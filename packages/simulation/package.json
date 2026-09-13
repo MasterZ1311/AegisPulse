@@ -1,0 +1,29 @@
+{
+  "name": "@aegispulse/simulation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ward patient deterioration simulation engine for AegisPulse",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aegispulse/types": "*"
+  },
+  "devDependencies": {
+    "@aegispulse/config": "*",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.7"
+  }
+}

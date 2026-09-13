@@ -1,28 +1,33 @@
 {
-  "name": "aegispulse",
+  "name": "aegispulse-monorepo",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "description": "AegisPulse: Patient Deterioration Radar & Nurse Attention Allocation Engine",
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "lucide-react": "^1.45.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "tailwindcss": "^4.3.3"
+    "dev": "concurrently -k -p \"[{name}]\" -n \"API,WEB\" -c \"cyan,magenta\" \"npm run dev --workspace=@aegispulse/api\" \"npm run dev --workspace=@aegispulse/web\"",
+    "dev:api": "npm run dev --workspace=@aegispulse/api",
+    "dev:web": "npm run dev --workspace=@aegispulse/web",
+    "build:packages": "npm run build --workspace=@aegispulse/types && npm run build --workspace=@aegispulse/clinical && npm run build --workspace=@aegispulse/signal && npm run build --workspace=@aegispulse/simulation",
+    "build": "npm run build:packages && npm run build --workspace=@aegispulse/api && npm run build --workspace=@aegispulse/web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\""
   },
   "devDependencies": {
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7",
-    "@vitejs/plugin-react": "^6.1.1",
-    "oxlint": "^1.81.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.3.0"
+    "@eslint/js": "^9.20.0",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.20.1",
+    "prettier": "^3.5.1",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.24.0",
+    "vitest": "^3.0.7"
   }
 }

@@ -1,7 +1,21 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+  "extends": "./packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@aegispulse/config": ["packages/config/tsconfig.base.json"],
+      "@aegispulse/types": ["packages/types/src/index.ts"],
+      "@aegispulse/clinical": ["packages/clinical/src/index.ts"],
+      "@aegispulse/signal": ["packages/signal/src/index.ts"],
+      "@aegispulse/simulation": ["packages/simulation/src/index.ts"]
+    }
+  },
+  "include": [
+    "packages/*/src/**/*",
+    "packages/*/tests/**/*",
+    "services/*/src/**/*",
+    "services/*/tests/**/*",
+    "apps/*/src/**/*",
+    "tests/**/*"
   ]
 }

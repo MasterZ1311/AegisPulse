@@ -92,16 +92,42 @@ AegisPulse does not pretend to replace all medical hardware with a webcam. Inste
 
 ---
 
-## ⚡ Quick Start & Verification
+## ⚡ Quick Start & Monorepo Development
+
+The entire monorepo runs locally with a single documented command:
 
 ```bash
-# 1. Install dependencies
+# 1. Install all workspace dependencies
 npm install
-cd server && npm install && cd ..
 
-# 2. Run frontend & backend
-npm run dev        # Terminal 1: Client UI at http://localhost:5173
-cd server && npm run dev  # Terminal 2: REST API & DB
+# 2. Launch backend API (:3001) & web app (:5173) concurrently
+npm run dev
+
+# 3. Run monorepo test suite (Vitest)
+npm run test
+
+# 4. Lint and verify codebase
+npm run lint
+
+# 5. Build all packages, services, and web apps
+npm run build
+```
+
+### 📁 Monorepo Workspace Structure
+```
+/apps
+  /web           → React 19 + TypeScript + Vite + Tailwind CSS shell (:5173)
+/services
+  /api           → Node.js + Express + TypeScript backend (:3001)
+/packages
+  /types         → Shared domain contracts (Patient, TrendVector, AttentionAssessment)
+  /clinical      → Clinical early warning & Attention Priority scoring
+  /signal        → POS rPPG optical processing & SQI gating
+  /simulation    → Ward patient deterioration simulation engine
+  /config        → Shared TypeScript, ESLint, and Prettier configurations
+/research        → Academic papers, statistical validation, and literature review
+/tests           → Monorepo integration and health check test suites
+/docs            → Complete specification suite & clinical safety boundaries
 ```
 
 ---
