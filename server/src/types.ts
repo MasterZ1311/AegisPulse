@@ -4,7 +4,7 @@ export interface VitalsReading {
   heartRate: number;
   respiratoryRate: number;
   hrv: number;
-  spo2: number;
+  shockIndex: number;
   temperature: number;
   systolicBP: number;
   diastolicBP: number;
@@ -13,6 +13,7 @@ export interface VitalsReading {
   triageLevel: TriageLevel;
   signalQuality: number;
   timestamp: number;
+  spo2?: number;
 }
 
 export interface LabBiomarkers {

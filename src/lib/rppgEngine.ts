@@ -12,7 +12,7 @@ export class RPPGEngine {
   private currentBPM = 74;
   private currentHRV = 48; // RMSSD in ms
   private currentRR = 16;
-  private currentSpO2 = 98;
+  private externalSpO2?: number; // Optional external pulse oximeter reading only
   private currentTemp = 36.8;
   private systolicBP = 118;
   private diastolicBP = 76;
@@ -32,7 +32,6 @@ export class RPPGEngine {
     if (mode === 'normal_sinus') {
       this.currentBPM = 72;
       this.currentRR = 16;
-      this.currentSpO2 = 98;
       this.currentTemp = 36.7;
       this.systolicBP = 118;
       this.diastolicBP = 78;
@@ -42,7 +41,6 @@ export class RPPGEngine {
     } else if (mode === 'acute_tachycardia') {
       this.currentBPM = 126;
       this.currentRR = 24;
-      this.currentSpO2 = 94;
       this.currentTemp = 38.4;
       this.systolicBP = 98;
       this.diastolicBP = 64;
@@ -52,7 +50,6 @@ export class RPPGEngine {
     } else if (mode === 'sepsis_decompensation') {
       this.currentBPM = 142;
       this.currentRR = 30;
-      this.currentSpO2 = 87;
       this.currentTemp = 39.3;
       this.systolicBP = 78;
       this.diastolicBP = 48;
@@ -284,7 +281,7 @@ export class RPPGEngine {
       heartRate: this.currentBPM,
       respiratoryRate: this.currentRR,
       hrv: this.currentHRV,
-      spo2: this.currentSpO2,
+      shockIndex: Number((this.currentBPM / (this.systolicBP || 120)).toFixed(2)),
       temperature: this.currentTemp,
       systolicBP: this.systolicBP,
       diastolicBP: this.diastolicBP,
@@ -293,6 +290,7 @@ export class RPPGEngine {
       triageLevel: mews.triageLevel,
       signalQuality: this.signalQuality,
       timestamp: Date.now(),
+      spo2: this.externalSpO2,
     };
   }
 
@@ -310,7 +308,7 @@ export class RPPGEngine {
     if (updates.diastolicBP !== undefined) this.diastolicBP = updates.diastolicBP;
     if (updates.respiratoryRate !== undefined) this.currentRR = updates.respiratoryRate;
     if (updates.temperature !== undefined) this.currentTemp = updates.temperature;
-    if (updates.spo2 !== undefined) this.currentSpO2 = updates.spo2;
+    if (updates.spo2 !== undefined) this.externalSpO2 = updates.spo2;
     if (updates.avpu !== undefined) this.avpu = updates.avpu;
   }
 }

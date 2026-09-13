@@ -190,8 +190,8 @@ export const WardOverviewTab: React.FC<WardOverviewTabProps> = ({
                     <span className="text-sm font-mono font-black text-white">{p.vitals.heartRate} <span className="text-[9px] text-slate-500">BPM</span></span>
                   </div>
                   <div className="bg-slate-950 p-2 rounded-xl border border-slate-800/60">
-                    <span className="text-[10px] uppercase text-slate-500 block font-semibold">SpO2</span>
-                    <span className="text-sm font-mono font-black text-cyan-300">{p.vitals.spo2}%</span>
+                    <span className="text-[10px] uppercase text-slate-500 block font-semibold">Resp Rate</span>
+                    <span className="text-sm font-mono font-black text-cyan-300">{p.vitals.respiratoryRate} <span className="text-[9px] text-slate-500">/min</span></span>
                   </div>
                   <div className="bg-slate-950 p-2 rounded-xl border border-slate-800/60">
                     <span className="text-[10px] uppercase text-slate-500 block font-semibold">MEWS</span>

@@ -69,15 +69,14 @@ AegisPulse continuously evaluates four multi-modal vectors into an explainable *
 │ 5. 60 FPS Canvas Oscilloscope       │ src/components/WaveformOscilloscope.tsx │ ✅ Hardware-Accel│
 │ 6. Optical Scanner & Forehead ROI   │ src/components/WebcamBiometricScanner.tsx │ ✅ Complete   │
 │ 7. Triage Warning Banner Matrix     │ src/components/TriageStatusBanner.tsx │ ✅ High-Contrast UI│
-│ 8. Multi-Patient Ward Grid (4-Bed)  │ src/components/MultiPatientWardView.tsx │ ✅ Multi-Bed Sync│
-│ 9. Full Ward Overview Management    │ src/components/WardOverviewTab.tsx │ ✅ Bed Switching   │
-│ 10. Hematology Lab Ingestion Tab    │ src/components/LabDiagnosticsTab.tsx │ ✅ Multi-Modal     │
-│ 11. AI Clinical Copilot & SBAR      │ src/components/CopilotTab.tsx     │ ✅ SBAR Automated  │
-│ 12. Modal SBAR Clinical Briefing    │ src/components/AIClinicalCopilot.tsx │ ✅ One-Click Copy │
-│ 13. Patient Admission Engine        │ src/components/AdmitPatientModal.tsx │ ✅ Bed Allocation │
-│ 14. Hospital Ward Settings & Limits │ src/components/SettingsTab.tsx    │ ✅ Configurable    │
-│ 15. Express & SQLite Edge Backend   │ server/src/index.ts & db.ts       │ ✅ REST Endpoints  │
-│ 16. Architectural Specifications    │ docs/                             │ ✅ All Specs Frozen│
+│ 8. Full Ward Overview Management    │ src/components/WardOverviewTab.tsx │ ✅ Bed Switching   │
+│ 9. Hematology Lab Ingestion Tab     │ src/components/LabDiagnosticsTab.tsx │ ✅ Multi-Modal     │
+│ 10. AI Clinical Copilot & SBAR      │ src/components/CopilotTab.tsx     │ ✅ SBAR Automated  │
+│ 11. Modal SBAR Clinical Briefing    │ src/components/AIClinicalCopilot.tsx │ ✅ One-Click Copy │
+│ 12. Patient Admission Engine        │ src/components/AdmitPatientModal.tsx │ ✅ Bed Allocation │
+│ 13. Hospital Ward Settings & Limits │ src/components/SettingsTab.tsx    │ ✅ Configurable    │
+│ 14. Express & SQLite Edge Backend   │ server/src/index.ts & db.ts       │ ✅ REST Endpoints  │
+│ 15. Architectural Specifications    │ docs/ & PROJECT_CONSTITUTION.md   │ ✅ All Specs Frozen│
 └─────────────────────────────────────┴───────────────────────────────────┴────────────────────────┘
 ```
 
@@ -106,44 +105,34 @@ An incoming AI agent must prioritize the following implementation steps for the 
 
 ---
 
-## 5. Innovative Feature Roadmap: Ranked Priorities P0 to P4
+## 5. Staged Sprint Roadmap: Ranked Priorities P0 to P2
+
+All speculative, non-essential distractions (such as continuous thermal FLIR, acoustic stethoscopes, or optical cuffless blood pressure) have been permanently deleted from the scope. The roadmap is strictly focused on executing the core Attention Radar deliverables:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   INNOVATION BACKLOG: P0 TO P4                                   │
+│                               CORE SPRINT BACKLOG: P0 TO P2                                      │
 ├────┬─────────────────────────────────────────────────┬─────────────────┬─────────────────────────┤
 │ TIER│ FEATURE TITLE                                   │ COMPLEXITY      │ CLINICAL / PRODUCT VALUE│
 ├────┼─────────────────────────────────────────────────┼─────────────────┼─────────────────────────┤
 │ P0 │ Deterministic APS Formula & Dynamic Queue UI    │ Low (1 Day)     │ Core product foundation │
-│    │                                                 │                 │ (Milestones 1 & 2).     │
+│    │ (Sorts beds #1 to #N by Attention Priority)     │                 │ (Milestones M1 & M2).   │
 │ P0 │ Dynamic Signal Quality Index (SQI) Gating       │ Low (1 Day)     │ Rejects motion rigors;  │
-│    │                                                 │                 │ prevents false alarms.  │
+│    │ (Transitions TRUSTED -> DEGRADED -> UNRELIABLE) │                 │ prevents false alarms.  │
 │ P0 │ 15-Second Guided Spot-Check with Countdown Ring │ Low (1 Day)     │ Solves 24/7 dark room   │
-│    │                                                 │                 │ and privacy dilemmas.   │
+│    │ (Bounded optical check in volatile RAM)         │                 │ and privacy dilemmas.   │
 ├────┼─────────────────────────────────────────────────┼─────────────────┼─────────────────────────┤
-│ P1 │ Derivative-First Shock Index Velocity Tracker   │ Medium (2 Days) │ Detects compensatory    │
+│ P1 │ Derivative-First Shock Index Velocity Tracker   │ Medium (1 Day)  │ Detects compensatory    │
 │    │ (HR / Systolic BP acceleration)                 │                 │ shock before cliff.     │
 │ P1 │ Explainable "WHY NOW" Clinical Reasoning Drawer │ Low (1 Day)     │ Replaces black boxes    │
-│    │                                                 │                 │ with auditable reasons. │
-│ P1 │ Synthesized Web Audio Ward Paging (IEC 60601)   │ Low (1 Day)     │ Real-time emergency tone│
-│    │                                                 │                 │ for Critical Review.    │
+│    │ (Auditable bullet points for nurse action)      │                 │ with actionable reasons.│
+│ P1 │ Automated SBAR Clinical Handoff Exporter        │ Low (1 Day)     │ 1-click standardized    │
+│    │ (Instant report generation for MD escalations)  │                 │ physician communication.│
 ├────┼─────────────────────────────────────────────────┼─────────────────┼─────────────────────────┤
-│ P2 │ WebGPU / Wasm rPPG Acceleration Shader          │ Medium (3 Days) │ Drops CPU to < 1.5% on  │
-│    │                                                 │                 │ low-cost tablets.       │
-│ P2 │ Respiratory Acoustic Stethoscope Fusion         │ Medium (3 Days) │ Detects wheezing/stridor│
-│    │ (Microphone Array + Optical RR)                 │                 │ via tablet audio.       │
-│ P2 │ Fast-Forward Time-Compression Demo Simulator    │ Low (1 Day)     │ Shows 4 hours decay in  │
-│    │                                                 │                 │ 30 seconds on stage!    │
-├────┼─────────────────────────────────────────────────┼─────────────────┼─────────────────────────┤
-│ P3 │ ABDM (Ayushman Bharat) M1/M2/M3 Gateway         │ Medium (4 Days) │ Direct Indian National  │
-│    │ (ABHA Tokenization & DHIS Payouts)              │                 │ Health Grid integration.│
-│ P3 │ Telemedicine Video Injection Widget (WebRTC)    │ Medium (3 Days) │ Embeds 15s spot-check   │
-│    │                                                 │                 │ in video consultations. │
-├────┼─────────────────────────────────────────────────┼─────────────────┼─────────────────────────┤
-│ P4 │ Sub-Surface Thermal FLIR + Optical Fusion       │ High (Hardware) │ Maps core-to-skin delta │
-│    │                                                 │                 │ for septic shock index. │
-│ P4 │ Optical Arrhythmia & AFib Dicrotic Notch Parser │ High (DSP)      │ Atrial fibrillation     │
-│    │                                                 │                 │ detection from rPPG.    │
+│ P2 │ Fast-Forward Time-Compression Demo Simulator    │ Low (1 Day)     │ Compresses 4 hours of   │
+│    │ (Simulates Bed 3 sepsis & Bed 8 decay)          │                 │ decay into 30s on stage!│
+│ P2 │ Synthesized Ward Alert Audio (IEC 60601 Tone)   │ Low (0.5 Day)   │ Auditory priority cue   │
+│    │ (Subtle chime for CRITICAL_REVIEW state)        │                 │ without alarm fatigue.  │
 └────┴─────────────────────────────────────────────────┴─────────────────┴─────────────────────────┘
 ```
 

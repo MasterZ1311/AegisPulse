@@ -29,7 +29,7 @@ Clinical History: ${patient.history.join(', ')}
 REAL-TIME OPTICAL BIOMETRICS (rPPG):
 - Heart Rate: ${currentVitals.heartRate} BPM
 - Blood Pressure: ${currentVitals.systolicBP}/${currentVitals.diastolicBP} mmHg
-- SpO2: ${currentVitals.spo2}%
+- Shock Index: ${(currentVitals.shockIndex ?? (currentVitals.heartRate / (currentVitals.systolicBP || 120))).toFixed(2)}${currentVitals.spo2 ? `\n- Ext SpO2: ${currentVitals.spo2}%` : ''}
 - Respiratory Rate: ${currentVitals.respiratoryRate} breaths/min
 - Body Temperature: ${currentVitals.temperature.toFixed(1)}°C
 - Autonomic HRV (RMSSD): ${currentVitals.hrv} ms
@@ -85,7 +85,7 @@ Please generate:
 
     // Deterministic Clinical Decision Support Engine (Fallback / Offline Mode)
     const isCritical = currentVitals.mewsScore >= 5 || currentVitals.qsofaScore >= 2 || currentLabs.lactate >= 2.0;
-    const isModerate = currentVitals.mewsScore >= 3 || currentLabs.wbc > 12.0 || currentVitals.spo2 < 94;
+    const isModerate = currentVitals.mewsScore >= 3 || currentLabs.wbc > 12.0 || (currentVitals.shockIndex ?? 0.6) > 0.8;
 
     const fallbackAnalysis = `### 1. SBAR CLINICAL HANDOFF REPORT
 **SITUATION:**
@@ -93,7 +93,7 @@ Patient ${patient.name} (Bed ${patient.bedNumber}, Age ${patient.age}y ${patient
       isCritical ? 'CRITICAL DECOMPENSATION (CODE RED)' : isModerate ? 'MODERATE RISK (CODE YELLOW)' : 'COMPENSATED / STABLE (CODE GREEN)'
     }**.
 Current MEWS Score: **${currentVitals.mewsScore}/14**, qSOFA Score: **${currentVitals.qsofaScore}/3**.
-Hemodynamics: HR ${currentVitals.heartRate} BPM, BP ${currentVitals.systolicBP}/${currentVitals.diastolicBP} mmHg, SpO2 ${currentVitals.spo2}%, RR ${currentVitals.respiratoryRate}/min, Temp ${currentVitals.temperature.toFixed(1)}°C.
+Hemodynamics: HR ${currentVitals.heartRate} BPM, BP ${currentVitals.systolicBP}/${currentVitals.diastolicBP} mmHg, Shock Index ${(currentVitals.shockIndex ?? (currentVitals.heartRate / (currentVitals.systolicBP || 120))).toFixed(2)}, RR ${currentVitals.respiratoryRate}/min, Temp ${currentVitals.temperature.toFixed(1)}°C${currentVitals.spo2 ? `, Ext SpO2 ${currentVitals.spo2}%` : ''}.
 
 **BACKGROUND:**
 Admitted for ${patient.admissionReason}. Known clinical history: ${patient.history.join('; ')}.

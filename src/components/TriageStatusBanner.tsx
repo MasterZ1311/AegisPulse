@@ -1,6 +1,6 @@
 import React from 'react';
 import type { VitalsReading } from '../lib/types';
-import { Heart, Activity, Wind, Droplets, Thermometer, AlertOctagon, CheckCircle2, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Heart, Activity, Wind, Thermometer, AlertOctagon, CheckCircle2, AlertTriangle, ShieldAlert } from 'lucide-react';
 
 interface TriageStatusBannerProps {
   vitals: VitalsReading;
@@ -8,7 +8,8 @@ interface TriageStatusBannerProps {
 }
 
 export const TriageStatusBanner: React.FC<TriageStatusBannerProps> = ({ vitals, onOpenCopilot }) => {
-  const { heartRate, respiratoryRate, spo2, temperature, systolicBP, diastolicBP, hrv, mewsScore, qsofaScore, triageLevel } = vitals;
+  const { heartRate, respiratoryRate, temperature, systolicBP, diastolicBP, hrv, mewsScore, qsofaScore, triageLevel } = vitals;
+  const shockIndex = vitals.shockIndex ?? Number((heartRate / (systolicBP || 120)).toFixed(2));
 
   return (
     <div className="space-y-4">
@@ -115,18 +116,18 @@ export const TriageStatusBanner: React.FC<TriageStatusBannerProps> = ({ vitals, 
           </div>
         </div>
 
-        {/* SpO2 */}
+        {/* Shock Index (HR / SBP) */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 backdrop-blur-md relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[11px] font-medium uppercase tracking-wider">Oxygen SpO2</span>
-            <Droplets className="w-4 h-4 text-cyan-400" />
+            <span className="text-[11px] font-medium uppercase tracking-wider">Shock Index</span>
+            <Activity className="w-4 h-4 text-cyan-400" />
           </div>
           <div className="flex items-baseline space-x-1.5">
-            <span className="text-2xl font-black text-white font-mono">{spo2}</span>
-            <span className="text-xs text-slate-400">%</span>
+            <span className="text-2xl font-black text-white font-mono">{shockIndex.toFixed(2)}</span>
+            <span className="text-xs text-slate-400">HR/SBP</span>
           </div>
           <div className="mt-1 text-[10px] text-slate-500 font-mono">
-            {spo2 < 90 ? '🚨 Critical Hypoxia' : spo2 < 95 ? '⚠️ Mild Hypoxia' : '✓ Normal Perfusion'}
+            {shockIndex >= 0.9 ? '🚨 Occult Shock Risk' : shockIndex >= 0.7 ? '⚠️ Mild Elevation' : '✓ Normal (0.5–0.7)'}
           </div>
         </div>
 

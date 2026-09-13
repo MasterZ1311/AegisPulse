@@ -27,7 +27,7 @@ export const AIClinicalCopilot: React.FC<AIClinicalCopilotProps> = ({
 SITUATION:
 Patient: ${patient.name} (Bed ${patient.bedNumber}, Age ${patient.age})
 Current Status: MEWS Score ${vitals.mewsScore}/14 (${vitals.triageLevel.toUpperCase()}), qSOFA: ${vitals.qsofaScore}/3
-Vitals: HR ${vitals.heartRate} BPM, BP ${vitals.systolicBP}/${vitals.diastolicBP} mmHg, SpO2 ${vitals.spo2}%, RR ${vitals.respiratoryRate}/min, Temp ${vitals.temperature.toFixed(1)}°C.
+Vitals: HR ${vitals.heartRate} BPM, BP ${vitals.systolicBP}/${vitals.diastolicBP} mmHg, Shock Index ${((vitals.shockIndex ?? (vitals.heartRate / (vitals.systolicBP || 120)))).toFixed(2)}, RR ${vitals.respiratoryRate}/min, Temp ${vitals.temperature.toFixed(1)}°C${vitals.spo2 ? `, Ext SpO2 ${vitals.spo2}%` : ''}.
 
 BACKGROUND:
 Admission: ${patient.admissionReason}

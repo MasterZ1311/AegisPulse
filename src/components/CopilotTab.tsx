@@ -48,7 +48,7 @@ HISTORY: ${patient.history.join(', ')}
 
 SITUATION:
 Current MEWS Score: ${vitals.mewsScore}/14 (${vitals.triageLevel.toUpperCase()}) | qSOFA: ${vitals.qsofaScore}/3
-Vitals: HR ${vitals.heartRate} BPM, BP ${vitals.systolicBP}/${vitals.diastolicBP} mmHg, SpO2 ${vitals.spo2}%, RR ${vitals.respiratoryRate}/min, Temp ${vitals.temperature.toFixed(1)}°C, HRV ${vitals.hrv} ms.
+Vitals: HR ${vitals.heartRate} BPM, BP ${vitals.systolicBP}/${vitals.diastolicBP} mmHg, Shock Index ${((vitals.shockIndex ?? (vitals.heartRate / (vitals.systolicBP || 120)))).toFixed(2)}, RR ${vitals.respiratoryRate}/min, Temp ${vitals.temperature.toFixed(1)}°C, HRV ${vitals.hrv} ms${vitals.spo2 ? `, Ext SpO2 ${vitals.spo2}%` : ''}.
 
 ASSESSMENT:
 ${
