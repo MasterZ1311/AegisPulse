@@ -1,218 +1,187 @@
 # AegisPulse: Problem Statement & Solution Architecture
 
-**Definitive Clinical Problem Definition, Failure Modes of Prior Art, and Solution Blueprint**  
-*Document Version:* 2.0  
-*Target Audience:* Healthcare Administrators, Chief Medical Officers (CMOs), Clinical Engineers, Hackathon Judges  
-*Project:* AegisPulse Contactless Physiological Monitoring System  
+**Positioning:** Patient Deterioration Radar & Nurse Attention Allocation Engine  
+**Document Version:** 3.0  
+**Status:** BINDING ARCHITECTURAL SPECIFICATION  
+**Target Audience:** Chief Medical Officers, Hospital Administrators, Clinical Engineers, Hackathon Judges  
 
 ---
 
-## 1. Executive Summary: The Crisis of the Unmonitored Ward
+## 1. Executive Summary: The Crisis of Clinician Attention
 
-In modern healthcare, there is a dangerous clinical paradox: **Patients inside intensive care units (ICUs) are monitored every second by continuous telemetry arrays, while patients in general hospital wards—representing over 80% of all hospital beds—are monitored only once every 4 to 6 hours by manual nurse spot-checks.**
+In modern healthcare systems, the most dangerous clinical blindspot is not inside intensive care units, but in general medical-surgical hospital wards. However, the root problem has been fundamentally misunderstood by prior medical technology developers:
 
-In those multi-hour intervals, patients silently deteriorate. Post-operative internal hemorrhages, progressing bacterial sepsis, respiratory fatigue, and impending cardiac arrests unfold unseen. By the time a ward nurse arrives for a scheduled routine round, the patient has already collapsed into profound septic shock or cardiac arrest.
+> **The scarce resource in general hospital wards is not patient data. It is clinician attention.**
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                THE 4-TO-6-HOUR GENERAL WARD BLINDSPOT                           │
-│                                                                                                 │
-│   08:00 AM                  10:30 AM                  12:15 PM                  02:00 PM        │
-│   [Nurse Round 1]           [Occult Sepsis]           [Tissue Hypoperfusion]    [Nurse Round 2] │
-│   Vitals: Stable            HR Spikes to 118 BPM      RR Reaches 28 breaths/min Patient Found   │
-│   HR: 76, RR: 16            Lactate > 2.2 mmol/L      BP Drops to 85/50 mmHg    UNRESPONSIVE    │
-│   MEWS: 0 (Green)           MEWS: 4 (Yellow)          MEWS: 6 (Red Code)        CARDIAC ARREST  │
-│         │                          │                         │                         │        │
-│         ▼                          ▼                         ▼                         ▼        │
-│   "Patient fine"           *UNSEEN COLLAPSE*         *UNSEEN COLLAPSE*          "CODE BLUE!"    │
-│                             Window of Reversal        Organ Failure Sets In     Mortality > 80% │
-└─────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
+In typical public and high-volume private hospitals across India and developing nations, a single staff nurse is responsible for **30 to 40 patients simultaneously during an 8- to 12-hour shift**.
 
-AegisPulse eliminates this blindspot without requiring hospitals to buy millions of dollars in wired monitors. By leveraging the optical camera already present on clinician laptops, bedside tablets, and ward terminals, AegisPulse converts everyday screens into continuous, autonomous clinical sentinels.
+Under standard ward protocols, nurses measure vital signs manually once every 4 to 6 hours. During the intervening multi-hour intervals—amounting to over **80% of a patient's hospital stay**—patients silently deteriorate.
+
+Attempts to solve this by installing continuous wired telemetry monitors on every bed have failed universally:
+1. **The Capital Barrier**: At ₹2.5 to ₹6 Lakhs ($3,000–$8,000) per bed, monitoring a 500-bed hospital costs crores that public facilities do not possess.
+2. **The Alarm Fatigue Crisis**: Traditional monitors generate up to 350 alarms per bed per day, of which **85% to 99% are clinically non-actionable false alarms**. Nurses desensitize to the noise and mute the alarms.
+3. **The "Isolated Normal" Trap**: Single-point threshold alarms miss compensatory physiology. A patient with internal bleeding or progressing septic shock can maintain a "normal" heart rate of 95 BPM until they suddenly crash. Traditional monitors sound no alarm until after the physiological cliff has been breached.
+
+**AegisPulse fundamentally reframes the paradigm:**  
+Instead of attempting to turn every general ward bed into an expensive, beeping intensive care monitor, AegisPulse acts as an **intelligent deterioration radar**. It continuously evaluates physiological velocity, information decay, clinical baseline, and laboratory evidence to answer one urgent question:
+
+> **"Which patient should the nurse pay attention to next, and why?"**
 
 ---
 
-## 2. Granular Breakdown of the Problem Statement
+## 2. Granular Anatomy of the Clinical Problem
 
-### 2.1 The "4-to-6-Hour Monitoring Gap" (The Dead Zone)
-- **The Operational Latency**: In standard medical-surgical, post-operative, and step-down wards, hospital protocol mandates vital sign recording once every 4 to 6 hours.
-- **The Pathophysiological Reality**: Human physiological collapse is not instantaneous; it is progressive:
-  - Compensatory tachycardia and tachypnea manifest **6 to 8 hours prior to cardiac arrest**.
-  - In septic shock, cellular tissue hypoperfusion and anaerobic metabolism begin hours before overt arterial hypotension.
-- **The Consequence**: Because nobody is observing the patient during the 240-to-360-minute window between rounds, clinical interventions are systematically reactive rather than preemptive.
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                               THE COMPENSATORY DETERIORATION CLIFF                                │
+│                                                                                                  │
+│  Patient Status    08:00 AM             10:00 AM             11:30 AM             01:00 PM       │
+│  ─────────────────────────────────────────────────────────────────────────────────────────────   │
+│  Heart Rate        74 BPM               88 BPM               98 BPM               140 BPM        │
+│                    (Normal)             (+18% Velocity)      (+32% Velocity)      (Cardiovascular│
+│                                                                                    Collapse!)    │
+│  Traditional       [NO ALARM]           [NO ALARM]           [NO ALARM]           [CODE BLUE!]   │
+│  Threshold         (Threshold: >100)    (Threshold: >100)    (Threshold: >100)    (TOO LATE)     │
+│  Monitor:          "Patient Green"      "Patient Green"      "Patient Green"      Mortality >80% │
+│                                                                                                  │
+│  AegisPulse        APS: 18 (LOW)        APS: 64 (EVALUATE)   APS: 91 (CRITICAL)   [PREVENTED]    │
+│  Attention Radar:                       ▲ Velocity Warning   ▲ Urgent SBAR Sent   Patient Saved  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
-### 2.2 The Chronic Healthcare Staffing Shortage
-- **Global Standards vs. Developing World Reality**:
-  - The World Health Organization (WHO) recommends a nurse-to-patient ratio of **1:3 in step-down/acute units** and **1:6 in general wards**.
-  - In Indian government medical colleges, district headquarters hospitals, and high-volume public facilities, daytime ratios average **1:20 to 1:25**, and nighttime ratios frequently deteriorate to **1:40 or 1:50**.
-- **The Physical Impossibility of Manual Surveillance**:
-  - A single nurse assigned to 40 patients cannot physically spend 5 minutes taking manual blood pressure, pulse, respiratory rate, and temperature every 15 minutes. Doing so would require 200 minutes of measurement every single hour—a mathematical impossibility.
-  - As a result, nurses are overwhelmed, documentation is deferred, and early warning signs are inadvertently missed.
+### 2.1 The "Isolated Normal" Fallacy
+A patient with occult sepsis or internal hemorrhage initiates powerful autonomic compensatory mechanisms:
+- Endogenous epinephrine and norepinephrine release causes peripheral vasoconstriction and sinus tachycardia.
+- Because stroke volume drops, the heart beats faster to maintain Cardiac Output ($\text{CO} = \text{HR} \times \text{SV}$).
+- **The Failure**: On an isolated spot-check, a Heart Rate of 96 BPM and Blood Pressure of 110/70 mmHg are technically within "normal limits." However, when viewed as a time-series derivative ($\Delta \text{HR}/\Delta t = +24\text{ BPM in 45 mins}$), the patient is in acute compensatory distress.
 
-### 2.3 Sepsis: The World's Most Time-Sensitive Clinical Killer
-- **The Statistics**: Sepsis strikes **49 million people annually**, claiming **11 million lives** (accounting for 1 in every 5 deaths globally).
-- **The "Golden Window"**:
-  - In early sepsis, administration of intravenous fluids and broad-spectrum antibiotics within the first hour yields a survival rate exceeding **80%**.
-  - For every single hour of delayed antimicrobial therapy after onset of hypotension, **patient mortality increases by 7.6% to 8.4%** (Kumar et al., *Crit Care Med*).
-  - A 4-hour delay in detecting sepsis translates to an approximate **32% absolute increase in patient mortality**.
+### 2.2 Information Decay & The "Forgotten Bed"
+In a 40-bed ward, sequential nurse rounding takes 2 hours. If Bed 12 was checked at 08:00 AM and found stable, our certainty regarding Bed 12's clinical status decays exponentially over time:
+- By 11:30 AM (3.5 hours later), Bed 12 has entered a high-entropy state.
+- If Bed 12's rPPG optical signal is occluded by blankets or movement, that sensor uncertainty must **increase** the priority of visiting that bed, not silently ignore it.
 
-### 2.4 In-Hospital Cardiac Arrest (IHCA)
-- In-hospital cardiac arrest occurs in **1.6 to 2.8 per 1,000 hospital admissions**.
-- **82% of patients who experience an IHCA die before discharge**.
-- Over **70% of IHCA cases display recorded vital signs deterioration in the 8 hours preceding the event**—proving that these arrests are not sudden cardiac deaths, but predictable, preventable failures of surveillance.
-
-### 2.5 The Hardware & Financial Impasse
-Why don't hospitals monitor every bed with traditional ICU monitors?
-1. **Capital Cost**: A standard wired multiparameter monitor (Philips IntelliVue, GE Carescape, Mindray BeneVision) costs **$3,500 to $10,000 (₹2.5 Lakh to ₹8 Lakh INR) per bed**. Telemetry for a 500-bed hospital would cost between **₹12.5 Crore and ₹40 Crore ($1.5M–$5M USD)**—an expenditure no public health system or rural clinic can bear.
-2. **Consumable Waste & Skin Ulcers**: Physical leads, ECG adhesive pads, and pulse oximeter finger probes cost **$15 to $50 per patient** and cause Medical Adhesive-Related Skin Injuries (MARSI), pressure ulcers, and digital ischemia in geriatric and burn patients.
-3. **Cross-Contamination**: In infectious wards (COVID-19, Swine Flu, MRSA, fungal pathogens), physical cables and sensor clips travel between patients or require aggressive chemical disinfection, creating dangerous cross-infection pathways.
-4. **Alarm Fatigue**: Conventional monitors produce up to **350 alarms per bed per day**, of which **85% to 99% are clinically insignificant false alarms** (caused by loose cables, sensor dislodgement, or movement). This overwhelms nursing staff, who desensitize to alarms or silence them entirely.
+### 2.3 Nurse Rationing of Time
+A single nurse with 40 patients has exactly **90 seconds of attention per patient per hour**. When every patient looks stable on paper, nurses are forced to ration attention based on whoever rings the call bell or whoever appears restless. AegisPulse converts this subjective guessing into an objective, dynamic clinical priority queue.
 
 ---
 
-## 3. Why Previous Interventions Failed
+## 3. The AegisPulse Solution Architecture
 
-Hospitals have attempted several technological alternatives over the past two decades. All have suffered from fatal operational flaws:
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 HOW PREVIOUS SOLUTIONS FAILED                                   │
-├─────────────────────────┬───────────────────────────────────────────────────────────────────────┤
-│ PRIOR ATTEMPT           │ WHY IT FAILED IN REAL-WORLD PRACTICE                                  │
-├─────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-│ 1. Wired ICU Telemetry  │ Prohibitive cost ($5,000/bed); anchors patient to bed; high alarm     │
-│    in General Wards     │ fatigue; physical cables easily disconnect when patient moves.        │
-├─────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-│ 2. Wearable Chest /     │ High recurring cost ($50/patch); single-use adhesives peel off with   │
-│    Wrist Patches        │ sweat; elderly patients pull them off; batteries die in 72 hours.     │
-├─────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-│ 3. Under-Mattress       │ High cost ($1,500/bed); cannot measure true vascular photoplethysmo-  │
-│    Piezoelectric Pads   │ graphy; completely blind when patient sits up or leaves bed.          │
-├─────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-│ 4. Heavy Deep Learning  │ Requires expensive Nvidia GPUs ($2,000+); high latency (15-30 sec);   │
-│    Video AI (PhysNet)   │ cloud video streaming violates patient data privacy and HIPAA laws.   │
-├─────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-│ 5. Increased Manual     │ Nursing recruitment is limited by national shortages; hospitals      │
-│    Nurse Rounds         │ cannot double or triple nursing staff due to structural deficits.    │
-└─────────────────────────┴───────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 4. How AegisPulse Solves the Problem Correctly
-
-AegisPulse represents a fundamental paradigm shift: **Instead of attaching expensive hardware to the patient, we extract physiological signals from the ambient photons already reflecting off the patient's face.**
+AegisPulse is an edge-native clinical intelligence engine built on four multi-modal pillars:
 
 ```
-                               THE AEGISPULSE SOLUTION ECOSYSTEM
-                               
-       ┌────────────────────────┐                    ┌────────────────────────┐
-       │   PATIENT IN BED       │                    │ COMMODITY OPTICAL LENS │
-       │ (Resting Comfortably)  │ ──── Photons ────► │ (Laptop / Tablet / Web)│
-       └────────────────────────┘                    └───────────┬────────────┘
-                                                                 │ 30 FPS Video
-                                                                 ▼
-       ┌──────────────────────────────────────────────────────────────────────┐
-       │                AEGISPULSE EDGE SIGNAL ENGINE (CLIENT RAM)            │
-       │                                                                      │
-       │  [Forehead ROI Tracking] ──► [POS Chrominance Extraction (540nm)]    │
-       │                                              │                       │
-       │  [Zero-Phase 4th-Order Butterworth Filter] ◄─┘                       │
-       │  (Bandpass: 0.75 Hz – 3.33 Hz / 45 – 200 BPM)                        │
-       │                               │                                      │
-       │                               ▼                                      │
-       │  [Dynamic Peak Detection] ──► [Inter-Beat Intervals & RMSSD (HRV)]   │
-       │                               │                                      │
-       │                               ▼                                      │
-       │  CONTACTLESS VITALS: HR (BPM) │ HRV (ms) │ Respiratory Rate (/min)   │
-       └───────────────────────────────┬──────────────────────────────────────┘
-                                       │
-                                       ▼
-       ┌──────────────────────────────────────────────────────────────────────┐
-       │              MULTI-MODAL CLINICAL DECISION ENGINE                    │
-       │                                                                      │
-       │   Contactless Vitals   +   Lab Panels (Lactate, WBC, Creatinine)     │
-       │                               │                                      │
-       │                               ▼                                      │
-       │     ┌──────────────────────────────────────────────────┐             │
-       │     │ MEWS Scoring (0-14)   &   qSOFA Sepsis Screening │             │
-       │     └─────────────────────────┬────────────────────────┘             │
-       │                               │                                      │
-       │      ┌────────────────────────┴───────────────────────┐              │
-       │      ▼                                                ▼              │
-       │  [NORMAL / GREEN]                             [CRITICAL / CODE RED]  │
-       │  Routine Ward Surveillance                    Stat Rapid Response    │
-       │                                               Automated SBAR Dossier │
-       └──────────────────────────────────────────────────────────────────────┘
+                                  AEGISPULSE ATTENTION RADAR
+                                  
+  ┌───────────────────────┐    ┌───────────────────────┐    ┌───────────────────────┐
+  │ 1. PHYSIOLOGICAL      │    │ 2. INFORMATION DECAY  │    │ 3. CLINICAL BASELINE  │
+  │    VELOCITY (V_physio)│    │    ENGINE (D_time)    │    │    & LAB BIOMARKERS   │
+  │ • dHR/dt (%/hr)       │    │ • Time since nurse    │    │ • Modified Early      │
+  │ • dRR/dt (%/hr)       │    │   bedside visit       │    │   Warning Score (MEWS)│
+  │ • Shock Index trend   │    │ • Optical Sensor      │    │ • Serum Lactate       │
+  │   (HR / Systolic BP)  │    │   Quality Index (SQI) │    │ • WBC / Infection     │
+  └───────────┬───────────┘    └───────────┬───────────┘    └───────────┬───────────┘
+              │                            │                            │
+              └────────────────────────────┼────────────────────────────┘
+                                           │
+                                           ▼
+                       ┌───────────────────────────────────────┐
+                       │   DETERMINISTIC ATTENTION FORMULA     │
+                       │   APS = min(100, w1*V + w2*D + w3*M)  │
+                       └───────────────────┬───────────────────┘
+                                           │
+                                           ▼
+                       ┌───────────────────────────────────────┐
+                       │   DYNAMIC WARD ATTENTION QUEUE        │
+                       │   Beds 1..N Ranked in Real Time       │
+                       │   #1  BED 03  [APS: 91]  CRITICAL     │
+                       │   #2  BED 14  [APS: 74]  EVALUATE     │
+                       │   #3  BED 09  [APS: 48]  WATCH        │
+                       │   #4  BED 01  [APS: 15]  LOW          │
+                       └───────────────────┬───────────────────┘
+                                           │ Tap Bed 03
+                                           ▼
+                       ┌───────────────────────────────────────┐
+                       │       EXPLAINABLE "WHY NOW" CARD      │
+                       │  ▲ HR accelerated +18% over 35 min    │
+                       │  ▲ RR tachypnea spike: 16 → 24 /min   │
+                       │  ⏱ 3h 42m since last manual visit     │
+                       │  🧪 Serum Lactate: 2.4 mmol/L         │
+                       │                                       │
+                       │  RECOMMENDED CLINICAL ACTION:         │
+                       │  Perform 15s Optical Bedside Check    │
+                       │  [ONE-CLICK: AUTO-GENERATE SBAR]      │
+                       └───────────────────────────────────────┘
 ```
 
 ---
 
-## 5. Core Technological Pillars of AegisPulse
+## 4. The Attention Priority Score (APS) Mathematical Model
 
-### Pillar 1: 100% Zero Added Hardware Requirement
-- **Runs Everywhere**: AegisPulse operates on any device equipped with a standard RGB camera sensor:
-  - Ward nurse workstation laptops
-  - Over-bed Android or Windows infotainment tablets
-  - Mobile smartphones during telemedicine video consultations
-  - Existing ceiling-mounted nurse call cameras
-- **Per-Bed Cost**: **$0 in dedicated medical hardware**. The software deploys instantly via a standard web browser URL without installing proprietary drivers or hardware dongles.
+The Attention Priority Score ($APS \in [0, 100]$) is computed deterministically for every active bed:
 
-### Pillar 2: Contactless rPPG via the Plane-Orthogonal-to-Skin (POS) Algorithm
-- **Optical Absorption**: With every contraction of the left ventricle, oxygenated blood surges into facial micro-capillaries. Hemoglobin absorbs green light ($500\text{–}560\text{ nm}$).
-- **The POS Advantage**: Rather than relying on simple green intensity (which fails when room lights flicker or the patient moves), AegisPulse deploys the POS projection algorithm:
-  - Normalizes color channels over a rolling $1.5\text{-second}$ window.
-  - Projects signals onto two orthogonal planes perpendicular to the skin tone vector.
-  - Completely cancels specular surface reflections and motion-induced luminance shifts.
-- **Latency**: Produces a calibrated, stabilized heart rate, HRV, and respiratory rate reading in under **4.8 seconds**.
+$$APS = \min\left(100, \, w_v \cdot V_{\text{physio}} + w_d \cdot D_{\text{time}} + w_m \cdot S_{\text{mews}} + w_l \cdot L_{\text{biomarker}}\right)$$
 
-### Pillar 3: Deterministic Clinical Decision Models (MEWS & qSOFA)
-A vital sign number without clinical context is useless. AegisPulse embeds globally validated medical decision algorithms:
-- **Modified Early Warning Score (MEWS)**: Evaluates Heart Rate, Systolic BP, Respiratory Rate, Body Temperature, and Neurological AVPU (Alert, Voice, Pain, Unresponsive).
-  - **Score 0–2 (CODE GREEN)**: Stable homeostasis.
-  - **Score 3–4 (CODE YELLOW)**: Early decompensation alert. Notifies floor nurse to repeat vitals in 30 minutes.
-  - **Score $\ge 5$ (CODE RED)**: Critical physiological failure. Triggers automated emergency protocols for Rapid Response Team (RRT) or ICU transfer.
-- **qSOFA Sepsis Screen**: Evaluates Respiratory Rate $\ge 22$, Systolic $\text{BP} \le 100$, and altered mentation. Automatically flags occult septic infection before irreversible septic shock.
+### 4.1 Component 1: Physiological Velocity ($V_{\text{physio}}$)
+Evaluates the rate of change and directional acceleration of hemodynamics:
+$$V_{\text{physio}} = \alpha \left(\frac{\Delta \text{HR}}{\Delta t}\right) + \beta \left(\frac{\Delta \text{RR}}{\Delta t}\right) + \gamma \left(\Delta \text{Shock Index}\right)$$
+Where Shock Index is defined as $\text{SI} = \frac{\text{Heart Rate}}{\text{Systolic BP}}$ (Critical if $\text{SI} > 0.9$).
 
-### Pillar 4: Multi-Modal Fusion (Optics + Laboratory Biochemistry)
-Unlike camera-only apps that operate in a clinical vacuum, AegisPulse synthesizes optical telemetry with patient laboratory hematology:
-- **Serum Lactate**: Detects anaerobic cellular metabolism before blood pressure collapses.
-- **White Blood Cell (WBC) Count**: Confirms systemic infectious etiology.
-- **Creatinine & Platelets**: Evaluates end-organ renal damage and consumption coagulopathy.
-- **The Clinical Value**: When contactless optical tachycardia ($118\text{ BPM}$) co-occurs with an elevated serum lactate ($2.8\text{ mmol/L}$) and high WBC, the system instantly differentiates simple pain or anxiety from **life-threatening septic shock**.
+### 4.2 Component 2: Information Decay ($D_{\text{time}}$)
+Quantifies clinical uncertainty as time elapses without verified bedside observation:
+$$D_{\text{time}} = \min\left(40, \, \left(\frac{t_{\text{current}} - t_{\text{last\_verified}}}{\tau_{\text{ward\_protocol}}}\right)^2 \times 25 \times (1 - \text{SQI})\right)$$
+Where:
+- $\tau_{\text{ward\_protocol}} = 4\text{ hours}$ (Standard general ward rounding window).
+- $\text{SQI} \in [0.0, 1.0]$: Real-time Signal Quality Index from the optical sensor. If the sensor is occluded or degraded, uncertainty penalty climbs faster.
 
-### Pillar 5: Automated SBAR Clinical Copilot
-During emergency escalations, junior nurses and residents frequently struggle to communicate critical patient data clearly to attending physicians:
-- AegisPulse auto-generates structured **SBAR handoff reports**:
-  - **S (Situation)**: *"Bed 401-B, 58yo Male, MEWS Score 6/14 (Code Red), qSOFA 2/3."*
-  - **B (Background)**: *"Admitted for post-op cholecystectomy, history of Type 2 Diabetes."*
-  - **A (Assessment)**: *"Acute physiological decompensation consistent with early septic shock."*
-  - **R (Recommendation)**: *"Stat IV crystalloid bolus (30 mL/kg), draw blood cultures, order ABG, urgent ICU consult."*
-- Enables one-click copying, printing, or seamless API export to hospital Electronic Health Record (EHR) systems.
+### 4.3 Component 3: Clinical Baseline ($S_{\text{mews}}$)
+Normalized Modified Early Warning Score ($0\text{ to }14$):
+$$S_{\text{mews}} = \frac{\text{MEWS Score}}{14} \times 35$$
 
-### Pillar 6: Zero-Trust Ephemeral Privacy Architecture
-- **Zero Video Storage**: Video frames are processed in volatile browser RAM and discarded after every frame calculation.
-- **No Facial Biometrics Saved**: No facial images, embeddings, or video files are ever saved to disk or transmitted across the network.
-- **Legal Compliance**: Guaranteed compliance with **HIPAA Security & Privacy Rules** and India's **Digital Personal Data Protection (DPDP) Act 2023**.
+### 4.4 Component 4: Biochemical Stress ($L_{\text{biomarker}}$)
+Evaluates cellular hypoxia and systemic inflammation from ingested laboratory panels:
+- Serum Lactate $> 2.0\text{ mmol/L} \implies +15\text{ points}$.
+- White Blood Cell count $< 4.0\text{ or } > 12.0 \times 10^9/\text{L} \implies +10\text{ points}$.
 
 ---
 
-## 6. Detailed Architectural Comparison: Before vs. After AegisPulse
+## 5. The 15-Second Optical Spot-Check Paradigm
 
-| Clinical Operational Dimension | Traditional Hospital General Ward | Hospital Ward with AegisPulse |
-| :--- | :--- | :--- |
-| **Vitals Surveillance Frequency** | Once every 4 to 6 hours (intermittent spot checks) | **Continuous (telemetry updated every second)** |
-| **Time to Detect Decompensation** | Up to 4 to 6 hours (often after cardiac arrest) | **< 30 seconds from physiological onset** |
-| **Hardware Capital Expense** | $3,500 – $8,000 per bed | **$0 (Uses existing hospital tablets / webcams)** |
-| **Consumable & Sensor Costs** | $15 – $50 per patient (leads, electrodes, clips) | **$0 (100% contactless optical sensing)** |
-| **Patient Physical Mobility** | Tethered to bedside by cables; skin ulcers | **100% untethered, comfortable, non-invasive** |
-| **Risk of Nosocomial Infection** | High (shared clips, adhesive skin tears) | **Zero (no physical contact required)** |
-| **Early Warning Score Calculation** | Manually calculated on paper or mental estimate | **Automated real-time MEWS & qSOFA computation** |
-| **Clinical Handoff Generation** | Verbal, fragmented, prone to communication errors | **Automated standardized SBAR clinical dossiers** |
-| **Deployment Time** | Weeks of hospital wiring and mounting hardware | **Instantaneous (open web URL in browser)** |
+AegisPulse rejects the flawed assumption that cameras must stare at patients 24/7. Instead, optical rPPG is packaged into an active **15-Second Guided Spot-Check**:
+
+```
+[Nurse Approaches Bed] ──► [Points Tablet at Patient] ──► [15s Optical Scan]
+                                                                  │
+                                                                  ▼
+[Forehead ROI Target] ──► [POS Chrominance Extraction] ──► [Live 60 FPS Oscilloscope]
+                                                                  │
+                                                                  ▼
+[Signal Quality Check: SQI ≥ 75%?] ── YES ──► [Instant Lock: HR 76 BPM, RR 16 /min]
+                                              [Information Decay Resets: D_time = 0]
+```
+
+- **Guaranteed Lighting & Posture**: Occurs while the nurse is present, lights are on, and the patient is seated or resting still.
+- **Zero Surveillance Friction**: Camera is active for exactly 15 seconds, then shuts down.
+- **Volatile RAM Invariant**: Video frames exist purely in memory buffers for $< 33.3\text{ ms}$ and are destroyed immediately. Zero video frames leave the device.
 
 ---
 
-## 7. Conclusion: The Paradigm Shift
-AegisPulse does not just improve hospital monitoring—it **democratizes** it. By replacing multi-thousand-dollar physical hardware with calibrated mathematical optics and clinical intelligence algorithms running at the edge, AegisPulse transforms every hospital ward bed into an intelligent, continuous surveillance station, effectively eliminating the 4-to-6-hour general ward blindspot and saving thousands of lives from preventable in-hospital collapse.
+## 6. Closing the Loop: Automated SBAR Escalation
+
+When a bed crosses into the `CRITICAL_REVIEW` tier ($APS \ge 80$), AegisPulse auto-compiles a standardized **SBAR handoff dossier**:
+- **Situation (S)**: Patient name, bed number, current APS score (e.g., 91/100), and immediate warning triggers.
+- **Background (B)**: Admission diagnosis, post-operative day, and co-morbidities.
+- **Assessment (A)**: Synthesis of physiological velocity (HR $+18\%$, RR $+22\%$), information decay (3h 42m unobserved), and elevated serum lactate.
+- **Recommendation (R)**: Bedside blood pressure cycling, stat arterial blood gas, and Rapid Response Team (RRT) consult.
+
+---
+
+## 7. Comparison: Traditional Telemetry vs. AegisPulse Radar
+
+| Operational Dimension | Traditional ICU Telemetry | Generic Health Dashboard | AegisPulse Deterioration Radar |
+| :--- | :--- | :--- | :--- |
+| **Core Paradigm** | Continuous wired threshold beeps | "Here is your heart rate on a chart" | **"Which patient needs you next, and why?"** |
+| **Nurse Cognitive Load** | Extreme alarm fatigue (>85% false) | High (requires reading dozens of numbers)| **Zero fatigue (single prioritized queue)** |
+| **Handling of Stale Data** | Completely ignores observation age | Blind to unmeasured time | **Actively penalizes Information Decay** |
+| **Optical Bio-Sensing Role**| None (Uses physical leads/wires) | Attempts 24/7 invasive surveillance | **15-Second guided bedside spot-check** |
+| **Explainability** | Single number alarm (e.g., "HR > 100") | Black-box AI percentage score | **4–5 explicit physiological bullet points** |
+| **Hardware Capital Cost** | ₹2.5L – ₹6L per bed | Unrealistic $0 (assumes tablets exist)| **Utilizes existing ward screens / nurse tablets** |

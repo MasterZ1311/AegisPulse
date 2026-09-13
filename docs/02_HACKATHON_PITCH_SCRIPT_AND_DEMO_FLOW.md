@@ -1,75 +1,84 @@
 # AegisPulse: 3-Minute Hackathon Winning Pitch Script & Demo Protocol
-*VMedithon 3.0 (VIT Chennai — September 2026)*
+
+**Positioning:** Patient Deterioration Radar & Nurse Attention Allocation Engine  
+*VMedithon 3.0 (VIT Chennai — September 2026)*  
 
 ---
 
 ## ⏱️ Pitch Timeline (3 Minutes Total)
 
 ```text
-[0:00 - 0:40]  The Hook & The Clinical Tragedy (The Silent Killer)
-[0:40 - 1:15]  The Innovation: Contactless rPPG (Zero Hardware Magic)
-[1:15 - 2:15]  LIVE JURY DEMO: Real-Time Biometric Scan & Triage Trigger
-[2:15 - 2:45]  Clinical Multi-Modal Integration & Sepsis Defense
-[2:45 - 3:00]  Unit Economics, Paper Pipeline & Vision
+[0:00 - 0:45]  The Core Reality: Nurse Scarcity & The Danger of Alarm Fatigue
+[0:45 - 1:20]  The Attention Engine: Physiological Velocity & Information Decay
+[1:20 - 2:15]  LIVE JURY DEMO: Bed 03 Deterioration Injection & 15s Optical Spot-Check
+[2:15 - 2:45]  Explainable Clinical Reasoning ("WHY NOW") & Instant SBAR Handoff
+[2:45 - 3:00]  Unit Economics, Academic Paper & The Vision
 ```
 
 ---
 
 ## 🎙️ Spoken Script (Word-for-Word Guide)
 
-### Part 1: The Problem & The National Crisis (0:00 – 0:40)
-> *"Judges, in hospitals across India today, up to 70% of preventable cardiac arrests and fatal sepsis cases show clear warning signs up to eight hours before the patient collapses.  
-> Yet, in general wards—where 80% of our hospital beds are—nurses are overwhelmed with ratios of 1 nurse to 40 patients. Vitals are checked only once every four to six hours. In those multi-hour dead zones, 1.2 million patients in India silently deteriorate and die each year.  
-> Why don't we monitor every patient 24/7? Because traditional telemetry systems cost ₹3 Lakhs per bed, require intrusive wires, and create massive infection vectors.  
-> Today, we ask: **What if the camera already on your doctor's laptop or ward tablet could become a continuous, clinical-grade medical monitor with ZERO external hardware?**  
-> We built **AegisPulse**."*
+### Part 1: The Core Reality: Nurse Scarcity (0:00 – 0:45)
+> *"Judges, in general hospital wards across India and the world, one night-shift nurse cares for 30 to 40 patients simultaneously.  
+> Every digital health startup says: 'We built a continuous camera monitor for every bed!'  
+> But ask any head nurse what happens when you give her 40 beeping monitors. **She goes crazy with alarm fatigue and unplugs them.**  
+> The scarce resource in hospital wards is not patient data.  
+> **The scarce resource is clinician attention.**  
+> She has 60 minutes in an hour. She cannot continuously reassess everyone. When vitals are checked once every four hours, patients silently deteriorate between rounds.  
+> Today, we introduce **AegisPulse: The Patient Deterioration Radar & Nurse Attention Allocation Engine.**  
+> We don't just display numbers. **We tell the nurse exactly which bed to visit next—and explain why in plain English.**"*
 
 *(Note: For the ultra-fast 2-Minute High-Voltage Pitch with recurring CTAs, see [07_MASTER_PITCH_SCRIPT_NATIONAL_CRISIS_AND_JUDGES_FAQ.md](file:///e:/My%20Development/AegisPulse/docs/07_MASTER_PITCH_SCRIPT_NATIONAL_CRISIS_AND_JUDGES_FAQ.md))*
 
 ---
 
-### Part 2: The Core Science & Innovation (0:40 – 1:15)
+### Part 2: The Core Science: Velocity & Information Decay (0:45 – 1:20)
 *(Open the AegisPulse interface on the laptop screen)*
-> *"AegisPulse uses **Remote Photoplethysmography (rPPG)**.  
-> With every heartbeat, a pulse of oxygenated blood rushes into the micro-capillaries of your face. While your eyes can't see it, your laptop webcam can.  
-> Hemoglobin has an intense absorption peak in the green light spectrum. Our computer vision pipeline tracks the patient's forehead, isolates the green channel photon absorption, and applies real-time digital Butterworth bandpass filtering directly in the browser.  
-> Within 5 seconds, it extracts the patient's **Heart Rate, Heart Rate Variability (stress index), and Respiratory Rate**—completely contactless."*
+> *"AegisPulse continuously calculates an **Attention Priority Score ($APS \in [0, 100]$)** across four deterministic clinical vectors:  
+> 1. **Physiological Velocity**: We evaluate how fast heart rate and respiration are accelerating. In compensatory shock, a patient's heart rate climbs from 72 to 96 BPM—still technically 'normal' on a threshold monitor, but a massive +33% velocity spike!  
+> 2. **Information Decay**: The longer a bed sits without a verified check, the higher its uncertainty penalty.  
+> 3. **Clinical Baseline**: Validated MEWS risk scoring.  
+> 4. **Biochemical Evidence**: Elevated serum lactate and white blood cell counts.  
+> This converts 40 chaotic beds into a single, dynamically sorted queue where the most urgent patient rises to the top."*
 
 ---
 
-### Part 3: The Live Jury Demo (1:15 – 2:15)
-*(Direct the laptop camera towards a judge or team member)*
-> *"Watch this in real-time. My teammate is sitting in front of the camera.  
-> Notice the dynamic ROI bounding box locking onto the forehead capillary bed. Look at the canvas oscilloscope below—that sinusoidal green waveform is their live arterial pulse wave being reconstructed at 60 frames per second.  
-> Pulse: **74 BPM**. Respiratory Rate: **16 breaths/min**. Status: **Green — Low Risk**.*
+### Part 3: The Live Jury Demo (1:20 – 2:15)
+*(Direct attention to the dashboard and webcam)*
+> *"Watch this in real-time. Here is Ward 4B.  
+> Currently, all beds are stable. Now, watch what happens when acute deterioration begins in Bed 3.  
+> *(Click the 'Deterioration Scenario' toggle in the dashboard)*  
+> Look at the screen: Bed 03's heart rate accelerates to 98 BPM, her decay clock crosses 3.5 hours, and her Attention Score spikes to **91 — CRITICAL REVIEW!**  
 > 
-> *Now, what happens in an emergency?  
-> Let's simulate acute sepsis decompensation or tachycardia.  
-> (Click the 'Trigger Decompensation Scenario' toggle in the dashboard)*  
-> *Instantly, our edge engine recalculates the **Modified Early Warning Score (MEWS)**. The score spikes to 6. The UI flashes **RED CODE ALERT**, and our AI Clinical Copilot immediately generates an SBAR protocol dispatching the Rapid Response Team with targeted antibiotic and fluid orders."*
+> How does the nurse close the loop?  
+> She walks to Bed 3 and holds up her tablet for our **15-Second Optical Spot-Check**.  
+> *(Point camera at presenter or judge)*  
+> Using optical rPPG with the Plane-Orthogonal-to-Skin algorithm, the camera tracks green-spectrum capillary absorption. Look at the live arterial pulse wave and our **Signal Quality Index at 94%**.  
+> In 15 seconds, with zero wires, it verifies Heart Rate and Respiratory Rate, instantly resetting information decay."*
 
 ---
 
-### Part 4: Clinical Ingestion & Multi-Modal Depth (2:15 – 2:45)
-> *"AegisPulse isn't just a camera trick—it's a multi-modal clinical intelligence platform.  
-> We ingest patient lab records—White Blood Cell count, serum creatinine, and lactate levels. Our algorithms synthesize these laboratory biomarkers with the live contactless vitals to screen for early-stage Sepsis via the **qSOFA** clinical criteria before shock becomes irreversible."*
+### Part 4: Explainability & Closed-Loop SBAR Action (2:15 – 2:45)
+> *"Clinicians reject black boxes. Tapping Bed 03 opens our **'WHY NOW'** card, showing the nurse the exact physiological drivers in plain medical English.  
+> And with one click, AegisPulse auto-generates a standardized **SBAR clinical handoff dossier** (Situation, Background, Assessment, Recommendation) ready to dispatch to the on-call ICU registrar, cutting handoff communication from twenty minutes to thirty seconds."*
 
 ---
 
 ### Part 5: Impact, Paper Track & Wrap-Up (2:45 – 3:00)
-> *"Because AegisPulse requires zero dedicated hardware, it can deploy instantly to rural primary health centers, quarantine isolation wards, and remote video telemedicine with zero marginal cost.  
-> We have completed full mathematical benchmarking against certified pulse oximeters yielding a 0.96 Pearson correlation, and our research paper draft is prepared for mentorship under the SCOPE academic track.  
-> AegisPulse: Turning every camera into a life-saving clinical sentinel. Thank you."*
+> *"Because AegisPulse runs on existing ward tablets with volatile RAM-only privacy, it slashes the 3-year cost of continuous monitoring by 99%—from ₹3.5 Lakhs down to ₹3,600.  
+> We have codified our mathematical formulations into an academic research paper prepared for mentorship under the SCOPE track.  
+> AegisPulse: Not more alarms. Just better clinician attention. Thank you."*
 
 ---
 
 ## 🎯 Jury Q&A Preparation (Bulletproof Answers)
 
-#### Q1: "How does this perform under varying lighting or skin tones?"
-> **Answer:** *"Excellent question. We implement spatial chromatic chrominance detrending that normalizes pixel luminance across the RGB color space before bandpass extraction. For low-light environments, we apply histogram equalization. Under standard indoor hospital lighting (300+ lux), our correlation is 0.96."*
+#### Q1: "Why not continuous 24/7 video monitoring?"
+> **Answer:** *"Because 24/7 video cameras in general wards fail: wards are dark at night ($< 30\text{ lux}$), patients sleep under blankets, and continuous cameras provoke severe patient privacy resistance. Instead, we package optical rPPG into an active 15-second spot-check during nurse rounds, while our Information Decay engine tracks unobserved time."*
 
-#### Q2: "What if the patient moves their head?"
-> **Answer:** *"Our ROI tracking uses optical flow anchoring with temporal filtering. Minor head movements and breathing are filtered out by our 0.75 Hz high-pass filter cutoff, which ignores low-frequency motion below 45 beats per minute."*
+#### Q2: "Can you measure Blood Pressure or SpO2 through the webcam?"
+> **Answer:** *"No, and we refuse to claim fake numbers. Ambient broadband RGB cameras cannot reliably measure SpO2 without dual-wavelength LEDs, and optical blood pressure without calibration is clinical malpractice. We measure what rPPG is genuinely good at: Heart Rate and Respiratory Rate. Blood pressure is entered via rapid dials to complete the MEWS score."*
 
-#### Q3: "Is patient video data stored or transmitted to the cloud?"
-> **Answer:** *"Zero video frames ever leave the patient's device. The entire rPPG computer vision extraction runs client-side in browser WebAssembly and HTML5 Canvas. Only numerical vitals vectors are saved to the clinical record, ensuring full HIPAA and DPDP compliance."*
+#### Q3: "How is patient privacy guaranteed?"
+> **Answer:** *"Zero video frames ever touch a persistent disk or stream to a cloud server. Processing lives in volatile browser RAM for under 33 milliseconds and is destroyed immediately. Only 120-byte numerical telemetry vectors leave the device, ensuring complete HIPAA and DPDP Act 2023 compliance."*

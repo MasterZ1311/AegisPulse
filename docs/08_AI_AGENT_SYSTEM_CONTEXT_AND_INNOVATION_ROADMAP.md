@@ -9,60 +9,57 @@
 
 ```yaml
 system_name: "AegisPulse"
-core_identity: "Contactless Facial Remote Photoplethysmography (rPPG) & Multi-Modal Clinical Triage Engine"
+core_identity: "Patient Deterioration Radar & Nurse Attention Allocation Engine"
+primary_question: "Which patient should the nurse pay attention to next, and why?"
 primary_repository_path: "e:/My Development/AegisPulse"
-target_environment: "Edge Browser Runtime (Chrome/Edge/Safari/Firefox) + Node.js/SQLite Local Ward Edge Server"
+target_environment: "Edge Browser Runtime (Chrome/Edge/Safari) + Node.js/SQLite Local Ward Server"
 clinical_standards:
   - "Modified Early Warning Score (MEWS, Subbe et al., 2001)"
   - "Sepsis-3 quick Sequential Organ Failure Assessment (qSOFA, Seymour et al., 2016)"
   - "SBAR (Situation, Background, Assessment, Recommendation) Clinical Handoff Protocol"
 regulatory_classification: "CDSCO Class B Software as a Medical Device (SaMD) / Clinical Decision Support System (CDSS)"
 privacy_invariants:
-  - "Zero persistent video storage (volatile RAM processing only)"
+  - "Zero persistent video storage (volatile RAM processing only, < 33.3ms frame lifetime)"
   - "Zero cloud video streaming (only ~120-byte numerical JSON telemetry transmitted)"
   - "Strict HIPAA Security Rule (45 CFR § 164) & India DPDP Act 2023 conformance"
 primary_stack:
   frontend: "React 19, TypeScript 5.x, Tailwind CSS v4, Lucide React, HTML5 2D Canvas (60 FPS)"
   backend: "Node.js v20+, Express.js, TypeScript, SQLite relational database"
-  signal_processing: "Plane-Orthogonal-to-Skin (POS), 4th-Order Butterworth Bandpass, Dynamic Zero-Crossing IBI"
+  signal_processing: "Plane-Orthogonal-to-Skin (POS) rPPG, 4th-Order Butterworth Filter, Dynamic Peak Zero-Crossing"
 ```
 
 ---
 
-## 2. The Grand Problem & Clinical Reality (Cognitive Grounding)
+## 2. The Grand Problem & Cognitive Grounding
 
-### 2.1 The "4-to-6-Hour Ward Blindspot" (The Dead Zone)
-Modern hospitals possess an acute surveillance divide:
-- **Intensive Care Units (ICUs)**: Continuous multi-lead telemetry, 1:1 or 1:2 nurse-to-patient ratios, real-time alert grids. Represents **< 15% of total hospital beds**.
-- **General Hospital Wards**: Intermittent spot-checks, 1:20 to 1:50 nurse-to-patient ratios (particularly in Indian public health facilities during night shifts), manual documentation. Represents **> 85% of total hospital beds**.
+### 2.1 The Crisis of Clinician Attention
+In general hospital wards across the globe, the fundamental bottleneck has been misunderstood:
+- **It is not a lack of patient data. It is the acute scarcity of clinician attention.**
+- In Indian government medical colleges and high-volume public hospitals, night-shift nurse-to-patient ratios routinely reach **1:30 to 1:50** (vs. WHO mandate 1:3).
+- A nurse caring for 40 patients has exactly **90 seconds of attention per patient per hour**.
+- Manual vitals rounds occur every 4 to 6 hours. During the intervening multi-hour "dead zones," patients silently deteriorate.
 
-In general wards, nurses measure vitals once every 4 to 6 hours. During the intervening multi-hour "dead zones":
-- **In-Hospital Cardiac Arrest (IHCA)**: Occurs in 1.6–2.8 per 1,000 admissions. **70% to 84% of patients show measurable vital sign derangement (tachycardia, tachypnea, hypoxia) 6 to 8 hours prior to collapse**. Because nobody measures them during the blindspot, survival-to-discharge is below 18%.
-- **Sepsis Progression**: Affects 48.9 million individuals globally with 11 million deaths annually. **For every single hour antibiotic and fluid resuscitation is delayed, septic shock mortality increases by 7.6% to 8.4%**. In an unmonitored ward, patients lose the entire 1-hour "Golden Window."
-- **India's National Catastrophe**: 1.2 million preventable in-hospital deaths annually; national nurse ratio of 1.7 per 1,000 citizens (WHO mandate: 3:1,000).
+### 2.2 Why Traditional Solutions Failed
+1. **Wired ICU Telemetry**: Cost-prohibitive ($3,000–$8,000/bed); creates massive alarm fatigue (>85% false alarms); physical cables cause skin tears and pressure ulcers.
+2. **Continuous 24/7 Webcam Surveillance**: Fails completely in dark wards at night ($< 30\text{ lux}$); blanket occlusions trigger constant false alarms; provokes severe patient dignity and privacy resistance.
+3. **The "Isolated Normal" Fallacy**: A patient compensating for acute internal bleeding or early septic shock can maintain a "normal" heart rate (e.g., 95 BPM) until cardiovascular collapse. Static threshold monitors remain silent while the patient crashes.
 
-### 2.2 Why Previous Technological Attempts Failed
-1. **Wired ICU Telemetry in Wards**: Prohibitive CapEx ($3,500–$8,000 / ₹2.5L–₹6L per bed); cabling restricts mobility, causes pressure ulcers and skin tears (MARSI); high false alarm rates (>85%) cause alarm fatigue.
-2. **Wearable Sensor Patches (Biobeat, Philips Biosensor)**: Single-use consumable expense ($40–$90 / ₹3,500–₹7,000 per patch); peeling from sweat; battery exhaustion in 3–5 days; geriatric compliance failure.
-3. **Deep Learning Spatio-Temporal Video AI (PhysNet, 3D-CNNs)**: Requires expensive workstation GPUs ($2,000+); high inference latency (15–30s buffer); uploading raw patient video to cloud servers triggers catastrophic HIPAA and DPDP Act legal violations.
-
-### 2.3 How AegisPulse Correctly Solves This
-AegisPulse decouples vital signs monitoring from proprietary medical hardware:
-- **Physics**: Employs **Remote Photoplethysmography (rPPG)**. Hemoglobin ($\text{HbO}_2$) absorbs green photons ($540\text{ nm}$). As cardiac systole expands facial micro-arterioles, green light reflectance drops.
-- **Algorithm**: The **Plane-Orthogonal-to-Skin (POS)** framework projects normalized RGB channels onto two orthogonal axes perpendicular to the skin tone vector, canceling surface glare and motion artifacts.
-- **Edge Efficiency**: Pure client-side JavaScript/Canvas implementation running at 30 FPS, consuming $< 8\%$ CPU, requiring zero dedicated medical hardware.
-- **Clinical Determinism**: Synthesizes optical vitals with laboratory blood counts (Lactate, WBC, Creatinine) into MEWS and qSOFA scoring, auto-generating SBAR handoffs.
+### 2.3 How AegisPulse Solves This
+AegisPulse continuously evaluates four multi-modal vectors into an explainable **Attention Priority Score ($APS \in [0, 100]$)**:
+1. **Physiological Velocity**: Measures rate-of-change ($\Delta \text{HR}/\Delta t$, $\Delta \text{RR}/\Delta t$, Shock Index trend), catching compensatory spikes before the cliff.
+2. **Information Decay**: Mathematically formalizes clinical uncertainty: $(t_{\text{elapsed}} / 4\text{h})^2 \times (1 - \text{SQI})$. The longer a bed sits unvisited, the higher its priority climbs.
+3. **Clinical MEWS Baseline**: Normalized Modified Early Warning Score matrix.
+4. **Biomarker Evidence**: Flags acute cellular hypoxia from lab panels (Serum Lactate $> 2.0\text{ mmol/L}$, WBC).
+5. **15-Second Optical Spot-Check**: Packages optical rPPG into a bounded, guided 15-second bedside check with an active Signal Quality Index (SQI) to quickly verify vitals without cables.
 
 ---
 
 ## 3. Completed Journey: What Has Been Built & Is Fully Operational
 
-The codebase is functional, production-built, and verified:
-
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                CURRENT IMPLEMENTATION MAP                                        │
-├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+├─────────────────────────────────────┬───────────────────────────────────┬────────────────────────┤
 │ MODULE / COMPONENT                  │ SOURCE FILE                       │ OPERATIONAL STATUS     │
 ├─────────────────────────────────────┼───────────────────────────────────┼────────────────────────┤
 │ 1. Core POS rPPG Engine             │ src/lib/rppgEngine.ts             │ ✅ Complete & Calibrated│
@@ -80,43 +77,36 @@ The codebase is functional, production-built, and verified:
 │ 13. Patient Admission Engine        │ src/components/AdmitPatientModal.tsx │ ✅ Bed Allocation │
 │ 14. Hospital Ward Settings & Limits │ src/components/SettingsTab.tsx    │ ✅ Configurable    │
 │ 15. Express & SQLite Edge Backend   │ server/src/index.ts & db.ts       │ ✅ REST Endpoints  │
-│ 16. Academic & Strategy Docs (01-07)│ docs/                             │ ✅ 10 Master Files │
+│ 16. Architectural Specifications    │ docs/                             │ ✅ All Specs Frozen│
 └─────────────────────────────────────┴───────────────────────────────────┴────────────────────────┘
 ```
-
-### Key Technical Achievements in the Active Codebase:
-- **Zero-Latency Signal Pipeline**: Frame processing occurs synchronously inside `requestAnimationFrame` loops via off-screen canvas buffers.
-- **Dynamic Simulation Suite**: Instant toggle between `live_webcam`, `normal_sinus` (72 BPM, Green), `acute_tachycardia` (126 BPM, Yellow), and `sepsis_decompensation` (142 BPM, Red) for stress-testing emergency protocols.
-- **Deterministic MEWS Calculator**: Exact implementation of Subbe et al.'s 5-parameter scoring with instantaneous Code Green (0–2), Yellow (3–4), and Red ($\ge 5$) thresholds.
-- **qSOFA Sepsis Rule Engine**: Flags occult organ failure based on $\text{RR} \ge 22$, $\text{SBP} \le 100$, and altered mentation.
-- **Automated SBAR Dossier Generator**: Auto-compiles patient demographics, admitting diagnosis, multi-modal vitals + labs, clinical differential, and resuscitation checklists.
 
 ---
 
 ## 4. What is Yet to Be Completed (Technical Gaps & Backlog)
 
-An incoming AI agent must prioritize addressing the following known architectural limitations:
+An incoming AI agent must prioritize the following implementation steps for the ground-up rebuild:
 
-1. **Live WebRTC / WebSocket Push Synchronization**:
-   - *Current State*: The frontend currently polls the backend via REST endpoints (`api.getPatients()`).
-   - *Target State*: Full-duplex WebSocket or Server-Sent Events (SSE) pipe pushing real-time vitals vectors (120 bytes) to central nursing stations without polling overhead.
-2. **Direct Optical Cuffless Blood Pressure (PTT)**:
-   - *Current State*: Systolic and Diastolic BP use baseline clinical entry combined with tachycardia escalation heuristics.
-   - *Target State*: Mathematical Pulse Transit Time (PTT) derivation correlating facial forehead rPPG (proximal) with hand/neck reflection (distal).
-3. **PWA Service Worker & Offline Cache**:
-   - *Current State*: Web app runs locally via dev server, but lacks a registered Service Worker for zero-connectivity installation on rural PHC tablets.
-4. **Automated Near-Infrared (NIR) Camera Mode**:
-   - *Current State*: Tuned for visible light ($500\text{–}560\text{ nm}$ green channel). Under pitch-dark ward conditions ($< 80\text{ lux}$), performance degrades unless ambient night-lights are active.
-   - *Target State*: Driver abstraction layer switching to NIR $850\text{ nm}$ illumination when ambient lux falls below 80.
-5. **Bidirectional HL7 / FHIR Live Webhook Sync**:
-   - *Current State*: FHIR R4 `Observation` JSON schemas are mapped in documentation and types.
-   - *Target State*: Native outbound HTTP POST client transmitting FHIR payloads to hospital EHR sandbox endpoints (e.g., Epic on FHIR, ABDM Health Facility Registry).
+1. **`src/lib/attentionCalculator.ts` Implementation**:
+   - Write the pure deterministic Attention Priority Score ($APS$) calculator.
+   - Implement the Information Decay formula: $D_{\text{time}} = \min(100, (t_{\text{elapsed}}/4\text{h})^2 \times 60 \times (1 - \text{SQI}))$.
+   - Implement the Physiological Velocity calculator: $\Delta \text{HR}/\Delta t$, $\Delta \text{RR}/\Delta t$, Shock Index trend.
+   - Implement the deterministic `generateWhyReasons()` clinical explanation builder.
+2. **`AttentionRadarQueue.tsx` Component**:
+   - Replace static patient cards with a real-time dynamically sorted priority list (Rank #1 at top).
+   - Display real-time Information Decay clocks (e.g., *"Last Check: 3h 42m ago"*).
+   - Display velocity indicators (e.g., *"HR ▲ +22%"*).
+3. **`ExplainableWhyDrawer.tsx` Component**:
+   - Slide-over drawer displaying the 4–5 plain-English bullet points explaining why a bed is elevated.
+   - Actionable checklist with one-click SBAR handoff generator.
+4. **Hardened 15-Second Optical Spot-Check Modal**:
+   - Add circular 15-second SVG countdown ring.
+   - Add real-time Signal Quality Index (SQI) confidence meter.
+   - Pause countdown if subject moves or SQI $< 50\%$.
 
 ---
 
 ## 5. Innovative Feature Roadmap: Ranked Priorities P0 to P4
-
-The incoming AI agent should use this creative, prioritized matrix to guide future code additions:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -124,197 +114,73 @@ The incoming AI agent should use this creative, prioritized matrix to guide futu
 ├────┬─────────────────────────────────────────────────┬─────────────────┬─────────────────────────┤
 │ TIER│ FEATURE TITLE                                   │ COMPLEXITY      │ CLINICAL / PRODUCT VALUE│
 ├────┼─────────────────────────────────────────────────┼─────────────────┼─────────────────────────┤
-│ P0 │ WebGPU / Wasm Acceleration Pipeline             │ Medium (2 Days) │ Eliminates CPU jank; 0% │
-│    │                                                 │                 │ frame drops on tablets. │
+│ P0 │ Deterministic APS Formula & Dynamic Queue UI    │ Low (1 Day)     │ Core product foundation │
+│    │                                                 │                 │ (Milestones 1 & 2).     │
 │ P0 │ Dynamic Signal Quality Index (SQI) Gating       │ Low (1 Day)     │ Rejects motion rigors;  │
 │    │                                                 │                 │ prevents false alarms.  │
-│ P0 │ Real-Time Lighting Auto-Equalization            │ Low (1 Day)     │ Boosts SNR in dim wards.│
+│ P0 │ 15-Second Guided Spot-Check with Countdown Ring │ Low (1 Day)     │ Solves 24/7 dark room   │
+│    │                                                 │                 │ and privacy dilemmas.   │
 ├────┼─────────────────────────────────────────────────┼─────────────────┼─────────────────────────┤
-│ P1 │ Cuffless Blood Pressure via Pulse Transit Time  │ High (4 Days)   │ Eliminates BP cuffs;    │
-│    │ (PTT & Arterial Wave Morphology)                │                 │ continuous MAP tracking.│
-│ P1 │ Automated Glasgow Coma Scale (GCS) Eye-Tracking │ Medium (3 Days) │ Continuous neurological │
-│    │ (Micro-Saccades & Blink Frequency)              │                 │ delirium monitoring.    │
-│ P1 │ Synthesized Web Audio Hospital Paging           │ Low (1 Day)     │ Real-time emergency tone│
-│    │                                                 │                 │ for Code Red alerts.    │
+│ P1 │ Derivative-First Shock Index Velocity Tracker   │ Medium (2 Days) │ Detects compensatory    │
+│    │ (HR / Systolic BP acceleration)                 │                 │ shock before cliff.     │
+│ P1 │ Explainable "WHY NOW" Clinical Reasoning Drawer │ Low (1 Day)     │ Replaces black boxes    │
+│    │                                                 │                 │ with auditable reasons. │
+│ P1 │ Synthesized Web Audio Ward Paging (IEC 60601)   │ Low (1 Day)     │ Real-time emergency tone│
+│    │                                                 │                 │ for Critical Review.    │
 ├────┼─────────────────────────────────────────────────┼─────────────────┼─────────────────────────┤
-│ P2 │ Multi-Patient Wide-Angle Ceiling Camera Mesh    │ High (5 Days)   │ 1 4K camera tracks 6    │
-│    │ (MediaPipe FaceMesh / YOLOv10 Edge)             │                 │ beds ($14/bed CapEx).   │
-│ P2 │ Respiratory Acoustic Stethoscope Fusion         │ Medium (3 Days) │ Detects wheezing, stridor│
-│    │ (Microphone Array + Optical RR)                 │                 │ & Cheyne-Stokes breathing│
-│ P2 │ Autonomous IV Drip Rate & Fluid Balance Monitor │ Medium (3 Days) │ Optical drop-counting to│
-│    │                                                 │                 │ prevent fluid overload. │
+│ P2 │ WebGPU / Wasm rPPG Acceleration Shader          │ Medium (3 Days) │ Drops CPU to < 1.5% on  │
+│    │                                                 │                 │ low-cost tablets.       │
+│ P2 │ Respiratory Acoustic Stethoscope Fusion         │ Medium (3 Days) │ Detects wheezing/stridor│
+│    │ (Microphone Array + Optical RR)                 │                 │ via tablet audio.       │
+│ P2 │ Fast-Forward Time-Compression Demo Simulator    │ Low (1 Day)     │ Shows 4 hours decay in  │
+│    │                                                 │                 │ 30 seconds on stage!    │
 ├────┼─────────────────────────────────────────────────┼─────────────────┼─────────────────────────┤
 │ P3 │ ABDM (Ayushman Bharat) M1/M2/M3 Gateway         │ Medium (4 Days) │ Direct Indian National  │
 │    │ (ABHA Tokenization & DHIS Payouts)              │                 │ Health Grid integration.│
-│ P3 │ Edge Federated Learning Network across Wards    │ High (6 Days)   │ Skin-tone calibration   │
-│    │                                                 │                 │ with zero data egress.  │
-│ P3 │ Telemedicine Video Injection Plugin (WebRTC SDK)│ Medium (3 Days) │ Turns any video call    │
-│    │                                                 │                 │ into a diagnostic tool. │
+│ P3 │ Telemedicine Video Injection Widget (WebRTC)    │ Medium (3 Days) │ Embeds 15s spot-check   │
+│    │                                                 │                 │ in video consultations. │
 ├────┼─────────────────────────────────────────────────┼─────────────────┼─────────────────────────┤
-│ P4 │ Thermal FLIR + RGB Micro-Vascular Fusion        │ High (Hardware) │ Maps septic shock index │
-│    │                                                 │                 │ & core-to-skin delta.   │
-│ P4 │ ICU Delirium & Agitation Predictive Index       │ High (AI Model) │ Predicts acute delirium │
-│    │ (Facial Grimace & Restless Micro-Motion)        │                 │ 4 hours prior.          │
-│ P4 │ Contactless Scleral Bilirubin Jaundice Scanner  │ Medium (Optics) │ Non-invasive neonatal & │
-│    │                                                 │                 │ hepatic bilirubin check.│
-│ P4 │ Optical Arrhythmia & AFib Dicrotic Notch Parser │ High (DSP)      │ Early atrial fibrillation│
+│ P4 │ Sub-Surface Thermal FLIR + Optical Fusion       │ High (Hardware) │ Maps core-to-skin delta │
+│    │                                                 │                 │ for septic shock index. │
+│ P4 │ Optical Arrhythmia & AFib Dicrotic Notch Parser │ High (DSP)      │ Atrial fibrillation     │
 │    │                                                 │                 │ detection from rPPG.    │
 └────┴─────────────────────────────────────────────────┴─────────────────┴─────────────────────────┘
 ```
 
 ---
 
-## 6. Deep Dive into Prioritized Innovations
+## 6. Architecture Invariants (DO NOT VIOLATE)
 
-### 6.1 P0 Innovations (Critical Immediate Enhancements)
-
-#### Innovation P0-1: WebGPU / WebAssembly rPPG Core
-- **The Concept**: Move pixel loop operations out of JavaScript main thread into WebAssembly (compiled C++/Rust) or WebGPU compute shaders.
-- **Mechanism**: The 1080p frame buffer is uploaded to GPU texture memory. A compute shader calculates spatial chromatic averages ($R, G, B$) and computes the POS projection matrix ($P_x = 3R_n - 2G_n, P_y = 1.5R_n + G_n - 1.5B_n$) in parallel across thousands of shader cores in $< 1\text{ ms}$.
-- **Result**: CPU utilization drops from $7.8\%$ to $< 1.5\%$, completely freeing the browser thread for 60 FPS UI animations.
-
-#### Innovation P0-2: Dynamic Signal Quality Index (SQI) Gating
-- **The Concept**: Calculate a real-time confidence metric ($0\text{ to }100\%$) based on:
-  1. Optical SNR: Peak energy at dominant frequency vs. baseline spectral noise.
-  2. Face stability: Inter-frame bounding box centroid drift.
-  3. Physiological plausibility: Sudden impossible jumps ($> 30\text{ BPM}$ in $500\text{ ms}$).
-- **Mechanism**: If $\text{SQI} < 50\%$, suppress vital updates, freeze last verified reading, display a visual amber calibration warning ("Subject Moving — Calibrating..."), and log an optical confidence alert. Never output noise as medical reality.
-
-#### Innovation P0-3: Ambient Illumination Histogram Auto-Equalization
-- **The Concept**: Hospital wards transition between bright daylight, fluorescent tube lighting, and dim night-lights.
-- **Mechanism**: Implement real-time Contrast Limited Adaptive Histogram Equalization (CLAHE) over the forehead ROI. Dynamically scales color channel intensities to maintain stable green-channel dynamic range even when ambient light drops to $150\text{ lux}$.
+1. **Never Stream or Persist Video**:
+   - `video` and `canvas` elements must process frames purely in memory. Do not add `fs.writeFileSync()` of image buffers or WebSocket video transmission. Only 120-byte numerical telemetry payloads may be saved or transmitted.
+2. **Never Fabricate Physiological Measurements**:
+   - If sensor signal degrades or face is lost, output `SIGNAL_LOST`. It is strictly forbidden to interpolate a synthetic 72 BPM sine wave to make the UI look good.
+3. **No Unverifiable Modalities**:
+   - Do not add fake webcam SpO2 or uncalibrated cuffless blood pressure.
+4. **Deterministic Scoring Over Black-Box AI**:
+   - The APS formula, MEWS calculator, and Information Decay functions must remain deterministic mathematical functions.
 
 ---
 
-### 6.2 P1 Innovations (High Priority Product Hardening)
+## 7. Key File Navigation Map
 
-#### Innovation P1-1: Cuffless Blood Pressure via Pulse Transit Time (PTT)
-- **The Concept**: Pneumatic inflatable arm cuffs are uncomfortable, wake sleeping patients, and cannot measure beat-to-beat trends.
-- **Mechanism**: Use the dual-vascular phase delay:
-  1. Track the proximal pulse wave at the facial forehead (near carotid artery).
-  2. Track the distal pulse wave from a secondary in-frame surface (e.g., patient's hand resting on blanket or neck jugular venous pulse).
-  3. Calculate $\Delta t = \text{PTT}$. Apply the Moens-Korteweg and Hughes equations:
-     $$\text{SBP} = a \cdot \ln(\text{PTT}) + b \cdot \text{HR} + c$$
-  4. Delivers continuous systolic and diastolic blood pressure estimation with zero inflatable cuffs.
-
-#### Innovation P1-2: Automated Glasgow Coma Scale (GCS) via Micro-Saccadic Eye Tracking
-- **The Concept**: Current MEWS requires nurses to manually assess whether the patient is Alert, responds to Voice, Pain, or is Unresponsive (AVPU).
-- **Mechanism**: Anchor secondary sub-ROIs over the patient's eyes. Monitor:
-  - Spontaneous blink frequency (normal: 12–20 blinks/min; drops severely in coma/encephalopathy).
-  - Micro-saccadic eye movement velocity (slow, wandering ocular movement indicates metabolic delirium).
-  - Eye-opening reaction to audio nurse call prompts.
-  - Automates the **Eye-Opening (E)** score of the Glasgow Coma Scale (GCS 1–4) and alerts doctors to subtle neurological decompensation.
-
-#### Innovation P1-3: Synthesized Web Audio Hospital Paging System
-- **The Concept**: Visual alerts on a laptop screen can be missed if a nurse is looking away or attending another bed.
-- **Mechanism**: Implement a Web Audio API synthesizer that generates standardized medical equipment alert frequencies (IEC 60601-1-8 compliant):
-  - Code Yellow: Low-priority two-tone chime ($440\text{ Hz} \to 554\text{ Hz}$).
-  - Code Red: High-urgency five-pulse repeating alarm ($880\text{ Hz}$ burst with $100\text{ ms}$ interval).
-  - Configurable in `SettingsTab.tsx` with nurse-mute override.
-
----
-
-### 6.3 P2 Innovations (Mid-Term Ward Surveillance Augmentation)
-
-#### Innovation P2-1: Multi-Bed Wide-Angle Ceiling Camera Mesh
-- **The Concept**: Placing an individual tablet at every single bed still requires buying tablets. A single 4K ultra-wide lens ($110^\circ\text{ FOV}$) mounted on a ward ceiling can monitor an entire 4-to-6-bed room.
-- **Mechanism**:
-  - Deploy lightweight YOLOv10-tiny or MediaPipe multi-face landmark detection on the 4K stream.
-  - Instantiate separate, concurrent rPPG worker pipelines for Bed 1, Bed 2, Bed 3, Bed 4, Bed 5, Bed 6.
-  - Maps each face to its corresponding bed ID via spatial coordinates.
-  - Brings capital hardware cost down from ₹7,500/bed to **₹1,200/bed ($14 USD)**.
-
-#### Innovation P2-2: Respiratory Acoustic Stethoscope Fusion
-- **The Concept**: Optical rPPG estimates breathing rate via chest/head movement and RSA, but cannot hear airway secretions or bronchospasms.
-- **Mechanism**: Utilize the tablet/laptop microphone array to perform acoustic Fourier analysis. Detects:
-  - High-pitched expiratory wheezes (asthma, COPD exacerbation).
-  - Inspiratory crackles (pulmonary edema, pneumonia fluid overload).
-  - Periodic waxing-and-waning Cheyne-Stokes respiration (heart failure, impending brainstem stroke).
-  - Fuses acoustic alerts into the MEWS respiratory vector.
-
-#### Innovation P2-3: Autonomous IV Drip Rate & Fluid Balance Monitor
-- **The Concept**: Over-hydration in septic or cardiac patients causes fatal pulmonary edema; under-hydration causes hypovolemic kidney failure.
-- **Mechanism**: Use the optical camera to locate the bedside IV drip chamber. Count drops per minute via frame differencing:
-  $$\text{Flow Rate (mL/hr)} = \frac{\text{Drops/min} \times 60}{\text{Drop Factor (gtt/mL)}}$$
-  Alerts the nurse if the IV infusion runs dry, infiltrates, or infuses at an incorrect rate.
-
----
-
-### 6.4 P3 Innovations (Long-Term National Health Scaling)
-
-#### Innovation P3-1: Ayushman Bharat Digital Mission (ABDM) Milestone Gateway
-- **The Concept**: Direct integration with the National Health Authority (NHA) ecosystem in India.
-- **Mechanism**:
-  - **M1 (ABHA Creation)**: Authenticates patient ABHA ID via Aadhaar OTP or biometric token.
-  - **M2 (Health Facility Registry)**: Links the hospital bed to official national healthcare provider registries.
-  - **M3 (Health Information Exchange)**: Automatically packages daily vitals histories into encrypted FHIR diagnostic bundles uploaded to the patient's personal Ayushman Bharat Health Locker.
-  - Enables the hospital to claim **Digital Health Incentive Scheme (DHIS)** direct financial subsidies (up to ₹500/patient) from the Indian Government.
-
-#### Innovation P3-2: Privacy-Preserving Federated Learning Network
-- **The Concept**: Improve rPPG accuracy on dark skin tones (Fitzpatrick V–VI) across 1,000 hospitals without centralizing patient biometric data.
-- **Mechanism**: Train local edge neural network weights on client devices in Tamil Nadu district hospitals. Send only encrypted gradient updates to a central state health server. Aggregate weights via Federated Averaging (FedAvg). Zero patient video frames or biometric vectors ever leave local ward firewalls.
-
-#### Innovation P3-3: Universal Telemedicine Video Injection SDK
-- **The Concept**: Remote doctors currently cannot examine vitals during video calls on Practo, Apollo 24/7, or WhatsApp.
-- **Mechanism**: A lightweight WebRTC / Canvas middleware wrapper. Takes the patient's incoming camera stream during a video consultation, extracts real-time rPPG vitals, and overlays an interactive HUD (Heart Rate, Respiratory Rate, MEWS) directly onto the doctor's teleconsultation dashboard.
-
----
-
-### 6.5 P4 Innovations (Moonshot / Radical Frontier Inventions)
-
-#### Innovation P4-1: Sub-Surface Thermal FLIR + Optical rPPG Fusion
-- **The Concept**: In early septic shock, peripheral vasoconstriction causes skin to become cold and clammy while core body temperature spikes (the "core-to-peripheral temperature gradient").
-- **Mechanism**: Fuse a miniature $80\times 60$ Lepton FLIR micro-bolometer ($90 USD) with the RGB camera. Measure the dynamic temperature delta between the inner canthus of the eye (core temperature) and the nose tip (peripheral perfusion). When combined with optical tachycardia and low HRV, this creates an unheralded **Non-Invasive Septic Shock Perfusion Index (SSPI)**.
-
-#### Innovation P4-2: Neurological Delirium & Agitation Predictive Index
-- **The Concept**: In-hospital delirium increases mortality threefold and leads to unplanned extubations.
-- **Mechanism**: Continuous facial micro-expression analysis tracking subtle orbital muscle tension (Action Unit 4), grimacing, and erratic head restlessness. Predicts acute hospital delirium and ICU psychosis up to 4 hours before physical agitation occurs.
-
-#### Innovation P4-3: Contactless Scleral Bilirubin Jaundice Scanner
-- **The Concept**: Neonatal jaundice (hyperbilirubinemia) affects 60% of term newborns and can cause permanent brain damage (kernicterus).
-- **Mechanism**: Optical segmentation of the ocular sclera. Measures spectral absorption at $460\text{ nm}$ (bilirubin peak absorption) normalized against the white scleral background to deliver transcutaneous bilirubin (TcB) estimation without blood draws or costly dedicated bilirubinometers.
-
-#### Innovation P4-4: Optical Cardiac Dysrhythmia & Atrial Fibrillation Detection
-- **The Concept**: Atrial Fibrillation (AFib) is a major cause of ischemic stroke.
-- **Mechanism**: Analyze the morphologic regularity of the arterial photoplethysmogram dicrotic notch and compute sample entropy ($\text{SampEn}$) across 300 consecutive cardiac cycles. Flags irregular, chaotic beat-to-beat variability characteristic of AFib directly through the webcam.
-
----
-
-## 7. Operational Blueprint & Agent Execution Directives
-
-When modifying, extending, or debugging the codebase, the AI agent must adhere strictly to these rules:
-
-### 7.1 Architecture Invariants (DO NOT VIOLATE)
-1. **Never Stream Video to Disk or Network**:
-   - `video` and `canvas` elements must process frames purely in memory. Do not add `fs.writeFileSync()` of image buffers or WebSocket video transmission. Only numerical telemetry payloads (`{heartRate, respiratoryRate, mewsScore}`) may be saved or transmitted.
-2. **Deterministic Clinical Scoring Over Black-Box AI**:
-   - The MEWS and qSOFA scoring must remain deterministic, transparent, and auditable. Do not replace them with unexplainable deep neural networks that clinicians cannot inspect or verify.
-3. **Graceful Degradation & Signal Gating**:
-   - If optical signal quality is poor ($\text{SQI} < 50\%$), the engine must indicate uncertainty rather than producing hallucinated numbers.
-
-### 7.2 Key File Navigation Map
-- **Frontend Entry Point**: [src/App.tsx](file:///e:/My%20Development/AegisPulse/src/App.tsx)
-- **rPPG Engine Core**: [src/lib/rppgEngine.ts](file:///e:/My%20Development/AegisPulse/src/lib/rppgEngine.ts)
+- **Product Specification**: [docs/PRODUCT_SPEC.md](file:///e:/My%20Development/AegisPulse/docs/PRODUCT_SPEC.md)
+- **Architecture Principles**: [docs/ARCHITECTURE_PRINCIPLES.md](file:///e:/My%20Development/AegisPulse/docs/ARCHITECTURE_PRINCIPLES.md)
+- **Clinical Safety Boundaries**: [docs/SAFETY_BOUNDARIES.md](file:///e:/My%20Development/AegisPulse/docs/SAFETY_BOUNDARIES.md)
+- **Architecture Decision Records (ADRs)**: [docs/DECISIONS.md](file:///e:/My%20Development/AegisPulse/docs/DECISIONS.md)
+- **Staged Roadmap**: [docs/MILESTONES.md](file:///e:/My%20Development/AegisPulse/docs/MILESTONES.md)
+- **Project Constitution**: [PROJECT_CONSTITUTION.md](file:///e:/My%20Development/AegisPulse/PROJECT_CONSTITUTION.md)
+- **Frontend Entry**: [src/App.tsx](file:///e:/My%20Development/AegisPulse/src/App.tsx)
+- **rPPG Engine**: [src/lib/rppgEngine.ts](file:///e:/My%20Development/AegisPulse/src/lib/rppgEngine.ts)
 - **Clinical Math**: [src/lib/mewsCalculator.ts](file:///e:/My%20Development/AegisPulse/src/lib/mewsCalculator.ts)
 - **Data Types**: [src/lib/types.ts](file:///e:/My%20Development/AegisPulse/src/lib/types.ts)
-- **Backend Entry Point**: [server/src/index.ts](file:///e:/My%20Development/AegisPulse/server/src/index.ts)
+- **Backend Entry**: [server/src/index.ts](file:///e:/My%20Development/AegisPulse/server/src/index.ts)
 - **Database Schema**: [server/src/db.ts](file:///e:/My%20Development/AegisPulse/server/src/db.ts)
-- **Master Documentation Catalog**: [docs/](file:///e:/My%20Development/AegisPulse/docs/)
-
-### 7.3 Verification Commands
-```bash
-# Verify Frontend TypeScript & Production Build:
-npm run build
-
-# Verify Backend TypeScript Build:
-cd server
-npm run build
-cd ..
-```
 
 ---
 
 ## 8. Summary for the Incoming AI Agent
-You are looking at a **fully functioning, clinically grounded, edge-native medical surveillance system**. It has passed mathematical benchmarking against certified medical devices ($r=0.962$, MAE $2.14\text{ BPM}$), possesses complete epidemiological justification, and features an enterprise React 19 / TypeScript architecture. 
 
-Your mission, should you take over or extend this system, is to maintain its zero-trust privacy guarantees, harden its clinical determinism, expand its capabilities along the P0–P4 roadmap, and help scale it to eliminate the deadly 4-hour general ward blindspot across hospitals worldwide.
+AegisPulse is **not** a webcam replacement for ICU monitors. It is an **intelligent deterioration radar and nurse attention allocation engine**. 
+
+Your mission is to maintain its zero-trust privacy guarantees, execute the staged milestones (M0 through M5), build the deterministic Attention Priority Score ($APS$) formula, and deliver an unshakeable, explainable clinical demonstration on stage.

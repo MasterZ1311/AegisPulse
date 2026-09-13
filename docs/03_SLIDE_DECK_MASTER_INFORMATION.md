@@ -1,8 +1,10 @@
 # AegisPulse: Slide-by-Slide Master Presentation Deck
+
+**Positioning:** Patient Deterioration Radar & Nurse Attention Allocation Engine  
 **Event:** VMedithon 3.0 — School of Computer Science & Engineering (SCOPE), VIT Chennai  
-**Track:** Hackathon Track (Software, Clinical AI & Academic Paper Publication)  
-**Time Limit:** 3 – 5 Minutes + Q&A  
-**Author:** Thenappan T (MasterZ) & Team
+**Track:** Software Innovation, Clinical AI & Academic Paper Publication Track  
+**Time Limit:** 3 – 5 Minutes + Jury Q&A  
+**Presenter:** Thenappan T & The AegisPulse Team  
 
 ---
 
@@ -10,18 +12,18 @@
 
 | Slide # | Slide Title | Core Focus | Target Duration |
 | :--- | :--- | :--- | :--- |
-| **01** | **Title Slide & The Core Thesis** | Hook & Identity | 20s |
-| **02** | **The Crisis: The 4-Hour Ward Blindspot** | Clinical Problem & Unmet Need | 30s |
-| **03** | **The Solution: AegisPulse** | Zero-Hardware Contactless Triage | 25s |
-| **04** | **Under The Hood: The rPPG Optical Science** | Biomedical Engineering & Optics | 35s |
-| **05** | **Clinical Intelligence: MEWS & qSOFA Engine** | Validated Medical Decision Models | 30s |
-| **06** | **Multi-Modal Diagnostic Fusion** | Blood Biomarkers + Live Optical Vitals | 25s |
-| **07** | **Aegis AI Copilot & Automated SBAR Handoff** | Clinical Decision Support & Action | 30s |
-| **08** | **Live System Demo & UI Walkthrough** | Working Software Proof-of-Work | 40s |
-| **09** | **Experimental Benchmarks & Privacy** | Clinical Accuracy ($r=0.96$) & HIPAA | 25s |
-| **10** | **Scalability, Impact & Unit Economics** | Hospital Deployment & Zero Marginal Cost | 20s |
-| **11** | **Research Paper & Innovation Roadmap** | Publication Plan & SCOPE Alignment | 15s |
-| **12** | **Conclusion & The Vision** | Final High-Agency Punchline | 15s |
+| **01** | **Title Slide & The Core Thesis** | The Attention Engine Identity | 20s |
+| **02** | **The Crisis: Nurse Attention Scarcity** | 1:40 Nurse Ratio & The 4-Hour Blindspot | 30s |
+| **03** | **The Solution: AegisPulse Radar** | "Who needs the nurse next, and why?" | 25s |
+| **04** | **The Attention Priority Score (APS)** | Velocity + Information Decay + MEWS + Labs | 35s |
+| **05** | **The 15-Second Optical Spot-Check** | Bounded rPPG via POS with Live SQI | 30s |
+| **06** | **The "WHY NOW" Explainability Engine**| Transparent Clinical Reasoning vs. Black Box | 25s |
+| **07** | **Closed-Loop Action: Automated SBAR** | Translating Risk into Instant Medical Briefs | 25s |
+| **08** | **Live System Demo & Triage Injection**| Proof of Work: Bed 03 Deterioration | 40s |
+| **09** | **Safety, Truth & Privacy Invariants** | Volatile RAM Only, No Fake SpO2/BP | 25s |
+| **10** | **Health Economics & Phased Scaling** | Attention ROI: Chennai $\to$ TN $\to$ India | 20s |
+| **11** | **Academic Roadmap & Staged Milestones**| SCOPE Mentorship & Engineering Timeline | 15s |
+| **12** | **Conclusion & Final Punchline** | "Not more alarms. Just better attention." | 15s |
 
 ---
 
@@ -30,202 +32,185 @@
 ---
 
 ### SLIDE 1: Title & The Core Thesis
-- **Slide Headline:** **AEGISPULSE AI**
-- **Subtitle:** Contactless Facial Remote Photoplethysmography (rPPG) & Multi-Modal Clinical Triage System
+- **Slide Headline:** **AEGISPULSE**
+- **Subtitle:** Patient Deterioration Radar & Nurse Attention Allocation Engine
 - **Badge / Category:** VMedithon 3.0 | Biology × Engineering | Software Innovation Track
-- **Presenter Info:** Thenappan T (Founder / Systems Architect) | Sathyabama Institute of Science and Technology (SIST)
-- **Visual Suggestion:** Dark medical UI background (`#060a12`), glowing cyan-emerald arterial pulse wave, laptop camera targeting reticle over a human face.
-- **Key Tagline:** *"Turning Every Camera into a Life-Saving Clinical Sentinel with Zero External Hardware."*
+- **Presenter Info:** Thenappan T (Systems Architect & Lead) | Sathyabama Institute of Science and Technology (SIST)
+- **Visual Suggestion:** Dark medical UI background (`#060a12`), glowing cyan Attention Priority radar reticle, dynamic priority queue cards (Bed 03 highlighted in Red).
+- **Key Tagline:** *"In general hospital wards, the scarce resource is not data, but clinician attention. We tell the nurse who to visit next, and why."*
 
 #### 🎙️ Spoken Script (20 seconds):
-> *"Good morning respected judges and faculty. I am Thenappan, and today we present **AegisPulse**—a zero-hardware cyber-physical medical intelligence platform that transforms standard laptop and smartphone webcams into continuous, clinical-grade triage monitors using computer vision and optical remote photoplethysmography."*
+> *"Good morning respected judges. I am Thenappan, and today we present **AegisPulse**—a Patient Deterioration Radar and Nurse Attention Allocation Engine that solves the acute nurse staffing crisis in general hospital wards by dynamically answering: Which patient needs the nurse's attention next, and why?"*
 
 ---
 
-### SLIDE 2: The Healthcare Crisis — The 4-Hour Monitoring Gap & India's National Emergency
-- **Slide Headline:** The Silent Killer: Delayed Triage & The 4-Hour General Ward Blindspot
+### SLIDE 2: The Healthcare Crisis — The Scarcity of Clinician Attention
+- **Slide Headline:** The Real Ward Bottleneck: Nurse Attention Rationing
 - **Key Statistics (Big Callout Numbers):**
   - **1:40**: The acute night-shift nurse-to-patient ratio in public hospital wards across India (vs. WHO mandate 1:3).
-  - **1.2 Million**: Annual preventable in-hospital deaths in India due to delayed clinical deterioration detection.
-  - **80%**: Of India's 1.9 million hospital beds are unmonitored general ward beds.
-  - **70% – 84%**: Of in-hospital cardiac arrests show abnormal vital trends **6 to 8 hours prior** to collapse.
-  - **4 – 6 Hours**: The average time interval between manual nurse rounds in general wards.
-  - **7.6% – 8.4%**: Increase in sepsis mortality for every single hour of delayed intervention.
-  - **₹2,50,000 – ₹6,00,000 ($3,000–$8,000)**: The prohibitive capital cost per bed of traditional wired telemetry.
+  - **90 Seconds**: The maximum attention a nurse can physically dedicate to each patient per hour.
+  - **85% – 99%**: Of acoustic alarms on traditional monitors are clinically non-actionable false alarms.
+  - **4 – 6 Hours**: The average time interval between manual nurse rounds, creating multi-hour dead zones.
 - **The Core Problem Breakdown:**
-  - **The Dead Zone**: Patients decompensate silently into septic shock or respiratory failure during the 4 hours between rounds.
-  - **The Hardware Barrier**: General wards cannot afford ICU telemetry for every bed; invasive cables cause pressure ulcers.
-  - **Contamination Vectors**: Physical contact sensors in infectious quarantine zones risk pathogen transmission.
+  - **The "Isolated Normal" Fallacy**: Compensatory physiology masks decline. Patients maintain "normal" vitals until an acute cliff.
+  - **Information Decay**: The longer a bed sits unvisited, the higher the clinical uncertainty.
+  - **Alarm Fatigue**: Adding 40 beeping monitors causes nurses to desensitize and mute alarms.
 
 #### 🎙️ Spoken Script (30 seconds):
-> *"Judges, in hospitals across India, up to 70% of cardiac arrests and fatal sepsis events are preventable—because the human body displays clear warning signs hours before collapse. But general wards face a catastrophic blindspot: while WHO mandates 1 nurse for every 3 patients, our public wards routinely have 1 nurse caring for 40 patients. Vitals are checked only once every 4 to 6 hours. In those multi-hour dead zones, 1.2 million patients in India silently deteriorate and die each year because traditional ICU telemetry costs three lakh rupees per bed and cannot scale."*
+> *"In general hospital wards across the world, one nurse cares for 30 to 40 patients. She has 60 minutes in an hour. She cannot continuously reassess everyone. Every health tech startup promises 40 continuous monitors, but head nurses will tell you that creates deafening alarm fatigue. The scarce resource isn't patient data—it's nurse attention. When vitals are checked once every four hours, patients silently deteriorate between rounds."*
 
 ---
 
-### SLIDE 3: The Solution — AegisPulse
-- **Slide Headline:** Continuous Bedside Surveillance with Zero Added Hardware
+### SLIDE 3: The Solution — AegisPulse Deterioration Radar
+- **Slide Headline:** A Dynamic Priority Queue for Clinical Attention
 - **Core Value Proposition:**
-  1. **100% Non-Contact Bio-Sensing**: Extracts arterial pulse, respiratory rate, and HRV directly from facial video feeds.
-  2. **Deterministic Clinical Scoring**: Automatically calculates the Modified Early Warning Score (MEWS) and qSOFA sepsis index every 250 milliseconds.
-  3. **Multi-Modal Data Fusion**: Combines optical biometrics with laboratory blood panels (WBC, lactate, creatinine, platelets).
-  4. **AI Emergency Copilot**: Auto-generates structured SBAR clinical handoffs and dispatches Rapid Response Teams (RRT) before irreversible arrest.
-- **Visual Suggestion:** Side-by-side split screen: Left side shows a patient resting in bed with a laptop on the table; Right side shows live waveforms, MEWS score, and instant automated triage status (Green / Yellow / Red).
+  1. **Dynamic Attention Queue**: Ranks all ward beds in real-time ($1\text{ to }N$) based on acute need for bedside presence.
+  2. **Multi-Vector Synthesis**: Combines physiological velocity, information decay, clinical baseline (MEWS), and lab biomarkers.
+  3. **Explainable "WHY NOW" Cards**: Replaces black-box scores with clear, auditable physiological bullet points.
+  4. **Closed-Loop Action**: Connects attention allocation directly to a 15-second bedside spot-check and automated SBAR referrals.
+- **Visual Suggestion:** Split screen: Left side shows traditional chaotic beeping ward with 40 equal beds; Right side shows AegisPulse cleanly sorted priority list with Bed 03 at Rank #1 (APS 91).
 
 #### 🎙️ Spoken Script (25 seconds):
-> *"AegisPulse solves this with pure software engineering. Without buying a single sensor or attaching a single wire, AegisPulse uses the optical camera already sitting on a nurse's workstation or patient tablet to continuously extract real-time hemodynamics, calculate validated clinical risk scores, and alert emergency teams the exact second a patient begins to decompensate."*
+> *"AegisPulse reframes the entire problem. We don't flood nurses with raw numbers. Instead, our Attention Allocation Engine continuously estimates which patient is on the steepest downward trajectory, places them at the top of the nurse's priority queue, and gives them an explainable reason to act immediately."*
 
 ---
 
-### SLIDE 4: Under The Hood — The rPPG Optical Science
-- **Slide Headline:** How rPPG Works: Sub-Perceptual Vascular Chrominance
-- **Step-by-Step Mathematical & Engineering Pipeline:**
-  1. **Facial ROI Localization**: Algorithms isolate the forehead capillary bed ($\text{ROI} = [0.35W \to 0.65W, 0.15H \to 0.35H]$), where dermal tissue is thin and muscle motion is minimal.
-  2. **Green-Channel Optical Extraction**: With each heartbeat, capillary blood volume expands. Because oxygenated hemoglobin has its highest optical absorption peak in the green spectrum ($500\text{–}560\text{ nm}$), green light reflectance drops synchronously with cardiac systole.
-  3. **Zero-Phase Digital Filtering**: A 4th-order Butterworth bandpass filter ($0.75\text{ Hz} \to 3.3\text{ Hz}$, equivalent to $45\text{–}200\text{ BPM}$) eliminates low-frequency illumination shifts and sensor noise.
-  4. **Dynamic Peak Extraction & HRV**: Zero-crossing derivatives extract instantaneous Inter-Beat Intervals (IBI) and calculate parasympathetic autonomic tone via RMSSD (Heart Rate Variability).
-- **Visual Suggestion:** Diagram showing: Facial Video Feed $\to$ Forehead Crop $\to$ Green Signal Extraction $\to$ Filtered Sinusoidal Wave $\to$ BPM & HRV Output.
+### SLIDE 4: The Attention Priority Score (APS) Engine
+- **Slide Headline:** The Mathematical Formula: Velocity + Information Decay
+- **The 4 Conceptual Pillars of the Score ($APS \in [0, 100]$):**
+  - **1. Physiological Velocity ($V_{\text{physio}}$)**: Evaluates rate-of-change ($\Delta \text{HR}/\Delta t$, $\Delta \text{RR}/\Delta t$, and Shock Index trend). Catches the compensatory spike before the cliff!
+  - **2. Information Decay ($D_{\text{time}}$)**: Mathematically formalizes clinical uncertainty: $(t_{\text{elapsed}} / 4\text{h})^2 \times (1 - \text{SQI})$. The longer a bed sits unobserved, the higher its priority climbs!
+  - **3. Clinical Baseline ($S_{\text{mews}}$)**: Validated Modified Early Warning Score matrix (0 to 14).
+  - **4. Biochemical Evidence ($L_{\text{biomarker}}$)**: Flags cellular stress from lab panels (Serum Lactate $> 2.0\text{ mmol/L}$, elevated WBC).
+- **Visual Suggestion:** Clean mathematical formula diagram showing the 4 weighted vectors converging into the final $0\text{–}100$ score.
 
 #### 🎙️ Spoken Script (35 seconds):
-> *"Here is the science: with every heartbeat, a micro-pulse of blood enters facial micro-capillaries. While invisible to the naked eye, your webcam captures it. Hemoglobin absorbs green light. By tracking the forehead and measuring microscopic green-channel intensity variations at 30 frames per second, our digital Butterworth bandpass filter isolates the arterial pulse wave, calculating instantaneous heart rate, respiratory sinus arrhythmia, and autonomic heart rate variability in under 5 seconds."*
+> *"How does the Attention Priority Score work? It is 100% deterministic math based on four vectors: First, Physiological Velocity—measuring how fast heart rate and respiration are accelerating. Second, Information Decay—the longer a bed sits unobserved, the higher its uncertainty penalty. Third, validated clinical MEWS baseline. And fourth, biochemical stress like serum lactate. A patient whose heart rate jumped 20% in 30 minutes gets flagged immediately, even if their number is still technically 'normal'."*
 
 ---
 
-### SLIDE 5: Clinical Intelligence — The MEWS & qSOFA Engine
-- **Slide Headline:** Moving Beyond Raw Numbers: Clinical Risk Stratification
-- **The Scoring Frameworks Implemented in AegisPulse:**
-  - **MEWS (Modified Early Warning Score)**: Evaluates composite score ($0\text{ to }14$) based on Heart Rate, Blood Pressure, Respiratory Rate, Temperature, and AVPU consciousness.
-    - **Score 0 – 2 (CODE GREEN)**: Stable. Standard 6-hour surveillance.
-    - **Score 3 – 4 (CODE YELLOW)**: Moderate Risk. Increase vitals frequency to 30 mins; notify charge nurse.
-    - **Score ≥ 5 (CODE RED)**: Critical Emergency. Immediate Rapid Response Team (RRT) bedside dispatch.
-  - **qSOFA (quick Sequential Organ Failure Assessment)**:
-    - Evaluates Respiratory Rate $\ge 22$, Systolic $\text{BP} \le 100$, and Altered Mentation.
-    - Score $\ge 2$ triggers automated emergency sepsis protocol.
-- **Visual Suggestion:** Clean 3-tier color-coded triage matrix showing clinical trigger thresholds and medical protocol actions.
+### SLIDE 5: The 15-Second Optical Bedside Spot-Check
+- **Slide Headline:** Optical rPPG as a Bounded, Calibrated Sensing Modality
+- **Why We Rejected 24/7 Continuous Video Cameras:**
+  - Hospitals are dark at night ($< 30\text{ lux}$); patients sleep under blankets; continuous cameras provoke severe privacy resistance.
+- **The 15-Second Guided Spot-Check Paradigm:**
+  - Occurs during active nurse bedside rounds. Lights are on, and the patient is stationary.
+  - Plane-Orthogonal-to-Skin (POS) rPPG tracks green capillary absorbance ($540\text{ nm}$) on the forehead.
+  - **Signal Quality Index (SQI)**: Real-time confidence meter gates the reading. If the patient moves, the system pauses.
+  - Locks in Heart Rate and Respiratory Rate in 15 seconds, resetting Information Decay to zero ($D_{\text{time}} = 0$).
+- **Visual Suggestion:** Tablet mockup showing the circular 15-second countdown reticle, green arterial pulse trace, and 94% SQI badge.
 
 #### 🎙️ Spoken Script (30 seconds):
-> *"A number on a screen doesn't save a life—clinical action does. AegisPulse embeds the clinically validated Modified Early Warning Score (MEWS) and qSOFA sepsis matrices directly into the edge engine. A score of 0 to 2 indicates green homeostasis. If the score climbs to 3 or 4, it alerts the ward nurse. The moment it hits 5 or above, the system triggers a CODE RED alert, alerting the ICU registrar before catastrophic shock sets in."*
+> *"We do not point cameras at sleeping patients 24/7. That fails in dark wards and violates privacy. Instead, we package optical rPPG into a bounded 15-Second Bedside Spot-Check. When the nurse visits Bed 3, she holds up her tablet for 15 seconds. Using the Plane-Orthogonal-to-Skin algorithm, it extracts live pulse and respiration with an active Signal Quality Index, resetting the bed's information decay with zero wires."*
 
 ---
 
-### SLIDE 6: Multi-Modal Fusion — Lab Diagnostics + Optical Telemetry
-- **Slide Headline:** Multi-Modal Intelligence: Merging Biochemistry with Optics
-- **Why Single-Modality Monitoring Fails:** Vital signs indicate *that* a patient is decompensating, but laboratory biomarkers explain *why*.
-- **Integrated Biomarker Panel:**
-  - **Serum Lactate**: Detects anaerobic metabolism and cellular tissue hypoperfusion (Critical $> 2.0\text{ mmol/L}$).
-  - **White Blood Cell (WBC) Count**: Detects leukocytosis or severe leukopenia (Infection / Sepsis $> 12.0 \times 10^9/\text{L}$).
-  - **Serum Creatinine**: Detects acute kidney injury secondary to septic hypoperfusion.
-  - **Platelets & CRP**: Identifies systemic inflammatory cascade and coagulopathy.
-- **The Fusion Mechanism:** Cross-correlates optical tachycardia ($>110\text{ BPM}$) with elevated lactate and WBC to confirm sepsis with high diagnostic confidence.
-- **Visual Suggestion:** Medical dashboard view showing laboratory sliders and automated diagnostic correlation badges.
+### SLIDE 6: The "WHY NOW" Explainability Engine
+- **Slide Headline:** Zero Black Boxes: Explainable Clinical Reasoning
+- **Why Clinicians Reject AI Black Boxes:** Doctors and nurses will never act on an arbitrary score like "Risk: 88%" without knowing the physiological drivers.
+- **The AegisPulse Explainable Card (Example: Bed 03):**
+  - *▲ Tachycardia Acceleration: Heart rate spiked +22% over 35 min (74 $\to$ 96 BPM).*
+  - *▲ Respiratory Drift: Breathing rate increased from 16 to 22 /min.*
+  - *⏱ Information Decay: 3 hours 42 minutes since last verified bedside check.*
+  - *🧪 Laboratory Corroboration: Serum Lactate elevated at 2.4 mmol/L.*
+- **Visual Suggestion:** High-resolution screenshot of the slide-over drawer highlighting the 4 bullet points and recommended human action.
 
 #### 🎙️ Spoken Script (25 seconds):
-> *"AegisPulse is truly multimodal. We don't just rely on camera vitals—we fuse live optical telemetry with patient laboratory hematology. By cross-referencing contactless heart rate and respiratory spikes with serum lactate and white blood cell counts, our system differentiates simple post-op anxiety from life-threatening systemic septic shock."*
+> *"Doctors reject black-box AI. AegisPulse is completely transparent. When the nurse taps Bed 3, our Explainable Why card tells her exactly why that bed is at the top of her list in plain medical English: Heart rate accelerated 22% in 35 minutes, breathing rate is climbing, lactate is elevated, and no one has touched this bed in over three hours."*
 
 ---
 
-### SLIDE 7: Aegis AI Copilot & Automated SBAR Handoff
-- **Slide Headline:** Closing the Loop: Automated SBAR Clinical Decision Support
-- **The SBAR Communication Framework (Hospital Standard):**
-  - **S (Situation)**: Bed 401-B, 58y Male, MEWS Score 6/14 (Code Red), qSOFA 2/3.
-  - **B (Background)**: Admitted for acute lobar pneumonia, history of Type 2 Diabetes.
-  - **A (Assessment)**: Acute physiological decompensation consistent with severe sepsis and respiratory fatigue.
-  - **R (Recommendation)**: Stat arterial blood gas, 30 mL/kg IV crystalloid fluid bolus, Sepsis 6 antibiotic orders, urgent ICU consult.
-- **Interactive Protocol Checklist:** Checkbox protocol guiding junior nurses and residents through immediate life-saving interventions.
-- **Visual Suggestion:** Screenshot of the dark glassmorphic AI Clinical Copilot modal with one-click copy and EHR sync button.
+### SLIDE 7: Closed-Loop Action: Automated SBAR Escalation
+- **Slide Headline:** From Priority Score to Immediate Clinical Action
+- **The Problem**: In emergencies, junior night-shift nurses lose 20 minutes gathering fragmented charts before calling on-call doctors.
+- **The SBAR Solution**:
+  - **S (Situation)**: Bed 03, 42F, APS 91 (Critical Review), MEWS 4, Shock Index 0.94.
+  - **B (Background)**: Post-Op Laparoscopic Cholecystectomy, Type 2 Diabetes.
+  - **A (Assessment)**: Accelerating physiological velocity consistent with early septic shock.
+  - **R (Recommendation)**: Bedside blood pressure cycling, stat blood cultures, IV fluid bolus evaluation.
+- **One-Click Dispatch**: Auto-compiled text ready for phone briefing or direct EHR sync.
 
-#### 🎙️ Spoken Script (30 seconds):
-> *"During a critical emergency, communication breakdowns cost lives. AegisPulse features an AI Clinical Decision Copilot that translates multi-modal vitals and labs into standardized SBAR handoff dossiers in real time. It delivers differential diagnoses, outlines immediate clinical checklists—like fluid resuscitation and blood culture orders—and syncs the summary with the hospital Electronic Health Record with one click."*
+#### 🎙️ Spoken Script (25 seconds):
+> *"A score without an action is useless. AegisPulse closes the loop. With one click, the system auto-compiles a standardized SBAR handoff dossier. A junior nurse calling the on-call registrar at 3:00 AM has the complete clinical situation, trajectory, and recommended orders synthesized on her screen, cutting emergency communication time from twenty minutes to thirty seconds."*
 
 ---
 
-### SLIDE 8: Live System Demonstration & Architecture
-- **Slide Headline:** Production-Ready Software Architecture (Proof of Work)
-- **Tech Stack Overview:**
-  - **Frontend / UI**: React 19, TypeScript, Tailwind CSS v4, HTML5 Canvas Oscilloscope.
-  - **Optics Engine**: Custom client-side rPPG pipeline processing video frames at 30 FPS.
-  - **Architecture**: 100% Offline-capable, zero server dependency, responsive glassmorphic dark mode.
-- **Live Demo Highlights to Showcase to Jury:**
-  1. *Live Camera Scanning*: Green capillary ROI box tracking forehead; live 60 FPS green phosphor pulse waveform.
-  2. *Interactive Scenarios*: Toggle between Normal Sinus (72 BPM Green) $\to$ Tachycardia (126 BPM Yellow) $\to$ Septic Shock (142 BPM Red).
-  3. *Centralized Ward 4B Monitor*: 4 virtual beds monitored simultaneously with instant bed switching.
-- **Visual Suggestion:** High-resolution screenshot of the running dashboard at `http://localhost:5173/` showing the camera feed, oscilloscope, metrics cards, and ward view.
+### SLIDE 8: Live System Demonstration & Proof of Work
+- **Slide Headline:** Live Software Demonstration (Ward 4B Simulation)
+- **Live Demo Protocol for Jury:**
+  1. *Ward Baseline*: Show 4 active ward beds in stable equilibrium (APS $< 35$).
+  2. *Deterioration Injection*: Trigger acute trajectory for Bed 03 (HR accelerates 74 $\to$ 96 BPM, decay crosses 3.5h, lactate 2.4).
+  3. *Dynamic Re-Sorting*: Watch Bed 03 shoot to Rank #1 with an APS of 91 (CRITICAL REVIEW).
+  4. *Inspect "WHY NOW"*: Open the slide-over drawer and review the 4 physiological reasons.
+  5. *Execute 15s Spot-Check*: Turn on the camera, scan presenter's pulse at 60 FPS, lock in vitals.
+- **Visual Suggestion:** High-contrast screenshot of the running React 19 interface at `http://localhost:5173`.
 
 #### 🎙️ Spoken Script (40 seconds):
-> *"Let's see AegisPulse in action. (Point to the laptop screen).  
-> Here you see our live React 19 interface. The camera has locked onto the forehead capillary bed. Below it, our 60-frames-per-second oscilloscope renders the continuous arterial pulse wave. Notice the vital telemetry: 74 BPM, 98% oxygen, MEWS 0.  
-> Now, watch what happens when acute sepsis strikes. (Click 'Septic Shock' button).  
-> The MEWS score spikes to 6, the dashboard flashes CODE RED, and opening our AI Copilot instantly reveals the complete emergency SBAR handoff dossier. All of this runs 100% client-side inside the browser."*
+> *"Let's see AegisPulse in action. (Point to screen). Here is Ward 4B. Notice all beds are currently stable. Now, watch what happens when occult deterioration begins in Bed 3. (Trigger scenario). Her heart rate accelerates—still technically normal at 96—but her velocity spikes. Watch the queue dynamically re-sort in real time: Bed 3 shoots to Rank Number One with an Attention Score of 91! Tapping her card reveals the exact physiological drivers. And when the nurse arrives at bedside, our 15-second spot-check verifies her vitals live on camera."*
 
 ---
 
-### SLIDE 9: Experimental Benchmarks & Privacy Compliance
-- **Slide Headline:** Rigorous Validation & Zero-Trust Privacy Architecture
-- **Benchmarking Results (vs. Certified Contec CMS50D Pulse Oximeter):**
-  - **Pearson Correlation ($r$)**: **$0.962$** (Strong linear concordance).
-  - **Mean Absolute Error (MAE)**: **$2.14\text{ BPM}$** across diverse illumination levels ($300\text{–}600\text{ lux}$).
-  - **Time to Initial Lock**: **$4.8\text{ seconds}$**.
-  - **Client CPU Utilization**: **$< 8\%$** on standard dual-core laptop.
-- **Privacy & Security Architecture:**
-  - **Zero Video Transmission**: Video frames are processed entirely in browser volatile RAM and discarded immediately.
-  - **No Cloud Video Storage**: Zero patient imagery leaves the device, guaranteeing compliance with **HIPAA** and India's **DPDP Act 2023**.
-  - **Lightweight Telemetry Only**: Only numerical biometrics (e.g., `{hr: 74, rr: 16}`) are transmitted to hospital dashboards.
+### SLIDE 9: Rigorous Safety Boundaries & Privacy Invariants
+- **Slide Headline:** Medical Device Ethics: Safety Before Novelty
+- **What We Strictly Forbid in Our Architecture:**
+  - ❌ *No Fake Webcam SpO2* (physically invalid under ambient broadband light).
+  - ❌ *No Fake Cuffless BP* (uncalibrated facial video BP is clinical malpractice).
+  - ❌ *No Autonomous Sepsis Diagnosis* (we screen deterioration risk, not diagnose disease).
+  - ❌ *No Continuous 24/7 Video Surveillance* (only 15-second bounded spot-checks).
+- **Non-Negotiable Privacy Invariants:**
+  - **Volatile RAM Only**: Video frames exist purely in temporary canvas memory for $< 33.3\text{ ms}$ and are destroyed immediately. Zero video files are ever saved or transmitted.
+  - **Telemetry Egress Only**: Only 120-byte numerical JSON vectors cross the device boundary.
 
 #### 🎙️ Spoken Script (25 seconds):
-> *"We benchmarked AegisPulse against medical-grade finger pulse oximeters, achieving a 0.962 Pearson correlation and an error margin of just 2.14 beats per minute. Most importantly, we built this with a zero-trust privacy architecture: no video frames are ever recorded, saved, or sent over the internet. Everything is processed locally in browser RAM, ensuring complete HIPAA and DPDP compliance."*
+> *"We believe in radical engineering honesty. We do not claim fake webcam SpO2 or magic cuffless blood pressure—both are physically impossible on standard webcams. We do not stream invasive 24/7 video. Video frames exist solely in volatile RAM for 33 milliseconds and are destroyed immediately. We adhere to clinical safety invariants: our system recommends human verification; it never replaces doctors."*
 
 ---
 
-### SLIDE 10: Scalability, Impact & Unit Economics: Chennai $\to$ Tamil Nadu $\to$ India
-- **Slide Headline:** Democratizing Continuous Monitoring: 99% Cost Reduction Across India
+### SLIDE 10: Health Economics & Phased Scaling Strategy
+- **Slide Headline:** Maximizing Clinician Attention Across Public Health
 - **Cost & Scaling Comparison (Per-Bed Over 3 Years):**
-  | Metric | Traditional Ward Telemetry | Wearable Sensor Patches | AegisPulse Platform |
+  | Metric | Traditional Ward Telemetry | Wearable Sensor Patches | AegisPulse Attention Engine |
   | :--- | :--- | :--- | :--- |
-  | **Hardware Cost per Bed** | ₹2,50,000 – ₹6,00,000 | ₹15,000 (Hub/Gateway) | **₹0 (Existing screens) / ₹7,500 (Refurb Tablet)** |
-  | **Sensor Consumables / Bed / Yr** | ₹36,000 (leads, probes) | ₹48,000 (disposables) | **₹0 (100% Optical Contactless)** |
-  | **Annual Software / Maintenance** | ₹20,000 (AMC service) | ₹12,000 (Cloud fee) | **₹1,200 – ₹2,400 (SaaS)** |
+  | **Hardware Cost per Bed** | ₹2,50,000 – ₹6,00,000 | ₹15,000 (Hub) | **₹0 (Existing screens) / ₹7,500 (Tablet)** |
+  | **Recurring Consumables / Yr** | ₹36,000 (leads, probes) | ₹48,000 (disposables) | **₹0 (100% Non-contact)** |
   | **Total 3-Year Cost Per Bed** | **₹3,58,000 – ₹7,20,000** | **₹1,95,000** | **₹3,600 – ₹11,100 (99% Savings)** |
-- **Phased Scaling Trajectory & Government Policy Integration:**
-  1. **Phase 1: Chennai Pilot (Year 1)**: 2,200 beds across 5 tertiary medical centers (RGGGH, Stanley, Kilpauk, Omandurar, Apollo) + 25 UPHCs. Budget: ₹1.2 Crore. Recouped in 10 months via avoided ICU transfers.
-  2. **Phase 2: Tamil Nadu State-Wide (Years 2–3)**: 45,000 beds across 38 District Hospitals and 1,800+ PHCs funded under the **World Bank-assisted $287M Tamil Nadu Health System Reform Program (TNHSRP)** and NHM-TN.
-  3. **Phase 3: Pan-India Scale (Years 4–5)**: 1,000,000+ public ward beds integrated with **Ayushman Bharat Digital Mission (ABDM)** and **Ayushman Arogya Mandirs**. Saving ₹24,000+ Crores in national healthcare infrastructure capital.
+- **Phased Rollout Plan:**
+  - **Phase 1: Chennai Pilot (Year 1)**: 2,200 beds across Rajiv Gandhi Govt General Hospital, Stanley, Kilpauk, and 25 UPHCs.
+  - **Phase 2: Tamil Nadu Scale (Years 2–3)**: 45,000 beds across 38 District Hospitals funded under the World Bank-backed **TNHSRP** program.
+  - **Phase 3: Pan-India ABDM (Years 4–5)**: Integrated into Ayushman Bharat Digital Mission across 1,000,000+ public ward beds.
 
-#### 🎙️ Spoken Script (25 seconds):
-> *"From a deployment standpoint, AegisPulse reduces the 3-year cost of continuous telemetry by 99%—from three and a half lakh rupees down to just ₹3,600 per bed. We have designed a 3-phase rollout starting with a 2,200-bed pilot across Rajiv Gandhi General Hospital and Chennai public clinics, scaling to 45,000 beds across Tamil Nadu under the World Bank-backed TNHSRP program, and integrating into Ayushman Bharat’s ABDM network to monitor one million hospital beds nationwide."*
+#### 🎙️ Spoken Script (20 seconds):
+> *"By focusing on software attention allocation rather than multi-lakh-rupee hardware, AegisPulse reduces continuous ward surveillance costs by 99%. We have mapped a phased deployment starting with a 2,200-bed Chennai pilot, expanding across Tamil Nadu under the World Bank-funded TNHSRP program, and integrating with Ayushman Bharat nationwide."*
 
 ---
 
-### SLIDE 11: Academic Research & Innovation Roadmap
-- **Slide Headline:** Academic Paper Track & Future Evolution
-- **Academic Publication Deliverables (Prepared for SCOPE Mentorship):**
-  - Completed research paper abstract and methodology dossier: *`AegisPulse: Contactless Facial Remote Photoplethysmography and Multi-Modal Clinical Triage for Low-Resource Healthcare Environments`*.
-  - Ready for refinement and submission to peer-reviewed biomedical engineering conferences (IEEE EMBC, Springer BHI).
-- **Engineering Milestones (Next 3–6 Months):**
-  - **Phase 1 (Current)**: Webcam rPPG (Heart Rate, HRV, RR) + MEWS/qSOFA calculation.
-  - **Phase 2 (Q4 2026)**: Micro-saccade eye tracking for neurological Glasgow Coma Scale (GCS) automation.
-  - **Phase 3 (Q1 2027)**: Edge WebAssembly / WebGPU acceleration for multi-bed simultaneous face extraction on a single wide-angle ceiling camera.
+### SLIDE 11: Academic Research & Staged Milestones
+- **Slide Headline:** Academic Rigor & Staged Engineering Milestones
+- **Academic Paper Alignment (Prepared for SCOPE Mentorship):**
+  - Methodology dossier detailing the mathematical derivation of the Attention Priority Score (APS) and empirical POS rPPG benchmarking.
+- **Staged Implementation Milestones:**
+  - **M0**: Immutable TypeScript contracts & mathematical specifications.
+  - **M1**: Deterministic APS engine & Information Decay simulation.
+  - **M2**: Dynamic Priority Queue UI with real-time re-sorting.
+  - **M3**: Hardened 15-second POS rPPG spot-check with Signal Quality Index.
+  - **M4**: Explainable "WHY NOW" drawer & closed-loop SBAR handoff.
+  - **M5**: Live demo scenario hardening & stage polish.
 
 #### 🎙️ Spoken Script (15 seconds):
-> *"We have already codified our mathematical derivations and benchmarking into a complete research paper draft submitted for mentorship under the VMedithon academic paper track. Our roadmap includes expanding into multi-face ceiling camera surveillance and automated neurological pupil analysis."*
+> *"We have codified our mathematical formulations into an academic research paper prepared for mentorship under the SCOPE track. Our engineering roadmap follows strict contract-first milestones, separating signal processing from clinical inference to guarantee medical device software rigor."*
 
 ---
 
 ### SLIDE 12: Conclusion & Call to Action
-- **Slide Headline:** The Future of Healthcare is Autonomous & Non-Contact
+- **Slide Headline:** Better Attention, Not More Alarms
 - **Summary Points:**
-  - **Zero Hardware**: Accessible anywhere with an optical lens.
-  - **Clinically Grounded**: Powered by MEWS, qSOFA, and SBAR protocols.
-  - **Production-Ready**: Live, working software with interactive simulation and 60 FPS waveforms.
+  - **Solves the Real Crisis**: Directs scarce nurse attention to the patients on the steepest downward trajectory.
+  - **Scientifically Grounded**: Physiological velocity + information decay + deterministic explainability.
+  - **Zero Black Boxes**: Every priority score carries plain-English clinical reasons and automated SBAR actions.
 - **Closing Call to Action:**
-  - Repository: `github.com/CodeSorcerer-007`
+  - Repository: `github.com/MasterZ1311/AegisPulse`
   - Contact: Thenappan T (`thenappanmasterz1311@gmail.com`)
-  - Live Demo: Open for jury hands-on interaction right now!
+  - **Live Stage Trial**: Open for jury hands-on 15-second pulse scan right now!
 
 #### 🎙️ Spoken Script (15 seconds):
-> *"AegisPulse proves that cutting-edge biomedical engineering doesn't need expensive proprietary hardware—it needs intelligent software architecture. We invite the jury to test their own pulse on our live camera right now. Thank you!"*
-
----
-
-## 💡 Pro-Tips for Presenting to VIT Chennai Judges
-1. **Never read off the slides**: Keep bullet points brief on screen and speak with conviction using the provided script.
-2. **Do the Live Demo in the middle (Slide 8)**: Show the camera locking onto a teammate or judge's face; seeing their actual pulse line wave live on screen immediately hooks judges.
-3. **If lighting in the auditorium is dim**: Seamlessly click the **'Acute Tachycardia'** or **'Septic Shock'** scenario buttons to guarantee a flawless 100% demo without camera hesitation!
+> *"AegisPulse proves that the future of hospital safety isn't more beeping monitors. It is intelligent, explainable clinician attention allocation. We invite the jury to test their own pulse on our live 15-second spot-check right now. Thank you!"*
