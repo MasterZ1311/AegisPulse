@@ -1,124 +1,147 @@
 /**
- * AegisPulse Shared Domain Contracts & Types
- * Defined strictly according to docs/PRODUCT_SPEC.md & docs/ARCHITECTURE_PRINCIPLES.md
+ * AegisPulse Domain Model & Schema Validation Library
+ * Strictly typed entities with runtime Zod contracts and provenance guarantees.
+ * Zero `any`, zero untyped JSON, exhaustive enums, physiological boundary checks.
  */
 
-// ==========================================
-// 1. Patient Master Record
-// ==========================================
-export interface Patient {
-  id: string;
-  name: string;
-  age: number;
-  gender: 'M' | 'F' | 'Other';
-  bedNumber: string;
-  admissionDiagnosis: string;
-  admissionTimestamp: number;
-  baselineMEWS: number;
-  history?: string[];
-  notes?: string[];
-}
+// ============================================================================
+// 1. Exhaustive Enums & Enum Types
+// ============================================================================
+export * from './enums';
 
-// ==========================================
-// 2. Sensor Quality & Signal Integrity
-// ==========================================
-export type SensorQualityState = 'TRUSTED' | 'DEGRADED' | 'UNRELIABLE' | 'LOST';
+// ============================================================================
+// 2. Timestamp & Provenance Schemas
+// ============================================================================
+export * from './provenance';
 
-export type ObservationSource = 'OPTICAL_RPPG' | 'NURSE_MANUAL' | 'BEDSIDE_DEVICE' | 'SIMULATION';
+// ============================================================================
+// 3. Physiological Vitals & Signal Quality Schemas
+// ============================================================================
+export * from './schemas/vitals';
+
+// ============================================================================
+// 4. Clinical Context, Labs & Attention Allocation Schemas
+// ============================================================================
+export * from './schemas/clinical';
+
+// ============================================================================
+// 5. Ward & Patient Management Schemas
+// ============================================================================
+export * from './schemas/ward';
+
+// ============================================================================
+// 6. Events, Alerts, Users & Auditing Schemas
+// ============================================================================
+export * from './schemas/events';
+
+// ============================================================================
+// 7. Backward Compatibility & Integration Aliases
+// ============================================================================
+import { QualityStatus, QualityStatusEnum, ObservationSource } from './enums';
+import { AttentionPriority, AttentionPrioritySchema } from './schemas/clinical';
+import { Observation, ObservationSchema } from './schemas/events';
+
+export const SensorQualityStateEnum = QualityStatusEnum;
+export type SensorQualityState = QualityStatus;
+
+export const AttentionAssessmentSchema = AttentionPrioritySchema;
+export type AttentionAssessment = AttentionPriority;
+
+export const SingleObservationSchema = ObservationSchema;
+export type SingleObservation = Observation;
 
 export interface PhysiologicalObservation {
   id: string;
   patientId: string;
   timestamp: number;
   source: ObservationSource;
-  confidence: number; // 0.0 to 1.0 (Signal Quality Index)
-  qualityState: SensorQualityState;
+  confidence: number;
+  qualityState: QualityStatus;
   heartRate?: number;
   respiratoryRate?: number;
   systolicBP?: number;
   diastolicBP?: number;
   temperature?: number;
-  hrv?: number; // RMSSD in ms
-  shockIndex?: number; // Derived HR / Systolic BP
-  spo2?: number; // External pulse oximeter probe only (never from optical rPPG)
+  hrv?: number;
+  shockIndex?: number;
+  spo2?: number;
   avpu?: 'A' | 'V' | 'P' | 'U';
 }
 
-// ==========================================
-// 3. Laboratory Biomarkers Panel
-// ==========================================
-export interface LabBiomarkerRecord {
-  patientId: string;
-  timestamp: number;
-  lactate?: number; // mmol/L (Critical > 2.0)
-  wbc?: number; // x10^9/L (Critical < 4.0 or > 12.0)
-  creatinine?: number; // mg/dL
-  platelets?: number; // x10^9/L
-  crp?: number; // mg/L
-}
+// ============================================================================
+// 8. Strongly-Typed Runtime Validation Helpers
+// ============================================================================
+import {
+  VitalMeasurementSchema,
+  SignalQualitySchema,
+  BloodPressurePairSchema,
+} from './schemas/vitals';
+import {
+  ClinicalContextSchema,
+  LaboratoryResultSchema,
+  ClinicalActionSchema,
+} from './schemas/clinical';
+import { PatientSchema, BedSchema, WardSchema } from './schemas/ward';
+import {
+  TimelineEventSchema,
+  AlertSchema,
+  UserSchema,
+  AuditEventSchema,
+  TrendVectorSchema,
+  SBARReportSchema,
+  HealthCheckResponseSchema,
+} from './schemas/events';
 
-// ==========================================
-// 4. Trend & Physiological Velocity Vectors
-// ==========================================
-export type TrajectoryDirection = 'IMPROVING' | 'STABLE' | 'DECOMPENSATING' | 'RAPID_CRASH';
-export type ShockIndexTrend = 'STABLE' | 'RISING' | 'FALLING';
+export const validateVitalMeasurement = (data: unknown) =>
+  VitalMeasurementSchema.safeParse(data);
 
-export interface TrendVector {
-  patientId: string;
-  hrVelocity: number; // % change per hour (dHR/dt)
-  rrVelocity: number; // % change per hour (dRR/dt)
-  shockIndexCurrent: number; // HR / Systolic BP
-  shockIndexTrend: ShockIndexTrend;
-  mewsDelta: number; // Change in MEWS over last 2 hours
-  trajectoryDirection: TrajectoryDirection;
-}
+export const validateObservation = (data: unknown) =>
+  ObservationSchema.safeParse(data);
 
-// ==========================================
-// 5. Attention Priority Assessment (Core Output)
-// ==========================================
-export type AttentionPriorityCategory = 'LOW' | 'WATCH' | 'EVALUATE' | 'CRITICAL_REVIEW';
+export const validateSignalQuality = (data: unknown) =>
+  SignalQualitySchema.safeParse(data);
 
-export interface AttentionAssessment {
-  patientId: string;
-  bedNumber: string;
-  apsScore: number; // 0 to 100 (Attention Priority Score)
-  priorityCategory: AttentionPriorityCategory;
-  wardRank: number; // 1 to Total Active Patients
-  whyReasons: string[]; // Bullet points of exact physiological / operational drivers
-  signalConfidence: number; // 0% to 100%
-  informationAgeMinutes: number; // Minutes elapsed since last trusted observation
-  recommendedAction: string; // Clinical action (e.g. SBAR escalation, 15s re-check)
-  velocityScore: number; // Rate-of-change component (0 - 100)
-  decayScore: number; // Information decay component (0 - 100)
-  mewsComponent: number; // MEWS component (0 - 100)
-  biomarkerComponent: number; // Lab biomarker component (0 - 100)
-  timestamp: number;
-}
+export const validateBloodPressurePair = (data: unknown) =>
+  BloodPressurePairSchema.safeParse(data);
 
-// ==========================================
-// 6. Clinical Handoff (SBAR)
-// ==========================================
-export interface SBARReport {
-  patientId: string;
-  bedNumber: string;
-  patientName: string;
-  situation: string;
-  background: string;
-  assessment: string;
-  recommendation: string;
-  generatedAt: number;
-  apsScore: number;
-  priorityCategory: AttentionPriorityCategory;
-}
+export const validatePatient = (data: unknown) =>
+  PatientSchema.safeParse(data);
 
-// ==========================================
-// 7. System & API Health
-// ==========================================
-export interface HealthCheckResponse {
-  status: 'ok' | 'degraded' | 'error';
-  service: string;
-  version: string;
-  timestamp: string;
-  uptimeSeconds: number;
-  environment: string;
-}
+export const validateBed = (data: unknown) =>
+  BedSchema.safeParse(data);
+
+export const validateWard = (data: unknown) =>
+  WardSchema.safeParse(data);
+
+export const validateClinicalContext = (data: unknown) =>
+  ClinicalContextSchema.safeParse(data);
+
+export const validateLaboratoryResult = (data: unknown) =>
+  LaboratoryResultSchema.safeParse(data);
+
+export const validateAttentionPriority = (data: unknown) =>
+  AttentionPrioritySchema.safeParse(data);
+
+export const validateClinicalAction = (data: unknown) =>
+  ClinicalActionSchema.safeParse(data);
+
+export const validateTimelineEvent = (data: unknown) =>
+  TimelineEventSchema.safeParse(data);
+
+export const validateAlert = (data: unknown) =>
+  AlertSchema.safeParse(data);
+
+export const validateUser = (data: unknown) =>
+  UserSchema.safeParse(data);
+
+export const validateAuditEvent = (data: unknown) =>
+  AuditEventSchema.safeParse(data);
+
+export const validateTrendVector = (data: unknown) =>
+  TrendVectorSchema.safeParse(data);
+
+export const validateSBARReport = (data: unknown) =>
+  SBARReportSchema.safeParse(data);
+
+export const validateHealthCheck = (data: unknown) =>
+  HealthCheckResponseSchema.safeParse(data);

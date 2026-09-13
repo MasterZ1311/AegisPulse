@@ -18,7 +18,9 @@
     "lint": "eslint src --ext .ts",
     "test": "vitest run"
   },
-  "dependencies": {},
+  "dependencies": {
+    "zod": "^4.6.4"
+  },
   "devDependencies": {
     "@aegispulse/config": "*",
     "typescript": "^5.7.3",
