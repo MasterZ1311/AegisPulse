@@ -11,6 +11,9 @@ import type {
 // Central Attention Priority Engine exports
 export * from './attentionPriority';
 
+// Explainability & Clinical Reasoning Engine exports
+export * from './explainability';
+
 // Stubs preserved for backward compatibility
 export interface LegacyMEWSInput {
   heartRate?: number;
