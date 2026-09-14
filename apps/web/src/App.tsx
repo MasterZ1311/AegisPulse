@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import type { HealthCheckResponse, TelemetryStreamEnvelope } from '@aegispulse/types';
 import {
   AegisPulseStreamClient,
@@ -6,19 +6,21 @@ import {
 } from './services/stream-client';
 import { WardHeader } from './components/WardHeader';
 import { AttentionQueue } from './components/AttentionQueue';
-import { PatientDetailModal } from './components/PatientDetailModal';
+import { PatientDetailPanel } from './components/PatientDetailPanel';
 import { INITIAL_WARD_PATIENTS } from './data/ward-simulated-data';
 import type { WardPatientRadarState } from './types/radar';
 
 export default function App() {
   const [patients, setPatients] = useState<WardPatientRadarState[]>(INITIAL_WARD_PATIENTS);
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  // Default to the first (highest priority) patient ID: P003 (Eleanor Vance, Bed 403-A)
+  const [selectedPatientId, setSelectedPatientId] = useState<string>('P003');
   const [focusedPatientIndex, setFocusedPatientIndex] = useState<number>(0);
   const [activeScenario, setActiveScenario] = useState<string>('SINGLE_PATIENT_DETERIORATION');
   const [streamStatus, setStreamStatus] = useState<StreamConnectionStatus>('CONNECTING');
   const [streamSeq, setStreamSeq] = useState<number>(0);
   const [_recentEvents, setRecentEvents] = useState<TelemetryStreamEnvelope[]>([]);
   const [_health, setHealth] = useState<HealthCheckResponse | null>(null);
+  const [mobileView, setMobileView] = useState<'QUEUE' | 'DETAIL'>('QUEUE');
 
   // Derive counts for ward header
   const criticalCount = patients.filter((p) => p.category === 'CRITICAL_REVIEW').length;
@@ -26,7 +28,12 @@ export default function App() {
   const watchCount = patients.filter((p) => p.category === 'WATCH').length;
   const lowCount = patients.filter((p) => p.category === 'LOW').length;
 
-  const selectedPatient = patients.find((p) => p.patientId === selectedPatientId) || null;
+  // Dynamically sorted queue order
+  const sortedPatients = useMemo(() => {
+    return [...patients].sort((a, b) => b.apsScore - a.apsScore);
+  }, [patients]);
+
+  const selectedPatient = patients.find((p) => p.patientId === selectedPatientId) || sortedPatients[0] || null;
 
   // 1. Health Probe Polling & Real-Time Telemetry Stream Client
   useEffect(() => {
@@ -265,7 +272,6 @@ export default function App() {
   const handleScenarioChange = useCallback((scenario: string) => {
     setActiveScenario(scenario);
 
-    // Apply scenario changes to patients state for interactive demonstration
     if (scenario === 'NORMAL_SHIFT') {
       setPatients((prev) =>
         prev.map((p) => ({
@@ -308,7 +314,6 @@ export default function App() {
         )
       );
     } else {
-      // Default: restore INITIAL_WARD_PATIENTS
       setPatients(INITIAL_WARD_PATIENTS);
     }
   }, []);
@@ -316,44 +321,40 @@ export default function App() {
   // 3. Accessible Keyboard Navigation Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // If modal is open, let Escape close it
-      if (selectedPatientId) {
-        if (e.key === 'Escape') {
-          setSelectedPatientId(null);
-        }
-        return;
-      }
-
       if (e.key === 'ArrowDown' || e.key === 'j') {
         e.preventDefault();
-        setFocusedPatientIndex((prev) => (prev + 1) % patients.length);
+        const nextIdx = (focusedPatientIndex + 1) % sortedPatients.length;
+        setFocusedPatientIndex(nextIdx);
+        if (sortedPatients[nextIdx]) {
+          setSelectedPatientId(sortedPatients[nextIdx].patientId);
+        }
       } else if (e.key === 'ArrowUp' || e.key === 'k') {
         e.preventDefault();
-        setFocusedPatientIndex((prev) => (prev - 1 + patients.length) % patients.length);
-      } else if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        const sorted = [...patients].sort((a, b) => b.apsScore - a.apsScore);
-        const target = sorted[focusedPatientIndex];
-        if (target) setSelectedPatientId(target.patientId);
+        const prevIdx = (focusedPatientIndex - 1 + sortedPatients.length) % sortedPatients.length;
+        setFocusedPatientIndex(prevIdx);
+        if (sortedPatients[prevIdx]) {
+          setSelectedPatientId(sortedPatients[prevIdx].patientId);
+        }
       } else if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
         const bedIndex = parseInt(e.key, 10) - 1;
-        if (patients[bedIndex]) {
-          setSelectedPatientId(patients[bedIndex].patientId);
+        if (sortedPatients[bedIndex]) {
+          setFocusedPatientIndex(bedIndex);
+          setSelectedPatientId(sortedPatients[bedIndex].patientId);
+          setMobileView('DETAIL');
         }
       } else if (e.key === 'a' || e.key === 'A') {
-        const sorted = [...patients].sort((a, b) => b.apsScore - a.apsScore);
-        const target = sorted[focusedPatientIndex];
+        const target = sortedPatients[focusedPatientIndex];
         if (target) handleAcknowledge(target.patientId);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedPatientId, focusedPatientIndex, patients, handleAcknowledge]);
+  }, [focusedPatientIndex, sortedPatients, handleAcknowledge]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-cyan-500 selection:text-black">
-      {/* Header */}
+      {/* Top Command Center Header */}
       <WardHeader
         wardName="Ward 4B — Acute Surgical & Step-Down"
         shiftLead="Nurse Rachel Hayes, RN"
@@ -369,27 +370,71 @@ export default function App() {
         onScenarioChange={handleScenarioChange}
       />
 
-      {/* Main Operational Screen */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        <AttentionQueue
-          patients={patients}
-          selectedPatientId={selectedPatientId}
-          focusedPatientIndex={focusedPatientIndex}
-          onSelectPatient={(p) => setSelectedPatientId(p.patientId)}
-          onAcknowledgePatient={handleAcknowledge}
-        />
-      </main>
+      {/* Mobile/Tablet View Switcher (< lg screens) */}
+      <div className="lg:hidden px-4 pt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setMobileView('QUEUE')}
+          className={`flex-1 py-2 rounded-lg text-xs font-bold font-mono transition-colors ${
+            mobileView === 'QUEUE'
+              ? 'bg-cyan-600 text-white shadow'
+              : 'bg-slate-900 text-slate-400 border border-slate-800'
+          }`}
+        >
+          Attention Queue ({patients.length} Beds)
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileView('DETAIL')}
+          className={`flex-1 py-2 rounded-lg text-xs font-bold font-mono transition-colors ${
+            mobileView === 'DETAIL'
+              ? 'bg-cyan-600 text-white shadow'
+              : 'bg-slate-900 text-slate-400 border border-slate-800'
+          }`}
+        >
+          Bed {selectedPatient?.bedNumber} Detail
+        </button>
+      </div>
 
-      {/* Slide-over / Modal for Patient Attention Detail */}
-      {selectedPatient && (
-        <PatientDetailModal
-          patient={selectedPatient}
-          onClose={() => setSelectedPatientId(null)}
-          onAcknowledge={handleAcknowledge}
-          onLogAssessment={handleLogAssessment}
-          onEscalate={handleEscalate}
-        />
-      )}
+      {/* Main Operational Command Center Grid */}
+      <main className="flex-1 w-full max-w-[1720px] mx-auto p-3 sm:p-4 lg:p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          {/* Left Column: Primary Attention Queue */}
+          <div
+            className={`lg:col-span-6 xl:col-span-6 space-y-4 ${
+              mobileView === 'DETAIL' ? 'hidden lg:block' : 'block'
+            }`}
+          >
+            <AttentionQueue
+              patients={patients}
+              selectedPatientId={selectedPatientId}
+              focusedPatientIndex={focusedPatientIndex}
+              onSelectPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+                if (idx !== -1) setFocusedPatientIndex(idx);
+                setMobileView('DETAIL');
+              }}
+              onAcknowledgePatient={handleAcknowledge}
+            />
+          </div>
+
+          {/* Right Column: Patient Detail Panel (Docked & Synchronized) */}
+          <div
+            className={`lg:col-span-6 xl:col-span-6 lg:sticky lg:top-20 lg:h-[calc(100vh-100px)] ${
+              mobileView === 'QUEUE' ? 'hidden lg:block' : 'block'
+            }`}
+          >
+            <PatientDetailPanel
+              patient={selectedPatient}
+              isEmbedded={true}
+              onAcknowledge={handleAcknowledge}
+              onLogAssessment={handleLogAssessment}
+              onEscalate={handleEscalate}
+            />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
