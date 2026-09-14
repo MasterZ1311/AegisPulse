@@ -63,6 +63,11 @@ export const AttentionReasonCodeEnum = z.enum([
   'LAB_HYPOXIA_LACTATE',
   'LAB_LEUKOCYTOSIS',
   'SENSOR_CONFIDENCE_DEGRADED',
+  'PHYSIOLOGICAL_STABILITY',
+  'BASELINE_DEVIATION',
+  'QSOFA_ESCALATION',
+  'PERSISTENT_DETERIORATION',
+  'MISSING_VITAL_SIGNS',
 ]);
 export type AttentionReasonCode = z.infer<typeof AttentionReasonCodeEnum>;
 

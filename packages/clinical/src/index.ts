@@ -1,6 +1,6 @@
 /**
  * @aegispulse/clinical
- * Clinical Early Warning & Attention Prioritization Engine (Stubs for Milestone 1)
+ * Clinical Early Warning & Central Attention Priority Engine
  */
 
 import type {
@@ -8,7 +8,11 @@ import type {
   AttentionPriorityCategory,
 } from '@aegispulse/types';
 
-export interface MEWSInput {
+// Central Attention Priority Engine exports
+export * from './attentionPriority';
+
+// Stubs preserved for backward compatibility
+export interface LegacyMEWSInput {
   heartRate?: number;
   systolicBP?: number;
   respiratoryRate?: number;
@@ -16,16 +20,16 @@ export interface MEWSInput {
   avpu?: 'A' | 'V' | 'P' | 'U';
 }
 
-export interface MEWSResult {
+export interface LegacyMEWSResult {
   score: number;
   triageLevel: 'green' | 'yellow' | 'red';
   isSevere: boolean;
 }
 
 /**
- * Placeholder for Modified Early Warning Score (to be fully ported in Milestone 1)
+ * Backward-compatible MEWS helper for legacy tests
  */
-export function calculateMEWSStub(input: MEWSInput): MEWSResult {
+export function calculateMEWSStub(input: LegacyMEWSInput): LegacyMEWSResult {
   let score = 0;
   if ((input.heartRate ?? 70) > 100) score += 2;
   if ((input.respiratoryRate ?? 16) >= 22) score += 2;
@@ -39,13 +43,12 @@ export function calculateMEWSStub(input: MEWSInput): MEWSResult {
 }
 
 /**
- * Placeholder for Attention Priority Score calculation (Milestone 1 target)
+ * Backward-compatible APS stub for legacy callers
  */
 export function calculateAPSStub(
   _observations: PhysiologicalObservation[],
   _timeElapsedMinutes: number
 ): { score: number; category: AttentionPriorityCategory } {
-  // Stubbed for initial monorepo scaffold as requested
   return {
     score: 0,
     category: 'LOW',

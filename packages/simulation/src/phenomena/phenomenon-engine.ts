@@ -156,6 +156,19 @@ export class PhenomenonEngine {
       sysBpDelta *= dampening;
       diaBpDelta *= dampening;
       spo2Delta *= dampening;
+
+      // Regress current vitals towards baseline (75 bpm, 16 rr, 120 sbp, 80 dbp, 98% spo2)
+      const targetHR = 75;
+      const targetRR = 16;
+      const targetSBP = 120;
+      const targetDBP = 80;
+      const targetSpO2 = 98;
+
+      hrDelta += (targetHR - baselineVitals.heartRate) * recoveryProgress;
+      rrDelta += (targetRR - baselineVitals.respiratoryRate) * recoveryProgress;
+      sysBpDelta += (targetSBP - baselineVitals.systolicBP) * recoveryProgress;
+      diaBpDelta += (targetDBP - baselineVitals.diastolicBP) * recoveryProgress;
+      spo2Delta += (targetSpO2 - baselineVitals.oxygenSaturation) * recoveryProgress;
     }
 
     const vitals: GroundTruthVitals = {
