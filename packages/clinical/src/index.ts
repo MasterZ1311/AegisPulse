@@ -14,6 +14,10 @@ export * from './attentionPriority';
 // Explainability & Clinical Reasoning Engine exports
 export * from './explainability';
 
+// Standalone Clinical Rule Layer (Subbe 2001 & Singer 2016)
+export * as mews from './mews';
+export * as qsofa from './qsofa';
+
 // Stubs preserved for backward compatibility
 export interface LegacyMEWSInput {
   heartRate?: number;

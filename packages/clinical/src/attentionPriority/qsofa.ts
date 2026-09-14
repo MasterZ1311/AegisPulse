@@ -1,14 +1,14 @@
 /**
- * quick Sepsis-related Organ Failure Assessment (qSOFA) Engine
+ * quick Sepsis-related Organ Failure Assessment (qSOFA) Engine Adapter for APS
  * Grounded in Singer et al. (JAMA 2016; 315(8):801-810 - Sepsis-3 Consensus)
  * Bedside tool identifying adult ward patients with suspected infection at high risk of death or prolonged ICU stay.
+ * Delegates deterministic rule evaluation to the standalone @aegispulse/clinical/qsofa engine.
  */
 
-export interface QSOFAInput {
-  respiratoryRate?: number;
-  systolicBP?: number;
-  avpu?: 'A' | 'V' | 'P' | 'U';
-}
+import { calculateQSOFA as calculateClinicalQSOFA } from '../qsofa';
+import type { QSOFAInput as ClinicalQSOFAInput } from '../qsofa';
+
+export type QSOFAInput = ClinicalQSOFAInput;
 
 export interface QSOFAResult {
   score: number; // 0 to 3
@@ -23,28 +23,15 @@ export interface QSOFAResult {
 }
 
 /**
- * Calculates Sepsis-3 qSOFA score from bedside parameters.
+ * Calculates Sepsis-3 qSOFA score from bedside parameters by delegating to the clinical rule layer.
  */
 export function calculateQSOFA(input: QSOFAInput): QSOFAResult {
-  const tachypnea = (input.respiratoryRate ?? 0) >= 22;
-  const alteredMentation = input.avpu !== undefined && input.avpu !== 'A';
-  const hypotension = input.systolicBP !== undefined && input.systolicBP <= 100;
+  const clinicalResult = calculateClinicalQSOFA(input, { skipValidation: true });
+  const score = clinicalResult.totalScore;
 
-  let score = 0;
-  const criteriaExplanations: string[] = [];
-
-  if (tachypnea) {
-    score += 1;
-    criteriaExplanations.push(`RR ${input.respiratoryRate}/min >= 22`);
-  }
-  if (alteredMentation) {
-    score += 1;
-    criteriaExplanations.push(`Altered mentation (AVPU=${input.avpu})`);
-  }
-  if (hypotension) {
-    score += 1;
-    criteriaExplanations.push(`SBP ${input.systolicBP} mmHg <= 100`);
-  }
+  const tachypnea = clinicalResult.subscores.respiratoryRate.points > 0;
+  const alteredMentation = clinicalResult.subscores.alteredMentation.points > 0;
+  const hypotension = clinicalResult.subscores.systolicBP.points > 0;
 
   // Normalization: qSOFA >= 2 is high mortality risk (Sepsis-3 consensus)
   let normalizedScore: number;
@@ -58,7 +45,19 @@ export function calculateQSOFA(input: QSOFAInput): QSOFAResult {
     normalizedScore = 100;
   }
 
-  const isPositive = score >= 2;
+  const isPositive = clinicalResult.isPositive;
+  const criteriaExplanations: string[] = [];
+
+  if (tachypnea) {
+    criteriaExplanations.push(`RR ${input.respiratoryRate}/min >= 22`);
+  }
+  if (alteredMentation) {
+    criteriaExplanations.push(`Altered mentation (AVPU=${input.avpu ?? input.gcs})`);
+  }
+  if (hypotension) {
+    criteriaExplanations.push(`SBP ${input.systolicBP} mmHg <= 100`);
+  }
+
   const explanation = isPositive
     ? `qSOFA positive (${score}/3): ${criteriaExplanations.join(', ')} - high sepsis risk`
     : score === 1

@@ -10,6 +10,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./mews": {
+      "types": "./dist/mews/index.d.ts",
+      "default": "./dist/mews/index.js"
+    },
+    "./qsofa": {
+      "types": "./dist/qsofa/index.d.ts",
+      "default": "./dist/qsofa/index.js"
     }
   },
   "scripts": {
