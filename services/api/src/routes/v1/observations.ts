@@ -11,6 +11,7 @@ import { timelineService } from '../../services/timeline.service';
 import { telemetryPipelineService } from '../../services/telemetry-pipeline.service';
 import { validateRequest } from '../../middleware/validator';
 import { authenticate } from '../../middleware/auth';
+import { requirePatientWardAccess } from '../../middleware/rbac';
 import { createRateLimiter } from '../../middleware/rate-limiter';
 
 export const observationsRouter = Router({ mergeParams: true });
@@ -40,7 +41,7 @@ const IngestObservationSchema = z
   })
   .strict();
 
-observationsRouter.get('/', (req: Request, res: Response) => {
+observationsRouter.get('/', requirePatientWardAccess(), (req: Request, res: Response) => {
   const patientId = String(req.params.patientId);
   const since = req.query.since ? Number(req.query.since) : undefined;
   const until = req.query.until ? Number(req.query.until) : undefined;
@@ -51,6 +52,7 @@ observationsRouter.get('/', (req: Request, res: Response) => {
 
 observationsRouter.post(
   '/',
+  requirePatientWardAccess(),
   ingestionRateLimiter,
   validateRequest({ body: IngestObservationSchema }),
   (req: Request, res: Response) => {
@@ -58,7 +60,19 @@ observationsRouter.post(
     const patient = wardStateService.getPatient(patientId);
 
     const body = req.body as z.infer<typeof IngestObservationSchema>;
-    const timestamp = body.timestamp ?? Date.now();
+    const now = Date.now();
+    const timestamp = body.timestamp ?? now;
+
+    // Clock skew / timestamp attack protection: reject timestamps > 5 min in future
+    if (timestamp > now + 300000) {
+      res.status(400).json({
+        statusCode: 400,
+        error: 'Invalid Timestamp',
+        message: 'Observation timestamp cannot be in the future (max allowable clock skew is 5 minutes).',
+      });
+      return;
+    }
+
     const id = body.id ?? `obs-${patientId}-${timestamp}-${Math.random().toString(36).substring(2, 6)}`;
 
     // Derive shock index if HR and SBP present and not explicitly provided

@@ -47,18 +47,38 @@ export class AttentionPriorityEngine {
     const config = overrideConfig ? mergeAttentionConfig(overrideConfig) : this.config;
     const now = patientState.currentTimestamp ?? Date.now();
 
-    // 1. Extract vitals and time series from observations
+    // 1. Extract vitals and time series from observations and sensorReadings
     const {
       latest,
       history,
       lastTrustedTimestamp,
+      lastManualTimestamp,
+      lastCameraTimestamp,
       overallSignalConfidence,
+      latestConfidence,
       observationIds,
-    } = extractVitalsFromObservations(patientState.observations, now);
+    } = extractVitalsFromObservations(
+      patientState.observations,
+      now,
+      patientState.sensorReadings
+    );
 
-    // If caller explicitly specified lastTrustedObservationTimestamp, use it
+    // If caller explicitly specified timestamps, use them
     const effectiveLastTrusted =
       patientState.lastTrustedObservationTimestamp ?? lastTrustedTimestamp;
+    const effectiveLastManual =
+      patientState.lastManualObservationTimestamp ?? lastManualTimestamp;
+    const effectiveLastCamera =
+      patientState.lastCameraObservationTimestamp ?? lastCameraTimestamp;
+    const expectedInterval =
+      patientState.expectedMonitoringIntervalMinutes ??
+      config.decayThresholds.criticalThresholdMinutes;
+
+    const effectiveSignalQuality =
+      patientState.latestSignalQuality ??
+      (patientState.sensorReadings && patientState.sensorReadings.length > 0
+        ? patientState.sensorReadings[patientState.sensorReadings.length - 1].signalQuality
+        : undefined);
 
     // 2. Evaluate Base Components
     // 2.1 Physiological Abnormality
@@ -85,30 +105,13 @@ export class AttentionPriorityEngine {
     const persistenceResult = evaluatePersistence(
       latest,
       history,
-      patientState.latestSignalQuality,
+      effectiveSignalQuality,
       config,
       now,
       observationIds
     );
 
-    // 2.5 Information Decay
-    const decayScore = evaluateInformationDecay(
-      effectiveLastTrusted,
-      now,
-      config,
-      observationIds
-    );
-
-    // 2.6 Signal Confidence
-    const confidenceResult = evaluateSignalConfidence(
-      patientState.latestSignalQuality,
-      overallSignalConfidence,
-      config,
-      now,
-      observationIds
-    );
-
-    // 2.7 MEWS Component
+    // 2.5 MEWS Component
     const mewsResult = calculateMEWS({
       heartRate: latest.HEART_RATE?.value,
       respiratoryRate: latest.RESPIRATORY_RATE?.value,
@@ -153,6 +156,32 @@ export class AttentionPriorityEngine {
           : [],
       recommendedActions: mewsResult.score >= 5 ? ['SBAR_PHYSICIAN_CONSULT'] : [],
     };
+
+    // 2.6 Information Decay & Freshness
+    const decayScore = evaluateInformationDecay(
+      effectiveLastTrusted,
+      now,
+      config,
+      observationIds,
+      {
+        lastManualTimestamp: effectiveLastManual,
+        lastCameraTimestamp: effectiveLastCamera,
+        confidence: latestConfidence,
+        expectedMonitoringIntervalMinutes: expectedInterval,
+        physiologicalAbnormalityScore: abnormalityScore.normalizedContribution,
+        rawVelocityScore: rawVelocityScore.normalizedContribution,
+        mewsScore: mewsResult.score,
+      }
+    );
+
+    // 2.7 Signal Confidence
+    const confidenceResult = evaluateSignalConfidence(
+      effectiveSignalQuality,
+      overallSignalConfidence,
+      config,
+      now,
+      observationIds
+    );
 
     // 2.8 qSOFA Component
     const qsofaResult = calculateQSOFA({
@@ -247,7 +276,7 @@ export class AttentionPriorityEngine {
     };
 
     // 4. Calculate Composite Raw Score
-    const compositeRaw =
+    let compositeRaw =
       abnormalityScore.weightedContribution +
       baselineScore.weightedContribution +
       modulatedVelocityScore.weightedContribution +
@@ -257,6 +286,44 @@ export class AttentionPriorityEngine {
       qsofaComponentScore.weightedContribution +
       biomarkersScore.weightedContribution +
       missingInfoScore.weightedContribution;
+
+    // Epistemic Uncertainty & Information Freshness Interactions:
+    // Interaction 1: NORMAL PHYSIOLOGY + 4 HOURS WITHOUT TRUSTED OBSERVATION
+    // → moderate attention contribution (category WATCH, ~32 score).
+    // Epistemic uncertainty is high, so patient needs bedside vitals recheck, but NOT assuming deterioration.
+    const isNormalPhysiology =
+      abnormalityScore.normalizedContribution === 0 &&
+      rawVelocityScore.normalizedContribution === 0 &&
+      mewsResult.score <= 1;
+
+    const isObservationOverdue =
+      decayScore.informationFreshness.isIntervalExceeded ||
+      decayScore.informationFreshness.observationAgeMinutes >=
+        config.decayThresholds.criticalThresholdMinutes;
+
+    if (isObservationOverdue) {
+      if (isNormalPhysiology) {
+        compositeRaw = Math.max(compositeRaw, config.categoryThresholds.lowMax + 3); // 32 = WATCH
+      } else {
+        // Interaction 2: ABNORMAL TREND + 4 HOURS WITHOUT TRUSTED OBSERVATION
+        // → significantly higher attention contribution (category CRITICAL_REVIEW, >= 75).
+        // Compounded risk escalation: unmonitored abnormal trajectory is an acute safety hazard.
+        const physiologicalRisk = Math.max(
+          abnormalityScore.normalizedContribution,
+          rawVelocityScore.normalizedContribution,
+          mewsComponentScore.normalizedContribution
+        );
+        if (physiologicalRisk >= 15) {
+          const compoundingBoost = Math.round(
+            decayScore.informationFreshness.uncertaintyIndex * physiologicalRisk * 0.8
+          );
+          compositeRaw = Math.max(compositeRaw, Math.max(76, compositeRaw + compoundingBoost));
+        } else {
+          // Mild physiological deviation + overdue: ensure at least WATCH status
+          compositeRaw = Math.max(compositeRaw, config.categoryThresholds.lowMax + 3);
+        }
+      }
+    }
 
     // 5. Apply Clinical Override Floors
     let scoreWithFloors = compositeRaw;
@@ -283,6 +350,17 @@ export class AttentionPriorityEngine {
     );
     if (criticalLactateLab) {
       scoreWithFloors = Math.max(scoreWithFloors, overrideFloors.criticalLactateMinScore);
+    } else {
+      // Elevated Lactate floor (Lactate >= 2.0) - occult tissue hypoperfusion screening
+      const elevatedLactateLab = patientState.labs?.find(
+        (l) => l.testCode === 'LACTATE' && l.value >= config.labThresholds.lactateElevated
+      );
+      if (elevatedLactateLab) {
+        scoreWithFloors = Math.max(
+          scoreWithFloors,
+          overrideFloors.elevatedLactateMinScore ?? 35
+        );
+      }
     }
 
     // 6. Strict Bounding: 0 to 100
@@ -397,6 +475,13 @@ export class AttentionPriorityEngine {
       mewsComponent: mewsComponentScore.normalizedContribution,
       biomarkerComponent: biomarkersScore.normalizedContribution,
       informationAgeMinutes: Math.round(informationAgeMinutes),
+      freshnessScore: decayScore.informationFreshness.freshnessScore,
+      uncertaintyIndex: decayScore.informationFreshness.uncertaintyIndex,
+      lastTrustedTimestamp: effectiveLastTrusted,
+      lastManualTimestamp: effectiveLastManual,
+      lastCameraTimestamp: effectiveLastCamera,
+      expectedMonitoringIntervalMinutes: expectedInterval,
+      informationFreshness: decayScore.informationFreshness,
       provenance,
     };
   }

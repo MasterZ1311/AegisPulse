@@ -1,8 +1,50 @@
 /**
  * @aegispulse/signal
- * Optical rPPG & Sensor Quality State Machine (Stubs for Milestone 3)
+ * Sensor Adapter Interface, Providers & Optical rPPG Signal Engine
  */
 
+// Re-export core sensor types from @aegispulse/types
+export type {
+  SensorProvider,
+  SensorReading,
+  SensorStatus,
+  SensorSource,
+  MeasurementStatus,
+  SensorOperationalState,
+  Unsubscribe,
+} from '@aegispulse/types';
+
+export {
+  SensorReadingSchema,
+  SensorStatusSchema,
+  SensorSourceEnum,
+  MeasurementStatusEnum,
+  SensorOperationalStateEnum,
+  validateSensorReading,
+  validateSensorStatus,
+} from '@aegispulse/types';
+
+// Adapters
+export {
+  sensorReadingToPhysiologicalObservation,
+  sensorReadingToObservation,
+} from './adapters/sensor-adapter';
+
+// Providers
+export {
+  SimulationSensorProvider,
+  type SimulationSensorProviderOptions,
+} from './providers/simulation-sensor-provider';
+
+export {
+  RppgSensorProvider,
+  type RppgSensorProviderOptions,
+} from './providers/rppg-sensor-provider';
+
+// Hub
+export { SensorHub, sensorHub } from './hub/sensor-hub';
+
+// Legacy / Quality State Machine
 import type { SensorQualityState } from '@aegispulse/types';
 
 export interface SignalQualityAssessment {
@@ -61,5 +103,6 @@ export interface SignalModuleInfo {
 export const signalModuleInfo: SignalModuleInfo = {
   version: '0.1.0',
   algorithm: 'POS',
-  status: 'scaffold',
+  status: 'ready',
 };
+

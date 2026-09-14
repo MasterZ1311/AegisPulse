@@ -38,6 +38,37 @@ export const ObservationSourceEnum = z.enum([
 ]);
 export type ObservationSource = z.infer<typeof ObservationSourceEnum>;
 
+export const SensorSourceEnum = z.enum([
+  'SIMULATION',
+  'OPTICAL_RPPG',
+  'WEBCAM',
+  'WEARABLE',
+  'BEDSIDE_DEVICE',
+  'FUTURE_SENSOR',
+]);
+export type SensorSource = z.infer<typeof SensorSourceEnum>;
+
+export const MeasurementStatusEnum = z.enum([
+  'VALID',
+  'LOW_CONFIDENCE',
+  'DEGRADED',
+  'UNRELIABLE',
+  'TARGET_LOST',
+  'DEVICE_DISCONNECTED',
+]);
+export type MeasurementStatus = z.infer<typeof MeasurementStatusEnum>;
+
+export const SensorOperationalStateEnum = z.enum([
+  'ONLINE',
+  'STREAMING',
+  'IDLE',
+  'DEGRADED',
+  'OFFLINE',
+  'ERROR',
+]);
+export type SensorOperationalState = z.infer<typeof SensorOperationalStateEnum>;
+
+
 export const QualityStatusEnum = z.enum([
   'TRUSTED',
   'DEGRADED',
@@ -123,6 +154,12 @@ export const AuditActionEnum = z.enum([
   'VIEW',
   'OVERRIDE',
   'SYSTEM_CALCULATION',
+  'ACKNOWLEDGE',
+  'START_ASSESSMENT',
+  'COMPLETE_ASSESSMENT',
+  'DISMISS',
+  'ESCALATE',
+  'MARK_FALSE_POSITIVE',
 ]);
 export type AuditAction = z.infer<typeof AuditActionEnum>;
 
@@ -204,3 +241,73 @@ export const UnifiedTimelineEventTypeEnum = z.enum([
   'COMPLETED_ACTION',
 ]);
 export type UnifiedTimelineEventType = z.infer<typeof UnifiedTimelineEventTypeEnum>;
+
+export const PriorityChangeClassificationEnum = z.enum([
+  'NEW_PRIORITY',
+  'RISING_PRIORITY',
+  'PERSISTENT_PRIORITY',
+  'RESOLVED',
+  'UNCONFIRMED',
+  'SIGNAL_FAILURE',
+]);
+export type PriorityChangeClassification = z.infer<typeof PriorityChangeClassificationEnum>;
+
+export const PolicyActionEnum = z.enum([
+  'EMIT_ALERT',
+  'ESCALATE',
+  'SUPPRESS',
+  'HOLD_UNCONFIRMED',
+  'ACKNOWLEDGE',
+  'RESOLVE',
+  'DE_ESCALATE',
+]);
+export type PolicyAction = z.infer<typeof PolicyActionEnum>;
+
+export const SuppressionReasonEnum = z.enum([
+  'HYSTERESIS_HOLD',
+  'PERSISTENCE_PENDING',
+  'COOLDOWN_ACTIVE',
+  'ACKNOWLEDGED_SILENT',
+  'DUPLICATE_DEDUPED',
+  'SIGNAL_UNRELIABLE',
+]);
+export type SuppressionReason = z.infer<typeof SuppressionReasonEnum>;
+
+export const NurseWorkflowActionEnum = z.enum([
+  'ACKNOWLEDGE',
+  'START_ASSESSMENT',
+  'COMPLETE_ASSESSMENT',
+  'DISMISS',
+  'ESCALATE',
+  'MARK_FALSE_POSITIVE',
+]);
+export type NurseWorkflowAction = z.infer<typeof NurseWorkflowActionEnum>;
+
+export const VerificationItemTypeEnum = z.enum([
+  'BEDSIDE_VITAL_RECHECK',
+  'MANUAL_BP_CONFIRMATION',
+  'INSPECT_PATIENT',
+  'CONFIRM_SIGNAL_QUALITY',
+]);
+export type VerificationItemType = z.infer<typeof VerificationItemTypeEnum>;
+
+export const CopilotQueryTypeEnum = z.enum([
+  'SUMMARIZE_TIMELINE',
+  'EXPLAIN_APS_CHANGE',
+  'DRAFT_SBAR',
+  'IDENTIFY_MISSING_INFO',
+  'EXPLAIN_CALCULATION',
+  'QUESTION_ANSWER',
+]);
+export type CopilotQueryType = z.infer<typeof CopilotQueryTypeEnum>;
+
+export const CopilotRefusalReasonEnum = z.enum([
+  'ATTEMPTED_DIAGNOSIS',
+  'ATTEMPTED_TREATMENT_RECOMMENDATION',
+  'ATTEMPTED_APS_MUTATION',
+  'ATTEMPTED_DATA_OVERWRITE',
+  'UNSUPPORTED_OR_MISSING_DATA',
+  'PROMPT_INJECTION_DETECTED',
+  'SAFETY_OVERRIDE_ATTEMPT',
+]);
+export type CopilotRefusalReason = z.infer<typeof CopilotRefusalReasonEnum>;

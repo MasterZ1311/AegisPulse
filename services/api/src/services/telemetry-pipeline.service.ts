@@ -12,6 +12,10 @@ import type {
 import { eventBroadcaster, EventBroadcaster } from '../stream/event-broadcaster';
 import { wardStateService, type AcknowledgementRecord } from './ward-state.service';
 import { timelineService } from './timeline.service';
+import type { SensorReading, SensorProvider, Unsubscribe } from '@aegispulse/signal';
+import { sensorReadingToPhysiologicalObservation } from '@aegispulse/signal';
+import { metricsService } from './metrics.service';
+
 
 export interface PipelineOptions {
   broadcaster?: EventBroadcaster;
@@ -31,12 +35,42 @@ export class TelemetryPipelineService {
   }
 
   /**
+   * Universal Sensor Reading Ingestion:
+   * Ingests validated readings from any SensorProvider (Simulation, Optical rPPG, Webcam, Wearable, Bedside Device, Future Sensor).
+   *
+   * Invariant: Rejects any raw video or pixel buffers.
+   * Invariant: When measurementStatus is LOW_CONFIDENCE, no vitals are fabricated.
+   */
+  public processSensorReading(reading: SensorReading): void {
+    // 1. Strict invariant verification: No raw frame data allowed
+    const readingKeys = Object.keys(reading);
+    for (const key of readingKeys) {
+      if (['frame', 'rawFrame', 'video', 'rawImage', 'pixelData', 'buffer', 'pixels'].includes(key)) {
+        throw new Error(`Security Violation: Raw video frame field '${key}' is forbidden.`);
+      }
+    }
+
+    const obs = sensorReadingToPhysiologicalObservation(reading);
+    this.processObservation(obs);
+  }
+
+  /**
+   * Attaches any SensorProvider to stream readings into the clinical telemetry pipeline.
+   */
+  public attachSensorProvider(provider: SensorProvider): Unsubscribe {
+    return provider.onReading((reading) => {
+      this.processSensorReading(reading);
+    });
+  }
+
+  /**
    * Core Ingestion Pipeline Step:
    * sensor/simulator -> observation ingestion -> clinical calculation -> APS recalculation -> event stream
    *
    * Invariant: Never transmit raw video/frames.
    */
   public processObservation(obs: PhysiologicalObservation): void {
+
     // 1. Strict invariant verification: No raw frame data allowed
     const obsKeys = Object.keys(obs);
     for (const key of obsKeys) {
@@ -160,15 +194,40 @@ export class TelemetryPipelineService {
       }
     }
 
+    const latestRawObs = rawObs.length > 0 ? rawObs[rawObs.length - 1] : undefined;
+    const latestSignalQuality = latestRawObs
+      ? {
+          sqiPercentage: Math.round(latestRawObs.confidence * 100),
+          snrDb:
+            latestRawObs.qualityState === 'TRUSTED'
+              ? 6.0
+              : latestRawObs.qualityState === 'DEGRADED'
+                ? 3.0
+                : 0.5,
+          illuminationLux: 300,
+          motionArtifactIndex: latestRawObs.qualityState === 'UNRELIABLE' ? 0.7 : 0.05,
+          state: latestRawObs.qualityState,
+          isUsable:
+            latestRawObs.qualityState === 'TRUSTED' ||
+            latestRawObs.qualityState === 'DEGRADED',
+          faceDetected: latestRawObs.qualityState !== 'LOST',
+        }
+      : undefined;
+
     const state: PatientStateInput = {
       patientId: patient.id,
       bedNumber: patient.bedNumber,
       currentTimestamp: eventTimestamp ?? Date.now(),
       observations,
       labs,
+      latestSignalQuality,
     };
 
+    const t0 = performance.now();
     const evaluationResult = this.apsEngine.evaluate(state);
+    const calcDurationMs = performance.now() - t0;
+    metricsService.recordApsDuration(calcDurationMs, evaluationResult.category);
+
     const explanationResult = this.explainEngine.explainPatient(state, evaluationResult);
 
     const now = Date.now();
@@ -214,6 +273,13 @@ export class TelemetryPipelineService {
         previousScore: previousState?.score,
         previousCategory: previousState?.category,
         confidence: evaluationResult.confidence,
+        freshnessScore: evaluationResult.freshnessScore,
+        uncertaintyIndex: evaluationResult.uncertaintyIndex,
+        lastTrustedTimestamp: evaluationResult.lastTrustedTimestamp,
+        lastManualTimestamp: evaluationResult.lastManualTimestamp,
+        lastCameraTimestamp: evaluationResult.lastCameraTimestamp,
+        expectedMonitoringIntervalMinutes: evaluationResult.expectedMonitoringIntervalMinutes,
+        informationFreshness: evaluationResult.informationFreshness,
         topReason,
         reasons,
         recommendedActions,

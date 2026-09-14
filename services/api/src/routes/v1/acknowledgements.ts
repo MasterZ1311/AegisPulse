@@ -6,11 +6,12 @@ import { timelineService } from '../../services/timeline.service';
 import { telemetryPipelineService } from '../../services/telemetry-pipeline.service';
 import { validateRequest } from '../../middleware/validator';
 import { authenticate } from '../../middleware/auth';
-import { requireRole } from '../../middleware/rbac';
+import { requireRole, requirePatientWardAccess } from '../../middleware/rbac';
 
 export const acknowledgementsRouter = Router({ mergeParams: true });
 
 acknowledgementsRouter.use(authenticate());
+acknowledgementsRouter.use(requirePatientWardAccess());
 
 const AcknowledgementCreateSchema = z
   .object({

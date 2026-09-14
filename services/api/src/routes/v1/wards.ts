@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { wardStateService } from '../../services/ward-state.service';
 import { authenticate } from '../../middleware/auth';
+import { requireWardAccess } from '../../middleware/rbac';
 
 export const wardsRouter = Router();
 
@@ -11,7 +12,7 @@ wardsRouter.get('/', (_req: Request, res: Response) => {
   res.status(200).json({ data: wards, total: wards.length });
 });
 
-wardsRouter.get('/:wardId', (req: Request, res: Response) => {
+wardsRouter.get('/:wardId', requireWardAccess(), (req: Request, res: Response) => {
   const wardId = String(req.params.wardId);
   const ward = wardStateService.getWard(wardId);
   const beds = wardStateService.getBeds(ward.id);
@@ -23,7 +24,7 @@ wardsRouter.get('/:wardId', (req: Request, res: Response) => {
   });
 });
 
-wardsRouter.get('/:wardId/overview', (req: Request, res: Response) => {
+wardsRouter.get('/:wardId/overview', requireWardAccess(), (req: Request, res: Response) => {
   const wardId = String(req.params.wardId);
   const ward = wardStateService.getWard(wardId);
   const beds = wardStateService.getBeds(ward.id);

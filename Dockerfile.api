@@ -1,0 +1,73 @@
+# ==============================================================================
+# AegisPulse API Service Dockerfile
+# Production-ready multi-stage Node.js 22 alpine build
+# ==============================================================================
+
+# Stage 1: Build & Compile
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++
+
+# Copy root manifest and workspace package manifests
+COPY package.json package-lock.json tsconfig.json ./
+COPY packages/types/package.json packages/types/
+COPY packages/clinical/package.json packages/clinical/
+COPY packages/signal/package.json packages/signal/
+COPY packages/simulation/package.json packages/simulation/
+COPY packages/persistence/package.json packages/persistence/
+COPY packages/rppg/package.json packages/rppg/
+COPY services/api/package.json services/api/
+COPY apps/web/package.json apps/web/
+COPY research/package.json research/
+
+# Clean install all dependencies
+RUN npm ci
+
+# Copy entire source tree
+COPY packages/ packages/
+COPY services/api/ services/api/
+COPY research/ research/
+
+# Build all internal workspaces and API
+RUN npm run build:packages && npm run build --workspace=@aegispulse/api
+
+# Stage 2: Production Runtime
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOST=0.0.0.0 \
+    AEGIS_DB_PATH=/data/aegispulse.db
+
+# Create non-root system user and persistent data volume directory
+RUN addgroup -S -g 10001 aegis && \
+    adduser -S -u 10001 -G aegis -h /home/aegis -s /bin/sh aegis && \
+    mkdir -p /data && \
+    chown -R aegis:aegis /data /app
+
+# Copy compiled artifacts and production dependencies
+COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/services/api/package.json ./services/api/
+COPY --from=builder /app/services/api/dist ./services/api/dist
+
+# Set ownership
+RUN chown -R aegis:aegis /app
+
+# Switch to non-root user
+USER aegis
+
+VOLUME ["/data"]
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+
+CMD ["node", "services/api/dist/src/index.js"]

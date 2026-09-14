@@ -12,11 +12,12 @@ import { timelineService } from '../../services/timeline.service';
 import { telemetryPipelineService } from '../../services/telemetry-pipeline.service';
 import { validateRequest } from '../../middleware/validator';
 import { authenticate } from '../../middleware/auth';
-import { requireRole } from '../../middleware/rbac';
+import { requireRole, requirePatientWardAccess } from '../../middleware/rbac';
 
 export const clinicalActionsRouter = Router({ mergeParams: true });
 
 clinicalActionsRouter.use(authenticate({ optional: true }));
+clinicalActionsRouter.use(requirePatientWardAccess());
 
 const CreateActionSchema = z
   .object({

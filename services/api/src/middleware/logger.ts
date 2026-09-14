@@ -1,10 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
+import { metricsService } from '../services/metrics.service';
 
 export function structuredLogger(req: Request, res: Response, next: NextFunction): void {
   const start = Date.now();
 
   res.on('finish', () => {
     const durationMs = Date.now() - start;
+    metricsService.recordApiRequest(durationMs);
+
     const logEntry = {
       timestamp: new Date().toISOString(),
       level: res.statusCode >= 500 ? 'ERROR' : res.statusCode >= 400 ? 'WARN' : 'INFO',

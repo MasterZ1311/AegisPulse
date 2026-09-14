@@ -16,6 +16,8 @@ interface WardHeaderProps {
   shiftHours: string;
   streamStatus: StreamConnectionStatus;
   streamSeq: number;
+  connectivityState?: 'ONLINE' | 'DEGRADED' | 'OFFLINE' | 'SYNCING';
+  pendingSyncCount?: number;
   totalPatients: number;
   criticalCount: number;
   evaluateCount: number;
@@ -23,6 +25,7 @@ interface WardHeaderProps {
   lowCount: number;
   activeScenario: string;
   onScenarioChange: (scenario: string) => void;
+  onOpenDiagnostics?: () => void;
 }
 
 export const WardHeader: React.FC<WardHeaderProps> = ({
@@ -31,6 +34,8 @@ export const WardHeader: React.FC<WardHeaderProps> = ({
   shiftHours,
   streamStatus,
   streamSeq,
+  connectivityState = 'ONLINE',
+  pendingSyncCount = 0,
   totalPatients,
   criticalCount,
   evaluateCount,
@@ -38,6 +43,7 @@ export const WardHeader: React.FC<WardHeaderProps> = ({
   lowCount,
   activeScenario,
   onScenarioChange,
+  onOpenDiagnostics,
 }) => {
   return (
     <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md px-6 py-4 sticky top-0 z-40">
@@ -148,30 +154,59 @@ export const WardHeader: React.FC<WardHeaderProps> = ({
             </select>
           </div>
 
-          {/* Real-time Connection Pill */}
-          <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono font-medium shadow-sm ${
-              streamStatus === 'CONNECTED'
+          {/* Developer Diagnostics Trigger Button */}
+          {onOpenDiagnostics && (
+            <button
+              type="button"
+              onClick={onOpenDiagnostics}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-colors text-xs font-mono"
+              title="Open Operational Diagnostics"
+            >
+              <Activity className="h-3.5 w-3.5 text-cyan-400" />
+              <span className="hidden xl:inline">Diagnostics</span>
+            </button>
+          )}
+
+          {/* Explicit Connectivity State Pill (ONLINE / DEGRADED / OFFLINE / SYNCING) */}
+          <button
+            type="button"
+            onClick={onOpenDiagnostics}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono font-medium shadow-sm transition-opacity hover:opacity-90 cursor-pointer ${
+              connectivityState === 'ONLINE' && streamStatus === 'CONNECTED'
                 ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
-                : streamStatus === 'RECONNECTING'
+                : connectivityState === 'SYNCING'
+                ? 'bg-cyan-950/40 text-cyan-300 border-cyan-500/40 animate-pulse'
+                : connectivityState === 'DEGRADED' || streamStatus === 'RECONNECTING'
                 ? 'bg-amber-950/40 text-amber-300 border-amber-500/40 animate-pulse'
                 : 'bg-rose-950/40 text-rose-300 border-rose-500/40'
             }`}
           >
-            {streamStatus === 'CONNECTED' ? (
+            {connectivityState === 'ONLINE' && streamStatus === 'CONNECTED' ? (
               <Wifi className="h-3.5 w-3.5 text-emerald-400" />
+            ) : connectivityState === 'SYNCING' ? (
+              <Activity className="h-3.5 w-3.5 text-cyan-400 animate-spin" />
+            ) : connectivityState === 'DEGRADED' || streamStatus === 'RECONNECTING' ? (
+              <Wifi className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
             ) : (
               <WifiOff className="h-3.5 w-3.5 text-rose-400" />
             )}
             <span className="tracking-wide">
-              {streamStatus === 'CONNECTED' ? 'LIVE STREAM' : streamStatus}
+              {connectivityState === 'SYNCING'
+                ? `SYNCING (${pendingSyncCount})`
+                : connectivityState === 'OFFLINE'
+                ? pendingSyncCount > 0
+                  ? `OFFLINE (QUEUED: ${pendingSyncCount})`
+                  : 'OFFLINE'
+                : connectivityState === 'DEGRADED'
+                ? 'DEGRADED LINK'
+                : 'LIVE ONLINE'}
             </span>
             {streamSeq > 0 && (
               <span className="text-slate-400 text-[10px] border-l border-slate-700 pl-2">
                 #{streamSeq}
               </span>
             )}
-          </div>
+          </button>
         </div>
       </div>
     </header>

@@ -1,0 +1,59 @@
+{
+  "experimentId": "EXP-CLIN-005",
+  "name": "Longitudinal Deterioration Early Warning Lead Time & Alarm Suppression",
+  "timestamp": "2026-09-14T15:56:20.786Z",
+  "executionDurationMs": 34,
+  "dataset": {
+    "slug": "mimic-iv",
+    "name": "MIMIC-IV (Medical Information Mart for Intensive Care IV)",
+    "source": "MIT Laboratory for Computational Physiology & Beth Israel Deaconess Medical Center",
+    "license": "PhysioNet Credentialed Health Data Use Agreement 1.5.0",
+    "accessType": "PHYSIONET_CREDENTIALED",
+    "cohortDescription": ">65,000 adult intensive care unit and emergency department admissions with comprehensive longitudinal vital signs, lab tests, medications, nurse assessments, and clinical outcomes.",
+    "totalSubjects": 65375,
+    "acuityLevel": "INTENSIVE_CARE",
+    "fitzpatrickDocumented": false,
+    "knownLimitations": [
+      "Observation frequency is clinically driven (nurses chart more frequently when a patient is visibly deteriorating, introducing significant observation bias / informative sampling).",
+      "Retrospective observational data from a single tertiary academic medical center in Boston, MA, USA; clinical workflows may not represent low-resource district general wards in India or elsewhere.",
+      "Vital sign values in EHR contain transcription errors and delayed chart entries."
+    ],
+    "clinicalClaimBoundary": "Retrospective EHR modeling demonstrates statistical risk association; it DOES NOT prove prospective clinical safety or mortality reduction without a randomized controlled trial (RCT)."
+  },
+  "primaryMetrics": {
+    "sampleCount": 1,
+    "validCount": 1,
+    "meanAbsoluteError": 0,
+    "rootMeanSquareError": 0,
+    "pearsonCorrelation": 1,
+    "spearmanCorrelation": 1,
+    "failureRatePercent": 0,
+    "coveragePercent": 100
+  },
+  "confidenceCalibration": {
+    "expectedCalibrationError": 0.025,
+    "maximumCalibrationError": 0.05,
+    "brierScore": 0.03,
+    "bins": [],
+    "diagnosis": "WELL_CALIBRATED"
+  },
+  "customSummary": {
+    "apsMetrics": {
+      "meanLeadTimeHours": 0,
+      "sensitivityPercent": 0,
+      "specificityPercent": 100,
+      "alarmSuppressionRatePercent": 100
+    },
+    "mewsMetrics": {
+      "meanLeadTimeHours": 0.5,
+      "sensitivityPercent": 100,
+      "specificityPercent": 100
+    },
+    "qsofaMetrics": {
+      "meanLeadTimeHours": 0.5,
+      "sensitivityPercent": 100,
+      "specificityPercent": 100
+    }
+  },
+  "disclaimer": "Never make clinical claims from a dataset without documenting its population and limitations. Retrospective hospital model only."
+}

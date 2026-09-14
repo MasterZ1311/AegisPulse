@@ -5,12 +5,25 @@ import { structuredLogger } from './middleware/logger';
 import { errorHandler, NotFoundError } from './middleware/errors';
 import { v1Router } from './routes/v1';
 import { healthRouter } from './routes/v1/health';
+import { metricsRouter } from './routes/v1/metrics';
 import { docsRouter } from './routes/docs';
 
 export function createApp(): Express {
   const app = express();
 
-  // 1. Core Security & Parsing Middleware
+  // 1. Core Security Headers & Parsing Middleware
+  app.use((_req: Request, res: Response, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self'; object-src 'none'; frame-ancestors 'none';"
+    );
+    next();
+  });
+
   app.use(
     cors({
       origin: '*',
@@ -27,6 +40,9 @@ export function createApp(): Express {
 
   // 3. Root Liveness & Readiness Probes (Infra / Kubernetes / LB)
   app.use('/', healthRouter);
+
+  // 3.1 Root Prometheus / JSON Metrics Probe
+  app.use('/metrics', metricsRouter);
 
   // 4. API Versioning (Primary: /api/v1, Backwards-compatible: /api)
   app.use('/api/v1', v1Router);

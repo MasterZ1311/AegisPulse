@@ -23,6 +23,8 @@ import {
   Square,
   ChevronDown,
   ChevronUp,
+  Search,
+  HelpCircle,
 } from 'lucide-react';
 import type { WardPatientRadarState } from '../types/radar';
 
@@ -35,6 +37,15 @@ interface PatientDetailPanelProps {
   onEscalate: (patientId: string) => void;
 }
 
+interface ProvenanceModalData {
+  title: string;
+  derivedValue: string | number;
+  calculationFormula: string;
+  sourceObservations: string[];
+  clinicalRationale: string;
+  timestamps: string;
+}
+
 export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
   patient,
   isEmbedded = false,
@@ -43,8 +54,9 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
   onLogAssessment,
   onEscalate,
 }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'VITALS_TRAJECTORY' | 'CLINICAL_RULES' | 'LABS_CONTEXT' | 'TIMELINE'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'ALL_OVERVIEW' | 'TRAJECTORY' | 'RULES_LABS' | 'TIMELINE'>('ALL_OVERVIEW');
   const [expandedProvenanceId, setExpandedProvenanceId] = useState<string | null>(null);
+  const [provenanceModal, setProvenanceModal] = useState<ProvenanceModalData | null>(null);
   const [assessmentNote, setAssessmentNote] = useState('');
   const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
@@ -76,14 +88,16 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
           badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/50',
           label: 'CRITICAL REVIEW',
           icon: <AlertOctagon className="h-4 w-4 text-rose-400 animate-pulse" />,
-          glow: 'border-rose-500/40 bg-rose-950/20 shadow-[0_0_20px_rgba(244,63,94,0.12)]',
+          glow: 'border-rose-500/40 bg-rose-950/20 shadow-[0_0_24px_rgba(244,63,94,0.15)]',
+          badgeText: 'text-rose-400 font-bold',
         };
       case 'EVALUATE':
         return {
           badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/50',
           label: 'EVALUATE',
           icon: <AlertTriangle className="h-4 w-4 text-amber-400" />,
-          glow: 'border-amber-500/40 bg-amber-950/20 shadow-[0_0_15px_rgba(245,158,11,0.08)]',
+          glow: 'border-amber-500/40 bg-amber-950/20 shadow-[0_0_18px_rgba(245,158,11,0.1)]',
+          badgeText: 'text-amber-300 font-bold',
         };
       case 'WATCH':
         return {
@@ -91,6 +105,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
           label: 'WATCH',
           icon: <Eye className="h-4 w-4 text-yellow-400" />,
           glow: 'border-yellow-500/30 bg-yellow-950/20',
+          badgeText: 'text-yellow-300 font-bold',
         };
       case 'LOW':
       default:
@@ -99,11 +114,24 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
           label: 'LOW RISK',
           icon: <CheckCircle2 className="h-4 w-4 text-emerald-400" />,
           glow: 'border-emerald-500/30 bg-emerald-950/20',
+          badgeText: 'text-emerald-300 font-bold',
         };
     }
   };
 
   const config = getCategoryConfig(patient.category);
+
+  // Inspector opener helper for deterministic provenance
+  const openProvenance = (metricName: string, derivedValue: string | number, formula: string, observations: string[], rationale: string) => {
+    setProvenanceModal({
+      title: metricName,
+      derivedValue,
+      calculationFormula: formula,
+      sourceObservations: observations,
+      clinicalRationale: rationale,
+      timestamps: new Date(patient.lastTrustedObservationIso).toLocaleTimeString(),
+    });
+  };
 
   // Content container styles based on embedded or modal/maximized state
   const containerClass = isMaximized || !isEmbedded
@@ -117,7 +145,9 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
   return (
     <div className={containerClass}>
       <div className={panelCardClass}>
-        {/* Panel Header */}
+        {/* ================================================================= */}
+        {/* PANEL HEADER: BED & PATIENT IDENTIFICATION */}
+        {/* ================================================================= */}
         <div className="px-5 py-3.5 border-b border-slate-800 bg-slate-950 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center h-10 w-14 rounded-lg bg-slate-850 border border-slate-700 text-center font-mono font-bold text-white text-sm">
@@ -175,51 +205,39 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
         <div className="px-5 border-b border-slate-800 bg-slate-950/50 flex items-center gap-4 overflow-x-auto text-xs font-mono shrink-0">
           <button
             type="button"
-            onClick={() => setActiveTab('OVERVIEW')}
+            onClick={() => setActiveTab('ALL_OVERVIEW')}
             className={`py-2.5 border-b-2 font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'OVERVIEW'
+              activeTab === 'ALL_OVERVIEW'
                 ? 'border-cyan-400 text-cyan-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Activity className="h-3.5 w-3.5" />
-            Why Now & Vitals
+            Executive Clinical View
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('VITALS_TRAJECTORY')}
+            onClick={() => setActiveTab('TRAJECTORY')}
             className={`py-2.5 border-b-2 font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'VITALS_TRAJECTORY'
+              activeTab === 'TRAJECTORY'
                 ? 'border-cyan-400 text-cyan-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <TrendingUp className="h-3.5 w-3.5" />
-            Trajectory
+            Multivariate Trajectory (60m)
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('CLINICAL_RULES')}
+            onClick={() => setActiveTab('RULES_LABS')}
             className={`py-2.5 border-b-2 font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'CLINICAL_RULES'
+              activeTab === 'RULES_LABS'
                 ? 'border-cyan-400 text-cyan-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Flame className="h-3.5 w-3.5" />
-            MEWS & qSOFA
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('LABS_CONTEXT')}
-            className={`py-2.5 border-b-2 font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'LABS_CONTEXT'
-                ? 'border-cyan-400 text-cyan-300'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <FileText className="h-3.5 w-3.5" />
-            Labs & Context
+            MEWS, qSOFA & Labs
           </button>
           <button
             type="button"
@@ -231,47 +249,153 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
             }`}
           >
             <Clock className="h-3.5 w-3.5" />
-            Timeline ({patient.timeline.length})
+            Audit Timeline ({patient.timeline.length})
           </button>
         </div>
 
-        {/* Scrollable Content Body */}
-        <div className="p-5 overflow-y-auto space-y-5 flex-1 bg-slate-900/60">
-          {/* TAB: OVERVIEW */}
-          {activeTab === 'OVERVIEW' && (
+        {/* ================================================================= */}
+        {/* SCROLLABLE BODY */}
+        {/* ================================================================= */}
+        <div className="p-5 overflow-y-auto space-y-6 flex-1 bg-slate-900/60">
+          {/* TAB 1: ALL_OVERVIEW (Executive Unified Bedside View) */}
+          {(activeTab === 'ALL_OVERVIEW' || activeTab === 'TRAJECTORY' || activeTab === 'RULES_LABS') && (
             <>
-              {/* "WHY NOW?" Hero Card */}
-              <div className={`p-4 sm:p-5 rounded-xl border ${config.glow} relative overflow-hidden`}>
+              {/* 1. TOP ATTENTION METRICS HEADER BAR (APS + Category + Confidence + Stale) */}
+              <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+                {/* APS Score with Trace Trigger */}
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openProvenance(
+                        'Attention Priority Score (APS)',
+                        `${patient.apsScore}/100`,
+                        'APS = Σ (ComponentWeight_i × NormalizedScore_i). Bounded in [0, 100].',
+                        ['OBS-P003-HR-040', 'OBS-P003-BP-030', 'OBS-P003-RR-032'],
+                        'Combines physiological velocity, abnormality bounds, shock index, and comorbidity factors.'
+                      )
+                    }
+                    className="group flex items-baseline gap-1.5 text-left focus:outline-none"
+                    title="Click to Trace APS Provenance & Formulas"
+                  >
+                    <span className="text-xs font-mono text-slate-400 group-hover:text-cyan-400 flex items-center gap-0.5">
+                      APS <HelpCircle className="h-3 w-3 inline text-slate-500 group-hover:text-cyan-400" />
+                    </span>
+                    <span
+                      className={`text-3xl font-black font-mono tracking-tight group-hover:underline ${
+                        patient.apsScore >= 80
+                          ? 'text-rose-400'
+                          : patient.apsScore >= 60
+                          ? 'text-amber-300'
+                          : patient.apsScore >= 35
+                          ? 'text-yellow-300'
+                          : 'text-emerald-300'
+                      }`}
+                    >
+                      {patient.apsScore}
+                    </span>
+                    <span className="text-xs font-mono text-slate-500">/100</span>
+                  </button>
+
+                  <div className="border-l border-slate-800 pl-3">
+                    <span className="text-[10px] font-mono uppercase text-slate-400 block font-semibold">
+                      Triage Category
+                    </span>
+                    <span className={`text-xs font-mono ${config.badgeText}`}>
+                      {patient.category.replace('_', ' ')} (Rank #{patient.categoryRank})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Velocity Trend & Signal Quality & Stale Check */}
+                <div className="flex items-center gap-4 text-xs font-mono flex-wrap">
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase block font-semibold">
+                      Trajectory Velocity
+                    </span>
+                    <span
+                      className={`flex items-center gap-1 font-bold ${
+                        patient.trendDirection === 'RAPIDLY_RISING'
+                          ? 'text-rose-400 animate-pulse'
+                          : patient.trendDirection === 'RISING'
+                          ? 'text-amber-300'
+                          : patient.trendDirection === 'RECOVERING'
+                          ? 'text-emerald-400'
+                          : 'text-slate-300'
+                      }`}
+                    >
+                      <TrendingUp className="h-3.5 w-3.5" />
+                      {patient.trendDirection.replace('_', ' ')} ({patient.trendVelocityPointsPerHour > 0 ? '+' : ''}
+                      {patient.trendVelocityPointsPerHour} pts/hr)
+                    </span>
+                  </div>
+
+                  <div className="border-l border-slate-800 pl-3">
+                    <span className="text-[10px] text-slate-500 uppercase block font-semibold">
+                      Optical Signal Quality
+                    </span>
+                    <span className="flex items-center gap-1 text-slate-200">
+                      <Radio className="h-3.5 w-3.5 text-cyan-400" />
+                      {patient.signalQuality.confidencePercent}% SNR ({patient.signalQuality.snrDb} dB)
+                    </span>
+                  </div>
+
+                  <div className="border-l border-slate-800 pl-3">
+                    <span className="text-[10px] text-slate-500 uppercase block font-semibold">
+                      Last Trusted Check
+                    </span>
+                    <span
+                      className={`flex items-center gap-1 ${
+                        patient.isStale ? 'text-rose-400 font-bold' : 'text-slate-300'
+                      }`}
+                    >
+                      <Clock className="h-3.5 w-3.5" />
+                      {patient.lastTrustedElapsedMinutes <= 1
+                        ? '1m ago (Live)'
+                        : `${patient.lastTrustedElapsedMinutes}m ago`}
+                      {patient.isStale && ' [STALE WARNING]'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. "WHY NOW?" HERO SECTION (Highly Readable, Prominent & Traceable) */}
+              <div className={`p-5 rounded-xl border ${config.glow} relative overflow-hidden shadow-lg`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 animate-ping" />
-                    <h4 className="text-xs font-mono font-bold tracking-wider text-cyan-300 uppercase">
-                      WHY NOW? — Clinical Attention Synthesis
+                    <h4 className="text-sm font-mono font-bold tracking-wider text-cyan-300 uppercase">
+                      WHY NOW? — Operational Clinical Synthesis
                     </h4>
                   </div>
-                  <span className="text-xs font-mono text-slate-400 font-semibold">
-                    APS #{patient.categoryRank} in Ward
+                  <span className="text-xs font-mono text-slate-400">
+                    Deterministic Explainability Engine
                   </span>
                 </div>
 
-                <p className="text-sm sm:text-base text-slate-100 font-medium leading-relaxed">
+                <p className="text-sm sm:text-base text-slate-100 font-medium leading-relaxed bg-slate-950/60 p-3.5 rounded-lg border border-slate-800/80">
                   {patient.whyNowSummary}
                 </p>
 
-                {/* Ranked Contributing Factors */}
-                <div className="mt-4 pt-4 border-t border-slate-800/80 space-y-3">
-                  <span className="text-xs font-mono text-slate-400 uppercase font-semibold block">
-                    Top Contributing Factors (Explainability Engine):
-                  </span>
+                {/* Ranked Contributing Reasons with Trace Inspector */}
+                <div className="mt-4 pt-3 border-t border-slate-800/80 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-slate-300 uppercase font-semibold">
+                      Top Contributing Factors (Ranked by Mathematical Weight):
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-500">
+                      Click factor to trace formula
+                    </span>
+                  </div>
 
-                  <div className="grid grid-cols-1 gap-2.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {patient.topContributingReasons.map((reason) => {
                       const isExpanded = expandedProvenanceId === reason.id;
 
                       return (
                         <div
                           key={reason.id}
-                          className="bg-slate-950/70 border border-slate-800 rounded-lg p-3 flex flex-col justify-between"
+                          className="bg-slate-950/80 border border-slate-800 rounded-lg p-3.5 flex flex-col justify-between hover:border-slate-700 transition-colors"
                         >
                           <div>
                             <div className="flex items-center justify-between gap-2 mb-1">
@@ -291,46 +415,48 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                               </span>
                             </div>
 
-                            <p className="text-xs text-slate-200 leading-normal">
+                            <p className="text-xs text-slate-200 leading-normal mt-1">
                               {reason.explanation}
                             </p>
 
-                            <div className="mt-2 text-[11px] font-mono text-slate-400 bg-slate-900/90 rounded px-2 py-1 border border-slate-800/60">
-                              <span className="text-slate-500">Evidence: </span>
-                              <span className="text-white">{reason.evidence.currentValue}</span>
-                              {reason.evidence.delta && (
-                                <span className="text-rose-400 font-bold ml-1">
-                                  ({reason.evidence.delta})
-                                </span>
-                              )}
+                            <div className="mt-2 text-[11px] font-mono text-slate-400 bg-slate-900/90 rounded px-2.5 py-1 border border-slate-800/80 flex items-center justify-between">
+                              <span>
+                                <span className="text-slate-500">Evidence: </span>
+                                <span className="text-white font-semibold">{reason.evidence.currentValue}</span>
+                                {reason.evidence.delta && (
+                                  <span className="text-rose-400 font-bold ml-1">
+                                    ({reason.evidence.delta})
+                                  </span>
+                                )}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setExpandedProvenanceId(isExpanded ? null : reason.id)}
+                                className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-0.5 ml-2"
+                              >
+                                <span>Inspect</span>
+                                {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                              </button>
                             </div>
                           </div>
 
-                          {/* Provenance Trace Inspector */}
-                          <div className="mt-2 pt-2 border-t border-slate-800/60">
-                            <button
-                              type="button"
-                              onClick={() => setExpandedProvenanceId(isExpanded ? null : reason.id)}
-                              className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
-                            >
-                              <span>Provenance Trace</span>
-                              {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                            </button>
-
-                            {isExpanded && (
-                              <div className="mt-2 p-2 bg-slate-950 rounded text-[10px] font-mono text-slate-300 space-y-1 border border-slate-800">
-                                <div className="text-slate-400">
-                                  Rule: <span className="text-white">{reason.provenance.calculationRule}</span>
-                                </div>
-                                <div className="text-slate-400">
-                                  Observation IDs: <span className="text-cyan-300">{reason.provenance.sourceObservationIds.join(', ')}</span>
-                                </div>
-                                <div className="text-slate-400">
-                                  Scores: Raw={reason.provenance.rawScore}, NormWeight={reason.provenance.normalizedWeight}
-                                </div>
+                          {/* Inline Provenance Expansion */}
+                          {isExpanded && (
+                            <div className="mt-2.5 p-2.5 bg-slate-950 rounded text-[10px] font-mono text-slate-300 space-y-1.5 border border-cyan-800/40">
+                              <div className="text-cyan-300 font-bold flex items-center gap-1">
+                                <Search className="h-3 w-3" /> Provenance Audit Trace:
                               </div>
-                            )}
-                          </div>
+                              <div className="text-slate-400">
+                                Rule: <span className="text-white">{reason.provenance.calculationRule}</span>
+                              </div>
+                              <div className="text-slate-400">
+                                Observation IDs: <span className="text-cyan-300 font-semibold">{reason.provenance.sourceObservationIds.join(', ')}</span>
+                              </div>
+                              <div className="text-slate-400">
+                                Mathematical Normalized Weight: <span className="text-amber-300 font-bold">{reason.provenance.normalizedWeight}</span> (Raw: {reason.provenance.rawScore})
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -338,17 +464,34 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                 </div>
               </div>
 
-              {/* Vitals Matrix */}
+              {/* 3. CURRENT STATE VS BASELINE (HR, RR, SpO2, BP/MAP, Shock Index, Temp/AVPU) */}
               <div>
-                <h4 className="text-xs font-mono uppercase font-semibold text-slate-400 mb-2.5 flex items-center gap-2">
-                  <Activity className="h-3.5 w-3.5 text-cyan-400" />
-                  Bedside Vitals vs Baseline
-                </h4>
+                <div className="flex items-center justify-between mb-2.5">
+                  <h4 className="text-xs font-mono uppercase font-semibold text-slate-300 flex items-center gap-2">
+                    <Activity className="h-3.5 w-3.5 text-cyan-400" />
+                    Bedside Physiological State vs Established Baseline
+                  </h4>
+                  <span className="text-[11px] font-mono text-slate-500">
+                    Click any vital card to trace mathematical derivation
+                  </span>
+                </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
                   {/* HR */}
-                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-                    <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openProvenance(
+                        'Heart Rate Velocity & Baseline Excursion',
+                        `${patient.vitals.heartRate} bpm`,
+                        `ΔHR = Current (${patient.vitals.heartRate}) - Baseline (${patient.vitals.heartRateBaseline}) = +${patient.vitals.heartRate - patient.vitals.heartRateBaseline} bpm (+51.3%).`,
+                        ['OBS-P003-HR-040', 'OBS-P003-HR-000'],
+                        'Progressive increase exceeding 0.6 bpm/min slope over 40 minutes.'
+                      )
+                    }
+                    className="bg-slate-950/80 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex flex-col justify-between text-left transition-colors"
+                  >
+                    <div className="flex items-center justify-between text-slate-400 text-xs font-mono w-full">
                       <span className="flex items-center gap-1">
                         <HeartPulse className="h-3.5 w-3.5 text-rose-400" /> HR
                       </span>
@@ -360,7 +503,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                       </span>
                     </div>
                     <div className="text-[10px] font-mono text-slate-400">
-                      Baseline: {patient.vitals.heartRateBaseline} bpm
+                      Base: {patient.vitals.heartRateBaseline} bpm
                       <span
                         className={`block font-bold ${
                           patient.vitals.heartRate - patient.vitals.heartRateBaseline > 20
@@ -372,11 +515,23 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                         {patient.vitals.heartRate - patient.vitals.heartRateBaseline} bpm
                       </span>
                     </div>
-                  </div>
+                  </button>
 
                   {/* RR */}
-                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-                    <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openProvenance(
+                        'Respiratory Rate Persistence',
+                        `${patient.vitals.respiratoryRate} /min`,
+                        `ΔRR = Current (${patient.vitals.respiratoryRate}) - Baseline (${patient.vitals.respiratoryRateBaseline}) = +${patient.vitals.respiratoryRate - patient.vitals.respiratoryRateBaseline} /min. Sustained > 24 /min for 32m.`,
+                        ['OBS-P003-RR-032'],
+                        'qSOFA Tachypnea criterion met (RR ≥ 22 /min).'
+                      )
+                    }
+                    className="bg-slate-950/80 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex flex-col justify-between text-left transition-colors"
+                  >
+                    <div className="flex items-center justify-between text-slate-400 text-xs font-mono w-full">
                       <span className="flex items-center gap-1">
                         <Wind className="h-3.5 w-3.5 text-cyan-400" /> RR
                       </span>
@@ -388,7 +543,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                       </span>
                     </div>
                     <div className="text-[10px] font-mono text-slate-400">
-                      Baseline: {patient.vitals.respiratoryRateBaseline} /min
+                      Base: {patient.vitals.respiratoryRateBaseline} /min
                       <span
                         className={`block font-bold ${
                           patient.vitals.respiratoryRate - patient.vitals.respiratoryRateBaseline > 6
@@ -400,11 +555,23 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                         {patient.vitals.respiratoryRate - patient.vitals.respiratoryRateBaseline} /min
                       </span>
                     </div>
-                  </div>
+                  </button>
 
                   {/* SpO2 */}
-                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-                    <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openProvenance(
+                        'Pulse Oximetry (SpO2)',
+                        `${patient.vitals.spo2}%`,
+                        `Optical pulse waveform SpO2 derived from dual-wavelength rPPG ratio. Baseline: ${patient.vitals.spo2Baseline}%.`,
+                        ['OBS-P003-SPO2-010'],
+                        'Delivery Mode: ' + patient.vitals.oxygenDelivery
+                      )
+                    }
+                    className="bg-slate-950/80 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex flex-col justify-between text-left transition-colors"
+                  >
+                    <div className="flex items-center justify-between text-slate-400 text-xs font-mono w-full">
                       <span className="flex items-center gap-1">
                         <Droplets className="h-3.5 w-3.5 text-blue-400" /> SpO2
                       </span>
@@ -415,14 +582,26 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                         {patient.vitals.spo2}%
                       </span>
                     </div>
-                    <div className="text-[10px] font-mono text-slate-400 truncate">
+                    <div className="text-[10px] font-mono text-slate-400 truncate w-full">
                       {patient.vitals.oxygenDelivery}
                     </div>
-                  </div>
+                  </button>
 
-                  {/* BP */}
-                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-                    <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
+                  {/* BP / MAP */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openProvenance(
+                        'Mean Arterial Pressure (MAP)',
+                        `${patient.vitals.meanArterialPressure} mmHg`,
+                        `MAP = DBP + 1/3 (SBP - DBP) = ${patient.vitals.diastolicBP} + 1/3 (${patient.vitals.systolicBP} - ${patient.vitals.diastolicBP}) = ${patient.vitals.meanArterialPressure} mmHg.`,
+                        ['OBS-P003-BP-030'],
+                        'Narrow pulse pressure (36 mmHg) indicates reduced stroke volume or peripheral vasoconstriction.'
+                      )
+                    }
+                    className="bg-slate-950/80 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex flex-col justify-between text-left transition-colors"
+                  >
+                    <div className="flex items-center justify-between text-slate-400 text-xs font-mono w-full">
                       <span className="flex items-center gap-1">
                         <Activity className="h-3.5 w-3.5 text-purple-400" /> BP / MAP
                       </span>
@@ -436,11 +615,23 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                     <div className="text-[10px] font-mono text-slate-400">
                       MAP: <span className="font-bold text-white">{patient.vitals.meanArterialPressure}</span> mmHg
                     </div>
-                  </div>
+                  </button>
 
                   {/* Shock Index */}
-                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-                    <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openProvenance(
+                        'Shock Index (SI)',
+                        patient.vitals.shockIndex.toFixed(2),
+                        `Shock Index = HR (${patient.vitals.heartRate}) / SBP (${patient.vitals.systolicBP}) = ${(patient.vitals.heartRate / patient.vitals.systolicBP).toFixed(2)}. Normal range: 0.5 - 0.7.`,
+                        ['OBS-P003-HR-040', 'OBS-P003-BP-030'],
+                        'SI ≥ 1.0 indicates severe hemodynamic instability, occult shock, or impending vascular collapse.'
+                      )
+                    }
+                    className="bg-slate-950/80 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex flex-col justify-between text-left transition-colors"
+                  >
+                    <div className="flex items-center justify-between text-slate-400 text-xs font-mono w-full">
                       <span className="flex items-center gap-1">
                         <Activity className="h-3.5 w-3.5 text-amber-400" /> Shock Index
                       </span>
@@ -460,11 +651,11 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                       </span>
                     </div>
                     <div className="text-[10px] font-mono text-slate-400">
-                      Target &lt; 0.70
+                      Normal &lt; 0.70 (High Risk)
                     </div>
-                  </div>
+                  </button>
 
-                  {/* Temp / AVPU */}
+                  {/* Temp & AVPU */}
                   <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
                     <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
                       <span className="flex items-center gap-1">
@@ -483,109 +674,93 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                 </div>
               </div>
 
-              {/* Optical rPPG Telemetry */}
-              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <Radio className="h-4 w-4 text-cyan-400" />
-                    <h5 className="text-xs font-mono uppercase font-semibold text-white">
-                      Optical rPPG Telemetry (Zero Raw Video)
+              {/* 4. CLINICAL RULES SUMMARY (MEWS & qSOFA) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* MEWS Box */}
+                <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="text-xs font-mono uppercase font-bold text-white flex items-center gap-1.5">
+                      <Flame className="h-3.5 w-3.5 text-amber-400" />
+                      MEWS Score: {patient.mews.totalScore} / 14
                     </h5>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openProvenance(
+                          'Modified Early Warning Score (MEWS)',
+                          patient.mews.totalScore,
+                          'MEWS = HR_pts (2) + RR_pts (2) + SBP_pts (1) + Temp_pts (0) + AVPU_pts (1) = 6.',
+                          ['OBS-P003-ALL'],
+                          'Deterministic standard scoring based on documented protocol thresholds.'
+                        )
+                      }
+                      className="text-[10px] font-mono text-cyan-400 hover:underline flex items-center gap-1"
+                    >
+                      <Search className="h-2.5 w-2.5" /> Trace Points
+                    </button>
                   </div>
-                  <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-                    <ShieldCheck className="h-3 w-3" /> Pure Photoplethysmography
-                  </span>
-                </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">Confidence</span>
-                    <span className="text-sm font-bold text-white">{patient.signalQuality.confidencePercent}%</span>
-                  </div>
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">SNR</span>
-                    <span className="text-sm font-bold text-cyan-300">{patient.signalQuality.snrDb} dB</span>
-                  </div>
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">Motion</span>
-                    <span className={`text-sm font-bold ${patient.signalQuality.motionDetected ? 'text-amber-400' : 'text-emerald-400'}`}>
-                      {patient.signalQuality.motionDetected ? 'Detected' : 'Minimal'}
-                    </span>
-                  </div>
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">Light</span>
-                    <span className="text-sm font-bold text-white">{patient.signalQuality.illuminationLux} Lux</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recommended Human Verification Checklist */}
-              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4">
-                <h5 className="text-xs font-mono uppercase font-semibold text-slate-300 mb-2.5 flex items-center gap-2">
-                  <CheckSquare className="h-4 w-4 text-cyan-400" />
-                  Recommended Human Verification Checklist
-                </h5>
-
-                <div className="space-y-2">
-                  {patient.recommendedVerifications.map((check) => {
-                    const isChecked = completedCheckIds[check.id] ?? check.completed;
-
-                    return (
-                      <div
-                        key={check.id}
-                        onClick={() => toggleCheck(check.id)}
-                        className={`p-2.5 rounded-lg border flex items-start gap-2.5 cursor-pointer transition-colors ${
-                          isChecked
-                            ? 'bg-emerald-950/20 border-emerald-800/40 text-slate-300'
-                            : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-200'
-                        }`}
-                      >
-                        <div className="mt-0.5">
-                          {isChecked ? (
-                            <CheckSquare className="h-4 w-4 text-emerald-400" />
-                          ) : (
-                            <Square className="h-4 w-4 text-slate-500" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className={`text-xs font-medium ${isChecked ? 'line-through text-slate-400' : 'text-white'}`}>
-                            {check.text}
-                          </p>
-                          <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                            Rationale: {check.rationale}
-                          </p>
-                        </div>
+                  <div className="space-y-1 text-xs font-mono">
+                    {patient.mews.breakdown.map((row, i) => (
+                      <div key={i} className="flex justify-between text-slate-300 py-0.5 border-b border-slate-900">
+                        <span>{row.parameter}: <span className="text-white">{row.value}</span></span>
+                        <span className="font-bold text-amber-300">+{row.points} pt</span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
 
-          {/* TAB: VITALS TRAJECTORY */}
-          {activeTab === 'VITALS_TRAJECTORY' && (
-            <div className="space-y-4">
+                {/* qSOFA Box */}
+                {patient.qsofa && (
+                  <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="text-xs font-mono uppercase font-bold text-white flex items-center gap-1.5">
+                        <AlertOctagon className="h-3.5 w-3.5 text-rose-400" />
+                        qSOFA Sepsis Screening: {patient.qsofa.criteriaMet} / 3 Criteria
+                      </h5>
+                      <span className="text-[10px] font-mono text-rose-400 font-bold bg-rose-950/60 px-2 py-0.5 rounded border border-rose-800/40">
+                        SEPSIS ALERT
+                      </span>
+                    </div>
+
+                    <div className="space-y-1 text-xs font-mono">
+                      {patient.qsofa.breakdown.map((q, i) => (
+                        <div
+                          key={i}
+                          className={`flex justify-between py-1 px-2 rounded ${
+                            q.isMet ? 'bg-rose-950/30 text-rose-200 font-bold' : 'text-slate-400'
+                          }`}
+                        >
+                          <span>{q.criterion}</span>
+                          <span>{q.value} ({q.isMet ? 'MET (+1)' : '0'})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 5. MULTIVARIATE TRAJECTORY PLOT (60 min) */}
               <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-xs font-bold text-white font-mono flex items-center gap-2">
                     <TrendingUp className="h-3.5 w-3.5 text-cyan-400" />
-                    Trajectory (60 Minutes)
+                    Multivariate Trajectory Trends (Last 60 Minutes)
                   </h4>
                   <div className="flex items-center gap-3 text-[11px] font-mono">
                     <span className="flex items-center gap-1 text-rose-400">
-                      <span className="h-1.5 w-2.5 bg-rose-500 inline-block rounded-xs" /> HR
+                      <span className="h-1.5 w-2.5 bg-rose-500 inline-block rounded-xs" /> HR (bpm)
                     </span>
                     <span className="flex items-center gap-1 text-cyan-400">
-                      <span className="h-1.5 w-2.5 bg-cyan-500 inline-block rounded-xs" /> RR
+                      <span className="h-1.5 w-2.5 bg-cyan-500 inline-block rounded-xs" /> RR (/min)
                     </span>
                     <span className="flex items-center gap-1 text-amber-400">
-                      <span className="h-1.5 w-2.5 bg-amber-500 inline-block rounded-xs" /> APS
+                      <span className="h-1.5 w-2.5 bg-amber-500 inline-block rounded-xs" /> APS (0-100)
                     </span>
                   </div>
                 </div>
 
-                <div className="h-52 w-full bg-slate-900/90 rounded-lg border border-slate-800 p-3 relative flex items-end">
+                <div className="h-44 w-full bg-slate-900/90 rounded-lg border border-slate-800 p-3 relative flex items-end">
                   <svg className="w-full h-full overflow-visible" viewBox="0 0 500 200" preserveAspectRatio="none">
                     <line x1="0" y1="50" x2="500" y2="50" stroke="#1e293b" strokeDasharray="3 3" />
                     <line x1="0" y1="100" x2="500" y2="100" stroke="#1e293b" strokeDasharray="3 3" />
@@ -655,136 +830,113 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                 </div>
               </div>
 
-              {/* Data Table */}
-              <div className="bg-slate-950/90 border border-slate-800 rounded-xl overflow-hidden">
-                <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
-                    <tr>
-                      <th className="p-2.5">Time</th>
-                      <th className="p-2.5">APS</th>
-                      <th className="p-2.5">HR</th>
-                      <th className="p-2.5">RR</th>
-                      <th className="p-2.5">BP</th>
-                      <th className="p-2.5">SpO2</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {patient.trajectory.map((pt, i) => (
-                      <tr key={i} className="hover:bg-slate-900/50">
-                        <td className="p-2.5 text-slate-300 font-semibold">
-                          {pt.timeOffsetMinutes === 0 ? 'NOW' : `${pt.timeOffsetMinutes}m`}
-                        </td>
-                        <td className="p-2.5 text-amber-300 font-bold">{pt.apsScore}</td>
-                        <td className="p-2.5 text-rose-300">{pt.heartRate}</td>
-                        <td className="p-2.5 text-cyan-300">{pt.respiratoryRate}</td>
-                        <td className="p-2.5 text-slate-300">{pt.systolicBP}/{pt.diastolicBP}</td>
-                        <td className="p-2.5 text-blue-300">{pt.spo2}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: CLINICAL RULES */}
-          {activeTab === 'CLINICAL_RULES' && (
-            <div className="space-y-4">
-              <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-xs font-bold text-white font-mono flex items-center gap-2">
-                    <Flame className="h-4 w-4 text-amber-400" />
-                    MEWS Score Breakdown
-                  </h4>
-                  <span className="text-xl font-black font-mono text-amber-300">
-                    Total: {patient.mews.totalScore}
-                  </span>
-                </div>
-
-                <div className="overflow-hidden border border-slate-800 rounded-lg">
-                  <table className="w-full text-left text-xs font-mono">
-                    <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
-                      <tr>
-                        <th className="p-2">Parameter</th>
-                        <th className="p-2">Value</th>
-                        <th className="p-2 text-right">Points</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {patient.mews.breakdown.map((row, i) => (
-                        <tr key={i}>
-                          <td className="p-2 text-white">{row.parameter}</td>
-                          <td className="p-2 text-slate-300">{row.value}</td>
-                          <td className="p-2 text-right font-bold text-amber-300">+{row.points}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {patient.qsofa && (
+              {/* 6. RELEVANT DIAGNOSTIC LABS & CLINICAL CONTEXT */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Diagnostic Labs */}
                 <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <h4 className="text-xs font-bold text-white font-mono flex items-center gap-2">
-                      <AlertOctagon className="h-4 w-4 text-rose-400" />
-                      qSOFA Sepsis Screening
-                    </h4>
-                    <span className="text-lg font-black font-mono text-rose-400">
-                      {patient.qsofa.criteriaMet} / 3 Criteria
-                    </span>
-                  </div>
+                  <h5 className="text-xs font-mono uppercase font-bold text-white flex items-center gap-1.5 mb-2.5">
+                    <Activity className="h-3.5 w-3.5 text-purple-400" />
+                    Relevant Diagnostic Laboratory Results
+                  </h5>
 
-                  <div className="space-y-1.5">
-                    {patient.qsofa.breakdown.map((q, i) => (
+                  {patient.labs.length ? (
+                    <div className="space-y-2 text-xs font-mono">
+                      {patient.labs.map((lab) => (
+                        <div key={lab.id} className="p-2 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
+                          <div>
+                            <span className="text-white font-bold block">{lab.testName}</span>
+                            <span className="text-[10px] text-slate-500">
+                              Ref: {lab.referenceRange.low}-{lab.referenceRange.high} {lab.unit}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-sm font-bold block ${lab.isCritical ? 'text-rose-400' : 'text-slate-200'}`}>
+                              {lab.value} {lab.unit}
+                            </span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${lab.isCritical ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                              {lab.isCritical ? 'CRITICAL ABNORMAL' : 'NORMAL'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 font-mono">No pending or abnormal laboratory values.</p>
+                  )}
+                </div>
+
+                {/* Clinical Context */}
+                <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4 text-xs font-mono space-y-2">
+                  <h5 className="text-xs font-mono uppercase font-bold text-white flex items-center gap-1.5 mb-2">
+                    <FileText className="h-3.5 w-3.5 text-cyan-400" />
+                    Clinical Context & Surgical Profile
+                  </h5>
+                  <p className="text-slate-300"><span className="text-slate-500">Admission:</span> {patient.clinicalContext.admissionReason}</p>
+                  <p className="text-slate-300"><span className="text-slate-500">Post-Op:</span> Day #{patient.clinicalContext.postOpDay}</p>
+                  <p className="text-slate-300"><span className="text-slate-500">Comorbidities:</span> {patient.clinicalContext.comorbidities.join(', ')}</p>
+                  <p className="text-slate-300">
+                    <span className="text-slate-500">Allergies:</span>{' '}
+                    <span className="text-rose-300 font-semibold">{patient.allergies.length ? patient.allergies.join(', ') : 'NKDA'}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* 7. RECOMMENDED HUMAN VERIFICATION CHECKLIST */}
+              <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4">
+                <h5 className="text-xs font-mono uppercase font-semibold text-slate-300 mb-2.5 flex items-center gap-2">
+                  <CheckSquare className="h-4 w-4 text-cyan-400" />
+                  Recommended Human Verification Checklist (Bedside Protocol)
+                </h5>
+
+                <div className="space-y-2">
+                  {patient.recommendedVerifications.map((check) => {
+                    const isChecked = completedCheckIds[check.id] ?? check.completed;
+
+                    return (
                       <div
-                        key={i}
-                        className={`p-2.5 rounded-lg border text-xs flex items-center justify-between ${
-                          q.isMet ? 'bg-rose-950/30 border-rose-800/50 text-rose-200' : 'bg-slate-900 border-slate-800 text-slate-400'
+                        key={check.id}
+                        onClick={() => toggleCheck(check.id)}
+                        className={`p-2.5 rounded-lg border flex items-start gap-2.5 cursor-pointer transition-colors ${
+                          isChecked
+                            ? 'bg-emerald-950/20 border-emerald-800/40 text-slate-300'
+                            : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-200'
                         }`}
                       >
-                        <span>{q.criterion}</span>
-                        <span className="font-mono font-bold">{q.value}</span>
+                        <div className="mt-0.5">
+                          {isChecked ? (
+                            <CheckSquare className="h-4 w-4 text-emerald-400" />
+                          ) : (
+                            <Square className="h-4 w-4 text-slate-500" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className={`text-xs font-medium ${isChecked ? 'line-through text-slate-400' : 'text-white'}`}>
+                            {check.text}
+                          </p>
+                          <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                            Rationale: {check.rationale}
+                          </p>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB: LABS & CONTEXT */}
-          {activeTab === 'LABS_CONTEXT' && (
-            <div className="space-y-4">
-              <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4 text-xs font-mono space-y-2">
-                <h4 className="text-xs font-bold text-white uppercase mb-2">Clinical Context</h4>
-                <p className="text-slate-300"><span className="text-slate-500">Admission:</span> {patient.clinicalContext.admissionReason}</p>
-                <p className="text-slate-300"><span className="text-slate-500">Comorbidities:</span> {patient.clinicalContext.comorbidities.join(', ')}</p>
-                <p className="text-slate-300"><span className="text-slate-500">Post-Op:</span> POD #{patient.clinicalContext.postOpDay}</p>
-              </div>
-
-              <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4">
-                <h4 className="text-xs font-bold text-white font-mono uppercase mb-2.5">Diagnostic Labs</h4>
-                <div className="space-y-2">
-                  {patient.labs.map((lab) => (
-                    <div key={lab.id} className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between text-xs font-mono">
-                      <div>
-                        <span className="text-white font-bold block">{lab.testName}</span>
-                        <span className="text-[10px] text-slate-500">Ref: {lab.referenceRange.low}-{lab.referenceRange.high} {lab.unit}</span>
-                      </div>
-                      <div className="text-right">
-                        <span className={`text-sm font-bold block ${lab.isCritical ? 'text-rose-400' : 'text-slate-200'}`}>
-                          {lab.value} {lab.unit}
-                        </span>
-                        <span className={`text-[10px] font-bold ${lab.isCritical ? 'text-rose-400' : 'text-emerald-400'}`}>
-                          {lab.isCritical ? 'ABNORMAL' : 'NORMAL'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
-            </div>
+
+              {/* 8. NON-INVASIVE OPTICAL TELEMETRY PRIVACY SEAL */}
+              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex items-center justify-between text-xs font-mono">
+                <div className="flex items-center gap-2 text-slate-300">
+                  <Radio className="h-4 w-4 text-cyan-400" />
+                  <span>rPPG Optical Pulse Sensor ({patient.signalQuality.cameraDeviceId})</span>
+                  <span className="text-slate-600">|</span>
+                  <span className="text-slate-400">{patient.signalQuality.illuminationLux} Lux</span>
+                </div>
+                <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Zero Raw Video Transmitted or Stored
+                </span>
+              </div>
+            </>
           )}
 
           {/* TAB: TIMELINE */}
@@ -815,13 +967,15 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
           )}
         </div>
 
-        {/* Panel Bottom Actions */}
+        {/* ================================================================= */}
+        {/* PANEL BOTTOM: OPERATIONAL ACTION CONTROLS */}
+        {/* ================================================================= */}
         <div className="px-5 py-3 border-t border-slate-800 bg-slate-950 flex flex-wrap items-center justify-between gap-2 shrink-0">
           <div className="text-[11px] font-mono text-slate-400">
             <span>RN: {patient.primaryNurse}</span>
             <span className="mx-1.5">•</span>
             <span className={patient.isAcknowledged ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
-              {patient.isAcknowledged ? 'Acknowledged' : 'Unacknowledged'}
+              {patient.isAcknowledged ? 'Priority Acknowledged' : 'Unacknowledged'}
             </span>
           </div>
 
@@ -836,7 +990,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
               }`}
             >
               <UserCheck className="h-3.5 w-3.5" />
-              <span>{patient.isAcknowledged ? 'Acked' : 'Ack'}</span>
+              <span>{patient.isAcknowledged ? 'Acknowledged' : 'Acknowledge Priority'}</span>
             </button>
 
             <button
@@ -845,7 +999,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
               className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 flex items-center gap-1.5"
             >
               <FileText className="h-3.5 w-3.5 text-slate-400" />
-              <span>Assess</span>
+              <span>Log Assessment</span>
             </button>
 
             <button
@@ -854,13 +1008,77 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
               className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-600 text-white hover:bg-rose-500 shadow-sm shadow-rose-600/30 flex items-center gap-1.5"
             >
               <AlertOctagon className="h-3.5 w-3.5" />
-              <span>RRT</span>
+              <span>Escalate (RRT)</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Sub-modal for logging assessment */}
+      {/* ================================================================= */}
+      {/* DETERMINISTIC PROVENANCE TRACE INSPECTOR MODAL */}
+      {/* ================================================================= */}
+      {provenanceModal && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-cyan-800/80 rounded-xl p-5 max-w-lg w-full shadow-2xl space-y-3 font-mono">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-cyan-400" />
+                <h4 className="text-sm font-bold text-white">Deterministic Provenance Trace</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProvenanceModal(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div>
+                <span className="text-slate-500 block">Derived Metric:</span>
+                <span className="text-base font-bold text-white">{provenanceModal.title}</span>
+              </div>
+
+              <div>
+                <span className="text-slate-500 block">Calculated Value:</span>
+                <span className="text-lg font-bold text-cyan-300">{provenanceModal.derivedValue}</span>
+              </div>
+
+              <div className="bg-slate-950 p-2.5 rounded border border-slate-800">
+                <span className="text-slate-500 block mb-1">Calculation Rule & Formula:</span>
+                <span className="text-amber-300 font-medium">{provenanceModal.calculationFormula}</span>
+              </div>
+
+              <div className="bg-slate-950 p-2.5 rounded border border-slate-800">
+                <span className="text-slate-500 block mb-1">Source Observation Records:</span>
+                <span className="text-slate-300">{provenanceModal.sourceObservations.join(', ')}</span>
+              </div>
+
+              <div>
+                <span className="text-slate-500 block">Clinical Rationale:</span>
+                <span className="text-slate-300">{provenanceModal.clinicalRationale}</span>
+              </div>
+
+              <div className="text-[10px] text-slate-500 pt-1">
+                Zero LLM-generated reasoning. All values verified against raw deterministic clinical engine pipelines.
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setProvenanceModal(null)}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded text-xs"
+              >
+                Close Trace
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-MODAL FOR BEDSIDE ASSESSMENT */}
       {isAssessmentModalOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70">
           <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 max-w-md w-full shadow-2xl">

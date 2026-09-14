@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: aegispulse-api
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - AEGIS_DB_PATH=/data/aegispulse.db
+      - LOG_LEVEL=info
+      - CORS_ORIGIN=*
+    volumes:
+      - aegis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - aegis_network
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: aegispulse-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "5173:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - aegis_network
+
+volumes:
+  aegis_data:
+    name: aegispulse_data
+
+networks:
+  aegis_network:
+    name: aegispulse_net
+    driver: bridge

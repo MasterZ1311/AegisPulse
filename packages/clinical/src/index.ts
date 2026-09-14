@@ -17,10 +17,32 @@ export * from './explainability';
 // Standalone Clinical Rule Layer (Subbe 2001 & Singer 2016)
 export * as mews from './mews';
 export * as qsofa from './qsofa';
+export { calculateMEWS } from './mews';
+export { calculateQSOFA, calculateQSOFA as calculateqSOFA } from './qsofa';
 
 // Unified Patient Timeline Engine
 export * from './timeline';
 export * as timeline from './timeline';
+
+// APS Calibration Laboratory & Empirical Validation Suite
+export * from './calibration';
+export * as calibration from './calibration';
+
+// Attention & Notification Event Policy Engine (Decoupled Alert Lifecycle)
+export * from './eventPolicy';
+export * as eventPolicy from './eventPolicy';
+
+// Human Action Workflow & Clinical Verification Protocols
+export * from './workflow';
+export * as workflow from './workflow';
+
+// SBAR Handoff Generator (Deterministic & AI-Assisted)
+export * from './sbar';
+export * as sbar from './sbar';
+
+// AI Clinical Copilot & Advisory Decision Support Layer
+export * from './copilot';
+export * as copilot from './copilot';
 
 // Stubs preserved for backward compatibility
 export interface LegacyMEWSInput {

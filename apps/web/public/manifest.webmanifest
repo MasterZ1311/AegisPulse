@@ -1,0 +1,22 @@
+{
+  "short_name": "AegisPulse",
+  "name": "AegisPulse | Patient Deterioration Radar",
+  "description": "Patient Deterioration Radar & Nurse Attention Allocation Engine",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

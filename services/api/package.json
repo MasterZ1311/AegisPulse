@@ -15,6 +15,7 @@
   "dependencies": {
     "@aegispulse/clinical": "*",
     "@aegispulse/persistence": "*",
+    "@aegispulse/signal": "*",
     "@aegispulse/simulation": "*",
     "@aegispulse/types": "*",
     "@types/ws": "^8.18.1",

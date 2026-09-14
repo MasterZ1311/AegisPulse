@@ -24,7 +24,8 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "eslint src --ext .ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "calibrate": "node dist/calibration/cli.js"
   },
   "dependencies": {
     "@aegispulse/types": "*"

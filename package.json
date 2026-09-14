@@ -7,16 +7,19 @@
   "workspaces": [
     "apps/*",
     "services/*",
-    "packages/*"
+    "packages/*",
+    "research/*"
   ],
   "scripts": {
     "dev": "concurrently -k -p \"[{name}]\" -n \"API,WEB\" -c \"cyan,magenta\" \"npm run dev --workspace=@aegispulse/api\" \"npm run dev --workspace=@aegispulse/web\"",
     "dev:api": "npm run dev --workspace=@aegispulse/api",
     "dev:web": "npm run dev --workspace=@aegispulse/web",
-    "build:packages": "npm run build --workspace=@aegispulse/types && npm run build --workspace=@aegispulse/clinical && npm run build --workspace=@aegispulse/signal && npm run build --workspace=@aegispulse/simulation && npm run build --workspace=@aegispulse/persistence",
+    "build:packages": "npm run build --workspace=@aegispulse/types && npm run build --workspace=@aegispulse/clinical && npm run build --workspace=@aegispulse/signal && npm run build --workspace=@aegispulse/simulation && npm run build --workspace=@aegispulse/persistence && npm run build --workspace=@aegispulse/rppg",
     "build": "npm run build:packages && npm run build --workspace=@aegispulse/api && npm run build --workspace=@aegispulse/web",
     "test": "vitest run",
     "test:watch": "vitest",
+    "benchmark:perf": "tsx scripts/performance-benchmark.ts",
+    "benchmark:science": "tsx research/benchmarks/run-scientific-evaluation.ts",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\""

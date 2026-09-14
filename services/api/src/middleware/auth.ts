@@ -48,6 +48,13 @@ const TOKEN_USER_MAP: Record<string, AuthenticatedUser> = {
     role: 'ATTENDING_PHYSICIAN',
     assignedWardIds: ['WARD-A', 'WARD-B', 'WARD-ICU'],
   },
+  'ward-b-nurse-token': {
+    userId: 'usr-nurse-ward-b',
+    username: 'npatel_b',
+    fullName: 'Nurse Nisha Patel, RN (Ward B)',
+    role: 'WARD_NURSE',
+    assignedWardIds: ['WARD-B'],
+  },
   'admin-token': {
     userId: 'usr-admin-001',
     username: 'admin',
@@ -68,6 +75,9 @@ export function authenticate(options?: { optional?: boolean }) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const authHeader = req.headers['authorization'];
     const apiKey = req.headers['x-api-key'] as string | undefined;
+    const testWards = req.headers['x-user-wards']
+      ? String(req.headers['x-user-wards']).split(',').map((w) => w.trim())
+      : undefined;
 
     let token: string | undefined;
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -76,17 +86,17 @@ export function authenticate(options?: { optional?: boolean }) {
       token = apiKey.trim();
     }
 
-    // Direct header override for testing
+    // Direct header override for testing - Strictly forbidden in production and requires explicit opt-in
     const testRole = req.headers['x-user-role'] as UserRole | undefined;
     const testUserId = req.headers['x-user-id'] as string | undefined;
 
-    if (testRole) {
+    if (testRole && process.env.NODE_ENV !== 'production' && process.env.ALLOW_HEADER_AUTH === 'true') {
       req.user = {
         userId: testUserId || `test-${testRole.toLowerCase()}`,
         username: testUserId || `test-${testRole.toLowerCase()}`,
         fullName: `Test ${testRole}`,
         role: testRole,
-        assignedWardIds: ['WARD-A', 'WARD-B', 'WARD-ICU'],
+        assignedWardIds: testWards || ['WARD-A', 'WARD-B', 'WARD-ICU'],
       };
       return next();
     }
@@ -94,7 +104,7 @@ export function authenticate(options?: { optional?: boolean }) {
     if (token) {
       const user = TOKEN_USER_MAP[token];
       if (user) {
-        req.user = user;
+        req.user = testWards ? { ...user, assignedWardIds: testWards } : user;
         return next();
       }
 

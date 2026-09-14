@@ -137,6 +137,7 @@ export interface OverrideFloors {
   mewsSevereMinScore: number;
   criticalShockIndexMinScore: number;
   criticalLactateMinScore: number;
+  elevatedLactateMinScore: number;
 }
 
 export interface AttentionPriorityConfig {
@@ -277,6 +278,7 @@ export const DEFAULT_ATTENTION_CONFIG: AttentionPriorityConfig = {
     mewsSevereMinScore: 70,
     criticalShockIndexMinScore: 75,
     criticalLactateMinScore: 75,
+    elevatedLactateMinScore: 35,
   },
 };
 

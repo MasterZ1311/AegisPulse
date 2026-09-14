@@ -45,6 +45,33 @@ export * from './schemas/timeline';
 export * from './schemas/telemetry-stream';
 
 // ============================================================================
+// 6.3 Sensor Adapter, Readings & Operational Status Schemas
+// ============================================================================
+export * from './schemas/sensors';
+
+// ============================================================================
+// 6.4 Information Decay, Freshness & Epistemic Uncertainty Schemas
+// ============================================================================
+export * from './schemas/decay';
+
+// ============================================================================
+// 6.5 Attention & Notification Event Policy Schemas
+// ============================================================================
+export * from './schemas/policy';
+
+// ============================================================================
+// 6.6 Human Action Workflow & Verification Schemas
+// ============================================================================
+export * from './schemas/workflow';
+
+// ============================================================================
+// 6.7 AI Clinical Copilot & Evidence Schemas
+// ============================================================================
+export * from './schemas/copilot';
+
+
+
+// ============================================================================
 // 7. Backward Compatibility & Integration Aliases
 // ============================================================================
 import { QualityStatus, QualityStatusEnum, ObservationSource } from './enums';
@@ -102,6 +129,13 @@ import {
   HealthCheckResponseSchema,
 } from './schemas/events';
 import { UnifiedTimelineEventSchema } from './schemas/timeline';
+import { SensorReadingSchema, SensorStatusSchema } from './schemas/sensors';
+import { InformationFreshnessSchema } from './schemas/decay';
+import {
+  StructuredEvidencePackageSchema,
+  CopilotResponseSchema,
+  CopilotAuditRecordSchema,
+} from './schemas/copilot';
 
 export const validateVitalMeasurement = (data: unknown) =>
   VitalMeasurementSchema.safeParse(data);
@@ -159,3 +193,23 @@ export const validateSBARReport = (data: unknown) =>
 
 export const validateHealthCheck = (data: unknown) =>
   HealthCheckResponseSchema.safeParse(data);
+
+export const validateSensorReading = (data: unknown) =>
+  SensorReadingSchema.safeParse(data);
+
+export const validateSensorStatus = (data: unknown) =>
+  SensorStatusSchema.safeParse(data);
+
+export const validateInformationFreshness = (data: unknown) =>
+  InformationFreshnessSchema.safeParse(data);
+
+export const validateStructuredEvidencePackage = (data: unknown) =>
+  StructuredEvidencePackageSchema.safeParse(data);
+
+export const validateCopilotResponse = (data: unknown) =>
+  CopilotResponseSchema.safeParse(data);
+
+export const validateCopilotAuditRecord = (data: unknown) =>
+  CopilotAuditRecordSchema.safeParse(data);
+
+

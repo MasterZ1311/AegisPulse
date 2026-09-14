@@ -9,10 +9,12 @@ import {
 import { timelineService } from '../../services/timeline.service';
 import { validateRequest } from '../../middleware/validator';
 import { authenticate } from '../../middleware/auth';
+import { requirePatientWardAccess } from '../../middleware/rbac';
 
 export const timelineRouter = Router({ mergeParams: true });
 
 timelineRouter.use(authenticate({ optional: true }));
+timelineRouter.use(requirePatientWardAccess());
 
 const TimelineEventCreateSchema = z
   .object({

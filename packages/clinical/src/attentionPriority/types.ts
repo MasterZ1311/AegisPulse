@@ -9,7 +9,10 @@ import type {
   Provenance,
   QualityStatus,
   VitalType,
+  SensorReading,
+  InformationFreshness,
 } from '@aegispulse/types';
+
 
 /**
  * Expected baseline physiological parameters for an individual patient.
@@ -48,13 +51,19 @@ export interface PatientStateInput {
   bedNumber: string;
   currentTimestamp?: number;
   observations: Observation[];
+  sensorReadings?: SensorReading[];
   baseline?: PatientBaselineVitals;
   clinicalContext?: ClinicalContext;
   labs?: LaboratoryResult[];
   latestSignalQuality?: SignalQuality;
   avpu?: 'A' | 'V' | 'P' | 'U';
   lastTrustedObservationTimestamp?: number;
+  lastManualObservationTimestamp?: number;
+  lastCameraObservationTimestamp?: number;
+  expectedMonitoringIntervalMinutes?: number;
 }
+
+
 
 /**
  * Audit-ready component score conforming to the deterministic component contract.
@@ -126,5 +135,13 @@ export interface AttentionPriorityResult {
   mewsComponent: number;
   biomarkerComponent: number;
   informationAgeMinutes: number;
+  freshnessScore: number; // 0 (stale) to 100 (instantaneously fresh)
+  uncertaintyIndex: number; // 0.0 (complete certainty) to 1.0 (maximum uncertainty)
+  lastTrustedTimestamp?: number;
+  lastManualTimestamp?: number;
+  lastCameraTimestamp?: number;
+  expectedMonitoringIntervalMinutes: number;
+  informationFreshness?: InformationFreshness;
   provenance: Provenance;
 }
+

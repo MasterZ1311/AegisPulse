@@ -10,10 +10,12 @@ import { wardStateService } from '../../services/ward-state.service';
 import { timelineService } from '../../services/timeline.service';
 import { validateRequest } from '../../middleware/validator';
 import { authenticate } from '../../middleware/auth';
+import { requirePatientWardAccess } from '../../middleware/rbac';
 
 export const labsRouter = Router({ mergeParams: true });
 
 labsRouter.use(authenticate({ optional: true }));
+labsRouter.use(requirePatientWardAccess());
 
 const IngestLabSchema = z
   .object({

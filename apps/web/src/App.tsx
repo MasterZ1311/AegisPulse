@@ -4,9 +4,15 @@ import {
   AegisPulseStreamClient,
   type StreamConnectionStatus,
 } from './services/stream-client';
+import {
+  offlineSyncQueue,
+  type WardConnectivityState,
+} from './services/offline-sync-queue';
 import { WardHeader } from './components/WardHeader';
 import { AttentionQueue } from './components/AttentionQueue';
 import { PatientDetailPanel } from './components/PatientDetailPanel';
+import { DiagnosticsModal } from './components/DiagnosticsModal';
+import { DemoScrubber } from './components/DemoScrubber';
 import { INITIAL_WARD_PATIENTS } from './data/ward-simulated-data';
 import type { WardPatientRadarState } from './types/radar';
 
@@ -18,6 +24,9 @@ export default function App() {
   const [activeScenario, setActiveScenario] = useState<string>('SINGLE_PATIENT_DETERIORATION');
   const [streamStatus, setStreamStatus] = useState<StreamConnectionStatus>('CONNECTING');
   const [streamSeq, setStreamSeq] = useState<number>(0);
+  const [connectivityState, setConnectivityState] = useState<WardConnectivityState>('ONLINE');
+  const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState<boolean>(false);
   const [_recentEvents, setRecentEvents] = useState<TelemetryStreamEnvelope[]>([]);
   const [_health, setHealth] = useState<HealthCheckResponse | null>(null);
   const [mobileView, setMobileView] = useState<'QUEUE' | 'DETAIL'>('QUEUE');
@@ -57,9 +66,23 @@ export default function App() {
       heartbeatIntervalMs: 15000,
     });
 
+    // Offline Sync Queue Subscription
+    const unsubOffline = offlineSyncQueue.onStateChange((state, count) => {
+      setConnectivityState(state);
+      setPendingSyncCount(count);
+    });
+
     client.onStatusChange((status) => {
       setStreamStatus(status);
       setStreamSeq(client.getLastSequenceNumber());
+      if (status === 'CONNECTED') {
+        offlineSyncQueue.setState('ONLINE');
+        offlineSyncQueue.flush(client.getLastSequenceNumber());
+      } else if (status === 'RECONNECTING') {
+        offlineSyncQueue.setState('DEGRADED');
+      } else if (status === 'DISCONNECTED') {
+        offlineSyncQueue.setState('OFFLINE');
+      }
     });
 
     client.onSnapshot((snapshot) => {
@@ -178,6 +201,7 @@ export default function App() {
 
     return () => {
       clearInterval(healthInterval);
+      unsubOffline();
       client.disconnect();
     };
   }, []);
@@ -185,6 +209,13 @@ export default function App() {
   // 2. Action Handlers
   const handleAcknowledge = useCallback((patientId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+
+    offlineSyncQueue.enqueueAcknowledgement(
+      patientId,
+      `alert-${patientId}-${Date.now()}`,
+      'RN Rachel Hayes',
+      'Nurse Rachel Hayes, RN reviewed radar alert at bedside station.'
+    );
 
     setPatients((prev) =>
       prev.map((p) =>
@@ -215,6 +246,14 @@ export default function App() {
   }, []);
 
   const handleLogAssessment = useCallback((patientId: string, note: string) => {
+    offlineSyncQueue.enqueueClinicalAction(
+      patientId,
+      'MANUAL_OBSERVATION',
+      'Bedside Physical Assessment Logged',
+      note,
+      'INFO'
+    );
+
     setPatients((prev) =>
       prev.map((p) =>
         p.patientId === patientId
@@ -243,6 +282,14 @@ export default function App() {
   }, []);
 
   const handleEscalate = useCallback((patientId: string) => {
+    offlineSyncQueue.enqueueClinicalAction(
+      patientId,
+      'RECOMMENDED_ACTION',
+      'Rapid Response Team (RRT) Activated',
+      'Medical Emergency Team paged for immediate bedside critical care consultation.',
+      'CRITICAL'
+    );
+
     setPatients((prev) =>
       prev.map((p) =>
         p.patientId === patientId
@@ -345,6 +392,8 @@ export default function App() {
       } else if (e.key === 'a' || e.key === 'A') {
         const target = sortedPatients[focusedPatientIndex];
         if (target) handleAcknowledge(target.patientId);
+      } else if (e.key === 'd' || e.key === 'D') {
+        setIsDiagnosticsOpen((prev) => !prev);
       }
     };
 
@@ -361,6 +410,8 @@ export default function App() {
         shiftHours="Day Shift 07:00 - 19:00"
         streamStatus={streamStatus}
         streamSeq={streamSeq}
+        connectivityState={connectivityState}
+        pendingSyncCount={pendingSyncCount}
         totalPatients={patients.length}
         criticalCount={criticalCount}
         evaluateCount={evaluateCount}
@@ -368,6 +419,28 @@ export default function App() {
         lowCount={lowCount}
         activeScenario={activeScenario}
         onScenarioChange={handleScenarioChange}
+        onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
+      />
+
+      {/* Diagnostics Modal */}
+      <DiagnosticsModal
+        isOpen={isDiagnosticsOpen}
+        onClose={() => setIsDiagnosticsOpen(false)}
+        streamStatus={streamStatus}
+        streamSeq={streamSeq}
+        pendingSyncCount={pendingSyncCount}
+      />
+
+      {/* Flagship Deterministic Demo Scrubber */}
+      <DemoScrubber
+        onApplyStep={(updatedPatients, targetPatientId) => {
+          setPatients(updatedPatients);
+          if (targetPatientId) {
+            setSelectedPatientId(targetPatientId);
+            const idx = updatedPatients.findIndex((p) => p.patientId === targetPatientId);
+            if (idx !== -1) setFocusedPatientIndex(idx);
+          }
+        }}
       />
 
       {/* Mobile/Tablet View Switcher (< lg screens) */}

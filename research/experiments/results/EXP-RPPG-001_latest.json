@@ -1,0 +1,348 @@
+{
+  "experimentId": "EXP-RPPG-001",
+  "name": "Resting Baseline rPPG Accuracy & Optical Convergence",
+  "timestamp": "2026-09-14T15:56:20.742Z",
+  "executionDurationMs": 126,
+  "dataset": {
+    "slug": "ubfc-rppg",
+    "name": "UBFC-rPPG (University of Bourgogne Franche-Comté)",
+    "source": "University of Bourgogne Franche-Comté (LE2I, France)",
+    "license": "Academic Research Non-Commercial License",
+    "accessType": "REGISTRATION_REQUIRED",
+    "cohortDescription": "Healthy undergraduate and graduate student volunteers performing resting and synthetic cognitive stress tasks (mental arithmetic).",
+    "totalSubjects": 56,
+    "acuityLevel": "SIMULATED_STRESS",
+    "fitzpatrickDocumented": true,
+    "knownLimitations": [
+      "Restricted age cohort of young healthy adults (19-32 years); zero representation of cardiovascular pathology, arrhythmias, or pediatric/geriatric physiology.",
+      "Near-zero representation of darker skin phototypes (Fitzpatrick V-VI).",
+      "Controlled indoor artificial fluorescent lighting; lacks natural sunlight shifts or high-glare environments.",
+      "Stationary seated posture; head motion is limited to minor nodding and conversational gestures."
+    ],
+    "clinicalClaimBoundary": "UBFC-rPPG benchmark results can NEVER be cited to substantiate clinical diagnostic accuracy, critical care reliability, or suitability across racially diverse patient populations."
+  },
+  "primaryMetrics": {
+    "sampleCount": 7,
+    "validCount": 7,
+    "meanAbsoluteError": 1.4,
+    "rootMeanSquareError": 1.5,
+    "pearsonCorrelation": 0.998,
+    "spearmanCorrelation": 1,
+    "failureRatePercent": 0,
+    "coveragePercent": 100
+  },
+  "confidenceCalibration": {
+    "expectedCalibrationError": 0,
+    "maximumCalibrationError": 0,
+    "brierScore": 0,
+    "bins": [
+      {
+        "binIndex": 0,
+        "confidenceRange": [
+          0,
+          0.2
+        ],
+        "sampleCount": 0,
+        "meanConfidence": 0.1,
+        "empiricalAccuracy": 0,
+        "meanAbsoluteError": 0,
+        "calibrationGap": 0
+      },
+      {
+        "binIndex": 1,
+        "confidenceRange": [
+          0.2,
+          0.4
+        ],
+        "sampleCount": 0,
+        "meanConfidence": 0.30000000000000004,
+        "empiricalAccuracy": 0,
+        "meanAbsoluteError": 0,
+        "calibrationGap": 0
+      },
+      {
+        "binIndex": 2,
+        "confidenceRange": [
+          0.4,
+          0.6000000000000001
+        ],
+        "sampleCount": 0,
+        "meanConfidence": 0.5,
+        "empiricalAccuracy": 0,
+        "meanAbsoluteError": 0,
+        "calibrationGap": 0
+      },
+      {
+        "binIndex": 3,
+        "confidenceRange": [
+          0.6000000000000001,
+          0.8
+        ],
+        "sampleCount": 0,
+        "meanConfidence": 0.7000000000000001,
+        "empiricalAccuracy": 0,
+        "meanAbsoluteError": 0,
+        "calibrationGap": 0
+      },
+      {
+        "binIndex": 4,
+        "confidenceRange": [
+          0.8,
+          1
+        ],
+        "sampleCount": 7,
+        "meanConfidence": 1,
+        "empiricalAccuracy": 1,
+        "meanAbsoluteError": 1.4,
+        "calibrationGap": 0
+      }
+    ],
+    "diagnosis": "WELL_CALIBRATED"
+  },
+  "algorithmComparisons": {
+    "GREEN": {
+      "metrics": {
+        "sampleCount": 7,
+        "validCount": 7,
+        "meanAbsoluteError": 1.33,
+        "rootMeanSquareError": 1.42,
+        "pearsonCorrelation": 0.998,
+        "spearmanCorrelation": 1,
+        "failureRatePercent": 0,
+        "coveragePercent": 100
+      },
+      "calibration": {
+        "expectedCalibrationError": 0,
+        "maximumCalibrationError": 0,
+        "brierScore": 0,
+        "bins": [
+          {
+            "binIndex": 0,
+            "confidenceRange": [
+              0,
+              0.2
+            ],
+            "sampleCount": 0,
+            "meanConfidence": 0.1,
+            "empiricalAccuracy": 0,
+            "meanAbsoluteError": 0,
+            "calibrationGap": 0
+          },
+          {
+            "binIndex": 1,
+            "confidenceRange": [
+              0.2,
+              0.4
+            ],
+            "sampleCount": 0,
+            "meanConfidence": 0.30000000000000004,
+            "empiricalAccuracy": 0,
+            "meanAbsoluteError": 0,
+            "calibrationGap": 0
+          },
+          {
+            "binIndex": 2,
+            "confidenceRange": [
+              0.4,
+              0.6000000000000001
+            ],
+            "sampleCount": 0,
+            "meanConfidence": 0.5,
+            "empiricalAccuracy": 0,
+            "meanAbsoluteError": 0,
+            "calibrationGap": 0
+          },
+          {
+            "binIndex": 3,
+            "confidenceRange": [
+              0.6000000000000001,
+              0.8
+            ],
+            "sampleCount": 0,
+            "meanConfidence": 0.7000000000000001,
+            "empiricalAccuracy": 0,
+            "meanAbsoluteError": 0,
+            "calibrationGap": 0
+          },
+          {
+            "binIndex": 4,
+            "confidenceRange": [
+              0.8,
+              1
+            ],
+            "sampleCount": 7,
+            "meanConfidence": 1,
+            "empiricalAccuracy": 1,
+            "meanAbsoluteError": 1.33,
+            "calibrationGap": 0
+          }
+        ],
+        "diagnosis": "WELL_CALIBRATED"
+      },
+      "throughputFps": 55371
+    },
+    "CHROM": {
+      "metrics": {
+        "sampleCount": 7,
+        "validCount": 7,
+        "meanAbsoluteError": 1.37,
+        "rootMeanSquareError": 1.46,
+        "pearsonCorrelation": 0.998,
+        "spearmanCorrelation": 1,
+        "failureRatePercent": 0,
+        "coveragePercent": 100
+      },
+      "calibration": {
+        "expectedCalibrationError": 0,
+        "maximumCalibrationError": 0,
+        "brierScore": 0,
+        "bins": [
+          {
+            "binIndex": 0,
+            "confidenceRange": [
+              0,
+              0.2
+            ],
+            "sampleCount": 0,
+            "meanConfidence": 0.1,
+            "empiricalAccuracy": 0,
+            "meanAbsoluteError": 0,
+            "calibrationGap": 0
+          },
+          {
+            "binIndex": 1,
+            "confidenceRange": [
+              0.2,
+              0.4
+            ],
+            "sampleCount": 0,
+            "meanConfidence": 0.30000000000000004,
+            "empiricalAccuracy": 0,
+            "meanAbsoluteError": 0,
+            "calibrationGap": 0
+          },
+          {
+            "binIndex": 2,
+            "confidenceRange": [
+              0.4,
+              0.6000000000000001
+            ],
+            "sampleCount": 0,
+            "meanConfidence": 0.5,
+            "empiricalAccuracy": 0,
+            "meanAbsoluteError": 0,
+            "calibrationGap": 0
+          },
+          {
+            "binIndex": 3,
+            "confidenceRange": [
+              0.6000000000000001,
+              0.8
+            ],
+            "sampleCount": 0,
+            "meanConfidence": 0.7000000000000001,
+            "empiricalAccuracy": 0,
+            "meanAbsoluteError": 0,
+            "calibrationGap": 0
+          },
+          {
+            "binIndex": 4,
+            "confidenceRange": [
+              0.8,
+              1
+            ],
+            "sampleCount": 7,
+            "meanConfidence": 1,
+            "empiricalAccuracy": 1,
+            "meanAbsoluteError": 1.37,
+            "calibrationGap": 0
+          }
+        ],
+        "diagnosis": "WELL_CALIBRATED"
+      },
+      "throughputFps": 136875
+    },
+    "POS": {
+      "metrics": {
+        "sampleCount": 7,
+        "validCount": 7,
+        "meanAbsoluteError": 1.4,
+        "rootMeanSquareError": 1.5,
+        "pearsonCorrelation": 0.998,
+        "spearmanCorrelation": 1,
+        "failureRatePercent": 0,
+        "coveragePercent": 100
+      },
+      "calibration": {
+        "expectedCalibrationError": 0,
+        "maximumCalibrationError": 0,
+        "brierScore": 0,
+        "bins": [
+          {
+            "binIndex": 0,
+            "confidenceRange": [
+              0,
+              0.2
+            ],
+            "sampleCount": 0,
+            "meanConfidence": 0.1,
+            "empiricalAccuracy": 0,
+            "meanAbsoluteError": 0,
+            "calibrationGap": 0
+          },
+          {
+            "binIndex": 1,
+            "confidenceRange": [
+              0.2,
+              0.4
+            ],
+            "sampleCount": 0,
+            "meanConfidence": 0.30000000000000004,
+            "empiricalAccuracy": 0,
+            "meanAbsoluteError": 0,
+            "calibrationGap": 0
+          },
+          {
+            "binIndex": 2,
+            "confidenceRange": [
+              0.4,
+              0.6000000000000001
+            ],
+            "sampleCount": 0,
+            "meanConfidence": 0.5,
+            "empiricalAccuracy": 0,
+            "meanAbsoluteError": 0,
+            "calibrationGap": 0
+          },
+          {
+            "binIndex": 3,
+            "confidenceRange": [
+              0.6000000000000001,
+              0.8
+            ],
+            "sampleCount": 0,
+            "meanConfidence": 0.7000000000000001,
+            "empiricalAccuracy": 0,
+            "meanAbsoluteError": 0,
+            "calibrationGap": 0
+          },
+          {
+            "binIndex": 4,
+            "confidenceRange": [
+              0.8,
+              1
+            ],
+            "sampleCount": 7,
+            "meanConfidence": 1,
+            "empiricalAccuracy": 1,
+            "meanAbsoluteError": 1.4,
+            "calibrationGap": 0
+          }
+        ],
+        "diagnosis": "WELL_CALIBRATED"
+      },
+      "throughputFps": 46583
+    }
+  },
+  "disclaimer": "Never make clinical claims from a dataset without documenting its population and limitations. Investigational algorithm research only."
+}
