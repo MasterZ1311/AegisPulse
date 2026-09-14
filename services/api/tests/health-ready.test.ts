@@ -53,4 +53,20 @@ describe('System Telemetry & Health Probes', () => {
     expect(res.body).toHaveProperty('requestId');
     expect(res.body).toHaveProperty('instance');
   });
+
+  it('serves valid OpenAPI 3.0.3 specification on /api/docs/openapi.json', async () => {
+    const res = await request(app).get('/api/docs/openapi.json');
+    expect(res.status).toBe(200);
+    expect(res.body.openapi).toBe('3.0.3');
+    expect(res.body.info.title).toContain('AegisPulse');
+    expect(res.body).toHaveProperty('paths');
+  });
+
+  it('serves interactive Swagger UI HTML documentation on /api/docs', async () => {
+    const res = await request(app).get('/api/docs');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('text/html');
+    expect(res.text).toContain('swagger-ui');
+  });
 });
+
