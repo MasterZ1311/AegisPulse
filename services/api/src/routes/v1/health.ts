@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import type { HealthCheckResponse } from '@aegispulse/types';
 import { wardStateService } from '../../services/ward-state.service';
 import { timelineService } from '../../services/timeline.service';
+import { eventBroadcaster } from '../../stream/event-broadcaster';
 
 export const healthRouter = Router();
 
@@ -53,6 +54,8 @@ healthRouter.get('/ready', (_req: Request, res: Response) => {
         wardSimulator: 'ONLINE',
         clinicalIntelligence: 'ONLINE',
         timelineRepository: 'ONLINE',
+        realtimeStream: 'ONLINE',
+        currentStreamSequence: eventBroadcaster.getCurrentSequence(),
         activePatients: patientCount,
         indexedTimelinePatients: timelinePatientCount,
         simulationClock: simStatus.clock,

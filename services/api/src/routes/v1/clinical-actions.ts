@@ -9,6 +9,7 @@ import {
 import { createActionTimelineEvent } from '@aegispulse/clinical';
 import { wardStateService } from '../../services/ward-state.service';
 import { timelineService } from '../../services/timeline.service';
+import { telemetryPipelineService } from '../../services/telemetry-pipeline.service';
 import { validateRequest } from '../../middleware/validator';
 import { authenticate } from '../../middleware/auth';
 import { requireRole } from '../../middleware/rbac';
@@ -97,6 +98,21 @@ clinicalActionsRouter.patch(
       actorUserId: userId,
     });
     timelineService.addEvent(timelineEvent);
+    telemetryPipelineService.processTimelineEvent(timelineEvent, patient.wardId);
+
+    if (body.status === 'COMPLETED') {
+      telemetryPipelineService.processAcknowledgement(
+        {
+          id: `ack-action-${updated.id}`,
+          patientId,
+          alertId: updated.id,
+          acknowledgedByUserId: userId,
+          acknowledgedAt: Date.now(),
+          reason: body.outcomeNotes || `Completed action: ${updated.title}`,
+        },
+        patient.wardId
+      );
+    }
 
     res.status(200).json({
       message: `Clinical action marked as ${body.status}.`,

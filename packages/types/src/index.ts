@@ -40,6 +40,11 @@ export * from './schemas/events';
 export * from './schemas/timeline';
 
 // ============================================================================
+// 6.2 Real-Time Telemetry & Event Stream Schemas
+// ============================================================================
+export * from './schemas/telemetry-stream';
+
+// ============================================================================
 // 7. Backward Compatibility & Integration Aliases
 // ============================================================================
 import { QualityStatus, QualityStatusEnum, ObservationSource } from './enums';

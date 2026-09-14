@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createAcknowledgementTimelineEvent } from '@aegispulse/clinical';
 import { wardStateService } from '../../services/ward-state.service';
 import { timelineService } from '../../services/timeline.service';
+import { telemetryPipelineService } from '../../services/telemetry-pipeline.service';
 import { validateRequest } from '../../middleware/validator';
 import { authenticate } from '../../middleware/auth';
 import { requireRole } from '../../middleware/rbac';
@@ -45,6 +46,7 @@ acknowledgementsRouter.post(
     };
 
     wardStateService.addAcknowledgement(record);
+    telemetryPipelineService.processAcknowledgement(record, patient.wardId);
 
     // Ingest into timeline
     const timelineEvent = createAcknowledgementTimelineEvent({
@@ -57,6 +59,7 @@ acknowledgementsRouter.post(
       timestamp: now,
     });
     timelineService.addEvent(timelineEvent);
+    telemetryPipelineService.processTimelineEvent(timelineEvent, patient.wardId);
 
     res.status(201).json({
       message: 'Alert / escalation acknowledged successfully.',

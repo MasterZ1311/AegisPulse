@@ -14,26 +14,37 @@ attentionPriorityRouter.use(authenticate({ optional: true }));
 const apsEngine = new AttentionPriorityEngine();
 const explainEngine = new ExplainabilityEngine();
 
+function expandObservations(rawObs: any[], patient: any): any[] {
+  const result: any[] = [];
+  for (const ro of rawObs) {
+    const base = {
+      patientId: patient.id,
+      bedId: patient.bedId,
+      timestamp: ro.timestamp,
+      source: ro.source,
+      confidence: ro.confidence,
+      qualityStatus: ro.qualityState,
+    };
+    if (ro.heartRate !== undefined) result.push({ ...base, id: `${ro.id}-hr`, vitalType: 'HEART_RATE', value: ro.heartRate, unit: 'BPM' });
+    if (ro.respiratoryRate !== undefined) result.push({ ...base, id: `${ro.id}-rr`, vitalType: 'RESPIRATORY_RATE', value: ro.respiratoryRate, unit: 'BREATHS_PER_MINUTE' });
+    if (ro.systolicBP !== undefined) result.push({ ...base, id: `${ro.id}-sbp`, vitalType: 'SYSTOLIC_BP', value: ro.systolicBP, unit: 'MMHG' });
+    if (ro.diastolicBP !== undefined) result.push({ ...base, id: `${ro.id}-dbp`, vitalType: 'DIASTOLIC_BP', value: ro.diastolicBP, unit: 'MMHG' });
+    if (ro.spo2 !== undefined) result.push({ ...base, id: `${ro.id}-spo2`, vitalType: 'OXYGEN_SATURATION', value: ro.spo2, unit: 'PERCENT' });
+    if (ro.temperature !== undefined) result.push({ ...base, id: `${ro.id}-temp`, vitalType: 'BODY_TEMPERATURE', value: ro.temperature, unit: 'CELSIUS' });
+    if (ro.heartRate !== undefined && ro.systolicBP !== undefined && ro.systolicBP > 0) {
+      result.push({ ...base, id: `${ro.id}-si`, vitalType: 'SHOCK_INDEX', value: Number((ro.heartRate / ro.systolicBP).toFixed(2)), unit: 'RATIO' });
+    }
+  }
+  return result;
+}
+
 // Patient Attention Priority Assessment
 attentionPriorityRouter.get('/patients/:patientId/attention-priority', (req: Request, res: Response) => {
   const patientId = String(req.params.patientId);
   const patient = wardStateService.getPatient(patientId);
   const rawObs = wardStateService.getObservations(patient.id);
   const labs = wardStateService.getLabs(patient.id);
-
-  // Convert raw observations into Observation[] format expected by engine
-  const observations: any[] = rawObs.map((ro) => ({
-    id: ro.id,
-    patientId: patient.id,
-    bedId: patient.bedId,
-    timestamp: ro.timestamp,
-    source: ro.source,
-    vitalType: ro.heartRate !== undefined ? 'HEART_RATE' : 'RESPIRATORY_RATE',
-    value: ro.heartRate ?? ro.respiratoryRate ?? ro.systolicBP ?? 0,
-    unit: ro.heartRate !== undefined ? 'BPM' : 'BREATHS_PER_MINUTE',
-    confidence: ro.confidence,
-    qualityStatus: ro.qualityState,
-  }));
+  const observations = expandObservations(rawObs, patient);
 
   const state: PatientStateInput = {
     patientId: patient.id,
@@ -77,19 +88,7 @@ attentionPriorityRouter.get('/wards/:wardId/radar', (req: Request, res: Response
   const radarItems = patients.map((patient) => {
     const rawObs = wardStateService.getObservations(patient.id);
     const labs = wardStateService.getLabs(patient.id);
-
-    const observations: any[] = rawObs.map((ro) => ({
-      id: ro.id,
-      patientId: patient.id,
-      bedId: patient.bedId,
-      timestamp: ro.timestamp,
-      source: ro.source,
-      vitalType: ro.heartRate !== undefined ? 'HEART_RATE' : 'RESPIRATORY_RATE',
-      value: ro.heartRate ?? ro.respiratoryRate ?? ro.systolicBP ?? 0,
-      unit: ro.heartRate !== undefined ? 'BPM' : 'BREATHS_PER_MINUTE',
-      confidence: ro.confidence,
-      qualityStatus: ro.qualityState,
-    }));
+    const observations = expandObservations(rawObs, patient);
 
     const state: PatientStateInput = {
       patientId: patient.id,

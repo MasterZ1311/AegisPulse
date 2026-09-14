@@ -1,211 +1,395 @@
-import { useEffect, useState } from 'react';
-import type { HealthCheckResponse } from '@aegispulse/types';
+import { useEffect, useState, useCallback } from 'react';
+import type { HealthCheckResponse, TelemetryStreamEnvelope } from '@aegispulse/types';
 import {
-  Activity,
-  HeartPulse,
-  ShieldCheck,
-  Wifi,
-  WifiOff,
-  Server,
-  Clock,
-  Layers,
-  Sparkles,
-  ArrowRight,
-} from 'lucide-react';
+  AegisPulseStreamClient,
+  type StreamConnectionStatus,
+} from './services/stream-client';
+import { WardHeader } from './components/WardHeader';
+import { AttentionQueue } from './components/AttentionQueue';
+import { PatientDetailModal } from './components/PatientDetailModal';
+import { INITIAL_WARD_PATIENTS } from './data/ward-simulated-data';
+import type { WardPatientRadarState } from './types/radar';
 
 export default function App() {
-  const [health, setHealth] = useState<HealthCheckResponse | null>(null);
-  const [loadingHealth, setLoadingHealth] = useState<boolean>(true);
-  const [healthError, setHealthError] = useState<string | null>(null);
+  const [patients, setPatients] = useState<WardPatientRadarState[]>(INITIAL_WARD_PATIENTS);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [focusedPatientIndex, setFocusedPatientIndex] = useState<number>(0);
+  const [activeScenario, setActiveScenario] = useState<string>('SINGLE_PATIENT_DETERIORATION');
+  const [streamStatus, setStreamStatus] = useState<StreamConnectionStatus>('CONNECTING');
+  const [streamSeq, setStreamSeq] = useState<number>(0);
+  const [_recentEvents, setRecentEvents] = useState<TelemetryStreamEnvelope[]>([]);
+  const [_health, setHealth] = useState<HealthCheckResponse | null>(null);
 
-  const checkHealth = async () => {
-    try {
-      setLoadingHealth(true);
-      setHealthError(null);
-      const res = await fetch('/health');
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      const data: HealthCheckResponse = await res.json();
-      setHealth(data);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to reach API service';
-      console.error('API health check failed:', err);
-      setHealthError(message);
-      setHealth(null);
-    } finally {
-      setLoadingHealth(false);
-    }
-  };
+  // Derive counts for ward header
+  const criticalCount = patients.filter((p) => p.category === 'CRITICAL_REVIEW').length;
+  const evaluateCount = patients.filter((p) => p.category === 'EVALUATE').length;
+  const watchCount = patients.filter((p) => p.category === 'WATCH').length;
+  const lowCount = patients.filter((p) => p.category === 'LOW').length;
 
+  const selectedPatient = patients.find((p) => p.patientId === selectedPatientId) || null;
+
+  // 1. Health Probe Polling & Real-Time Telemetry Stream Client
   useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const res = await fetch('/health');
+        if (res.ok) {
+          const data: HealthCheckResponse = await res.json();
+          setHealth(data);
+        }
+      } catch {
+        // Silently handled
+      }
+    };
     checkHealth();
-    const interval = setInterval(checkHealth, 10000);
-    return () => clearInterval(interval);
+    const healthInterval = setInterval(checkHealth, 10000);
+
+    // Initialize Stream Client (WebSocket with SSE fallback)
+    const client = new AegisPulseStreamClient({
+      wardId: 'WARD-4B',
+      heartbeatIntervalMs: 15000,
+    });
+
+    client.onStatusChange((status) => {
+      setStreamStatus(status);
+      setStreamSeq(client.getLastSequenceNumber());
+    });
+
+    client.onSnapshot((snapshot) => {
+      if (snapshot.radar && Array.isArray(snapshot.radar)) {
+        setPatients((prev) =>
+          prev.map((p) => {
+            const found = snapshot.radar.find((r: any) => r.patientId === p.patientId);
+            return found
+              ? {
+                  ...p,
+                  apsScore: found.apsScore ?? p.apsScore,
+                  category: found.category ?? p.category,
+                  whyNowSummary: found.topReason ?? p.whyNowSummary,
+                }
+              : p;
+          })
+        );
+      }
+    });
+
+    client.on('OBSERVATION_UPDATED', (env) => {
+      setStreamSeq(env.seq);
+      setRecentEvents((prev) => [env, ...prev].slice(0, 10));
+
+      const data = env.data;
+      if (data && data.patientId) {
+        setPatients((prev) =>
+          prev.map((item) =>
+            item.patientId === data.patientId
+              ? {
+                  ...item,
+                  vitals: {
+                    ...item.vitals,
+                    heartRate: data.heartRate ?? item.vitals.heartRate,
+                    respiratoryRate: data.respiratoryRate ?? item.vitals.respiratoryRate,
+                    spo2: data.spo2 ?? item.vitals.spo2,
+                    systolicBP: data.systolicBP ?? item.vitals.systolicBP,
+                    diastolicBP: data.diastolicBP ?? item.vitals.diastolicBP,
+                  },
+                  lastTrustedObservationIso: new Date().toISOString(),
+                  lastTrustedElapsedMinutes: 0,
+                  isStale: false,
+                }
+              : item
+          )
+        );
+      }
+    });
+
+    client.on('APS_UPDATED', (env) => {
+      setStreamSeq(env.seq);
+      setRecentEvents((prev) => [env, ...prev].slice(0, 10));
+
+      const data = env.data;
+      if (data && data.patientId) {
+        setPatients((prev) =>
+          prev.map((item) =>
+            item.patientId === data.patientId
+              ? {
+                  ...item,
+                  apsScore: data.apsScore ?? item.apsScore,
+                  category: data.category ?? item.category,
+                  whyNowSummary: data.topReason ?? item.whyNowSummary,
+                }
+              : item
+          )
+        );
+      }
+    });
+
+    client.on('SIGNAL_STATUS_CHANGED', (env) => {
+      setStreamSeq(env.seq);
+      setRecentEvents((prev) => [env, ...prev].slice(0, 10));
+
+      const data = env.data;
+      if (data && data.patientId) {
+        setPatients((prev) =>
+          prev.map((item) =>
+            item.patientId === data.patientId
+              ? {
+                  ...item,
+                  signalQuality: {
+                    ...item.signalQuality,
+                    confidencePercent: data.confidencePercent ?? item.signalQuality.confidencePercent,
+                    motionDetected: data.motionDetected ?? item.signalQuality.motionDetected,
+                  },
+                }
+              : item
+          )
+        );
+      }
+    });
+
+    client.on('ACTION_ACKNOWLEDGED', (env) => {
+      setStreamSeq(env.seq);
+      setRecentEvents((prev) => [env, ...prev].slice(0, 10));
+
+      const data = env.data;
+      if (data && data.patientId) {
+        setPatients((prev) =>
+          prev.map((item) =>
+            item.patientId === data.patientId
+              ? {
+                  ...item,
+                  isAcknowledged: true,
+                  lastAcknowledgedAt: new Date().toISOString(),
+                  lastAcknowledgedBy: data.acknowledgedBy || 'RN Rachel Hayes',
+                }
+              : item
+          )
+        );
+      }
+    });
+
+    client.connect();
+
+    return () => {
+      clearInterval(healthInterval);
+      client.disconnect();
+    };
   }, []);
 
+  // 2. Action Handlers
+  const handleAcknowledge = useCallback((patientId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
+    setPatients((prev) =>
+      prev.map((p) =>
+        p.patientId === patientId
+          ? {
+              ...p,
+              isAcknowledged: true,
+              lastAcknowledgedAt: new Date().toISOString(),
+              lastAcknowledgedBy: 'RN Rachel Hayes',
+              timeline: [
+                {
+                  id: `TL-ACK-${Date.now()}`,
+                  patientId,
+                  timestamp: Date.now(),
+                  eventType: 'ACKNOWLEDGEMENT',
+                  title: 'Priority Alert Acknowledged by Primary Nurse',
+                  description: 'Nurse Rachel Hayes, RN reviewed radar alert at bedside station.',
+                  severity: 'INFO',
+                  source: 'NURSE_MANUAL',
+                  isTrusted: true,
+                },
+                ...p.timeline,
+              ],
+            }
+          : p
+      )
+    );
+  }, []);
+
+  const handleLogAssessment = useCallback((patientId: string, note: string) => {
+    setPatients((prev) =>
+      prev.map((p) =>
+        p.patientId === patientId
+          ? {
+              ...p,
+              lastTrustedElapsedMinutes: 0,
+              lastTrustedObservationIso: new Date().toISOString(),
+              timeline: [
+                {
+                  id: `TL-ASSESS-${Date.now()}`,
+                  patientId,
+                  timestamp: Date.now(),
+                  eventType: 'MANUAL_OBSERVATION',
+                  title: 'Bedside Physical Assessment Logged',
+                  description: note,
+                  severity: 'INFO',
+                  source: 'NURSE_MANUAL',
+                  isTrusted: true,
+                },
+                ...p.timeline,
+              ],
+            }
+          : p
+      )
+    );
+  }, []);
+
+  const handleEscalate = useCallback((patientId: string) => {
+    setPatients((prev) =>
+      prev.map((p) =>
+        p.patientId === patientId
+          ? {
+              ...p,
+              timeline: [
+                {
+                  id: `TL-RRT-${Date.now()}`,
+                  patientId,
+                  timestamp: Date.now(),
+                  eventType: 'RECOMMENDED_ACTION',
+                  title: 'Rapid Response Team (RRT) Activated',
+                  description:
+                    'Medical Emergency Team paged for immediate bedside critical care consultation.',
+                  severity: 'CRITICAL',
+                  source: 'NURSE_MANUAL',
+                  isTrusted: true,
+                },
+                ...p.timeline,
+              ],
+            }
+          : p
+      )
+    );
+  }, []);
+
+  const handleScenarioChange = useCallback((scenario: string) => {
+    setActiveScenario(scenario);
+
+    // Apply scenario changes to patients state for interactive demonstration
+    if (scenario === 'NORMAL_SHIFT') {
+      setPatients((prev) =>
+        prev.map((p) => ({
+          ...p,
+          apsScore: Math.min(p.apsScore, 24),
+          category: 'LOW',
+          trendDirection: 'STEADY',
+          trendVelocityPointsPerHour: 0.1,
+          whyNowSummary: 'Ward stabilized. All vitals within normal postoperative parameters.',
+        }))
+      );
+    } else if (scenario === 'MULTIPLE_PATIENT_SCENARIO') {
+      setPatients((prev) =>
+        prev.map((p) => {
+          if (p.patientId === 'P003') {
+            return { ...p, apsScore: 92, category: 'CRITICAL_REVIEW' };
+          }
+          if (p.patientId === 'P006') {
+            return { ...p, apsScore: 84, category: 'CRITICAL_REVIEW', trendDirection: 'RAPIDLY_RISING' };
+          }
+          return p;
+        })
+      );
+    } else if (scenario === 'SIGNAL_FAILURE_SCENARIO') {
+      setPatients((prev) =>
+        prev.map((p) =>
+          p.patientId === 'P005'
+            ? {
+                ...p,
+                signalQuality: {
+                  ...p.signalQuality,
+                  confidencePercent: 28,
+                  motionDetected: true,
+                  motionMagnitude: 0.88,
+                },
+                isStale: true,
+                whyNowSummary: 'Severe optical signal obstruction. rPPG readings suppressed.',
+              }
+            : p
+        )
+      );
+    } else {
+      // Default: restore INITIAL_WARD_PATIENTS
+      setPatients(INITIAL_WARD_PATIENTS);
+    }
+  }, []);
+
+  // 3. Accessible Keyboard Navigation Listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // If modal is open, let Escape close it
+      if (selectedPatientId) {
+        if (e.key === 'Escape') {
+          setSelectedPatientId(null);
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowDown' || e.key === 'j') {
+        e.preventDefault();
+        setFocusedPatientIndex((prev) => (prev + 1) % patients.length);
+      } else if (e.key === 'ArrowUp' || e.key === 'k') {
+        e.preventDefault();
+        setFocusedPatientIndex((prev) => (prev - 1 + patients.length) % patients.length);
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const sorted = [...patients].sort((a, b) => b.apsScore - a.apsScore);
+        const target = sorted[focusedPatientIndex];
+        if (target) setSelectedPatientId(target.patientId);
+      } else if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
+        const bedIndex = parseInt(e.key, 10) - 1;
+        if (patients[bedIndex]) {
+          setSelectedPatientId(patients[bedIndex].patientId);
+        }
+      } else if (e.key === 'a' || e.key === 'A') {
+        const sorted = [...patients].sort((a, b) => b.apsScore - a.apsScore);
+        const target = sorted[focusedPatientIndex];
+        if (target) handleAcknowledge(target.patientId);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedPatientId, focusedPatientIndex, patients, handleAcknowledge]);
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500 selection:text-white">
-      {/* Top Navigation Bar */}
-      <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 ring-1 ring-cyan-400/40">
-              <HeartPulse className="w-6 h-6 text-white animate-pulse" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-extrabold text-lg tracking-tight text-white">AegisPulse</span>
-                <span className="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                  Radar v0.1
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 hidden sm:block">
-                Patient Deterioration Radar & Nurse Attention Allocation Engine
-              </p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-cyan-500 selection:text-black">
+      {/* Header */}
+      <WardHeader
+        wardName="Ward 4B — Acute Surgical & Step-Down"
+        shiftLead="Nurse Rachel Hayes, RN"
+        shiftHours="Day Shift 07:00 - 19:00"
+        streamStatus={streamStatus}
+        streamSeq={streamSeq}
+        totalPatients={patients.length}
+        criticalCount={criticalCount}
+        evaluateCount={evaluateCount}
+        watchCount={watchCount}
+        lowCount={lowCount}
+        activeScenario={activeScenario}
+        onScenarioChange={handleScenarioChange}
+      />
 
-          {/* Service Health Pill */}
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={checkHealth}
-              className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-mono border transition-all cursor-pointer bg-slate-900/80 hover:bg-slate-800"
-            >
-              {loadingHealth ? (
-                <>
-                  <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                  <span className="text-slate-400">Pinging API...</span>
-                </>
-              ) : health?.status === 'ok' ? (
-                <>
-                  <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400 font-semibold">API Online</span>
-                </>
-              ) : (
-                <>
-                  <div className="w-2 h-2 rounded-full bg-red-400" />
-                  <WifiOff className="w-3.5 h-3.5 text-red-400" />
-                  <span className="text-red-400 font-semibold" title={healthError ?? undefined}>
-                    API Disconnected
-                  </span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Hero Alert & System Status Banner */}
-        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900/80 to-slate-950 p-6 sm:p-8 shadow-2xl">
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-2xl">
-              <div className="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Monorepo Infrastructure Active</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                Ward Attention Allocation Engine
-              </h1>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                In crowded wards, the scarce resource is clinician attention. AegisPulse dynamically ranks
-                patients by risk velocity, information decay, and baseline MEWS—prioritizing where nurses
-                need to be next.
-              </p>
-            </div>
-
-            {/* Live Service Metrics Card */}
-            <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4 min-w-[260px] space-y-3 font-mono text-xs">
-              <div className="flex items-center justify-between text-slate-400 pb-2 border-b border-slate-800">
-                <span className="flex items-center space-x-1.5">
-                  <Server className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Service</span>
-                </span>
-                <span className="text-slate-200">{health?.service || 'api'}</span>
-              </div>
-              <div className="flex items-center justify-between text-slate-400">
-                <span>Status</span>
-                <span className={health?.status === 'ok' ? 'text-emerald-400 font-bold' : 'text-amber-400'}>
-                  {health?.status ? health.status.toUpperCase() : 'PENDING'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-slate-400">
-                <span className="flex items-center space-x-1.5">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>Uptime</span>
-                </span>
-                <span className="text-slate-200">{health ? `${health.uptimeSeconds}s` : '—'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Monorepo Architecture Overview Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-900/70 transition-all space-y-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-              <Layers className="w-4 h-4" />
-            </div>
-            <h3 className="font-bold text-sm text-white">@aegispulse/types</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Strict domain models for Patient, PhysiologicalObservation, TrendVector, and AttentionAssessment.
-            </p>
-            <div className="text-[11px] font-mono text-emerald-400 flex items-center space-x-1 pt-1">
-              <span>Status: Frozen Contract</span>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-900/70 transition-all space-y-3">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-              <Activity className="w-4 h-4" />
-            </div>
-            <h3 className="font-bold text-sm text-white">@aegispulse/clinical</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Deterministic Attention Priority Score (APS) calculation, information decay, and MEWS engine.
-            </p>
-            <div className="text-[11px] font-mono text-cyan-400 flex items-center space-x-1 pt-1">
-              <span>Ready for Milestone 1</span>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-900/70 transition-all space-y-3">
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <h3 className="font-bold text-sm text-white">@aegispulse/signal</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              POS rPPG chrominance projection and 4-state Signal Quality Index (SQI) confidence gating.
-            </p>
-            <div className="text-[11px] font-mono text-purple-400 flex items-center space-x-1 pt-1">
-              <span>Ready for Milestone 3</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Milestone 1 Ready Callout */}
-        <div className="rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-300">
-              <ArrowRight className="w-4 h-4" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-white">Next Phase: Milestone 1 & 2 Execution</h4>
-              <p className="text-xs text-slate-400">
-                Scaffolding complete. Ready to implement deterministic Attention Priority scoring and dynamic Ward Queue.
-              </p>
-            </div>
-          </div>
-          <span className="px-3 py-1 rounded text-xs font-mono font-bold bg-cyan-500 text-slate-950">
-            M0 DONE
-          </span>
-        </div>
+      {/* Main Operational Screen */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        <AttentionQueue
+          patients={patients}
+          selectedPatientId={selectedPatientId}
+          focusedPatientIndex={focusedPatientIndex}
+          onSelectPatient={(p) => setSelectedPatientId(p.patientId)}
+          onAcknowledgePatient={handleAcknowledge}
+        />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500 font-mono">
-        AegisPulse Clinical Monorepo · VMedithon 3.0 · Zero Persistent Video Storage Guarantee
-      </footer>
+      {/* Slide-over / Modal for Patient Attention Detail */}
+      {selectedPatient && (
+        <PatientDetailModal
+          patient={selectedPatient}
+          onClose={() => setSelectedPatientId(null)}
+          onAcknowledge={handleAcknowledge}
+          onLogAssessment={handleLogAssessment}
+          onEscalate={handleEscalate}
+        />
+      )}
     </div>
   );
 }

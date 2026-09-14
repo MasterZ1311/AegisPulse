@@ -8,6 +8,7 @@ import {
 import { createVitalTimelineEvent } from '@aegispulse/clinical';
 import { wardStateService } from '../../services/ward-state.service';
 import { timelineService } from '../../services/timeline.service';
+import { telemetryPipelineService } from '../../services/telemetry-pipeline.service';
 import { validateRequest } from '../../middleware/validator';
 import { authenticate } from '../../middleware/auth';
 import { createRateLimiter } from '../../middleware/rate-limiter';
@@ -82,8 +83,8 @@ observationsRouter.post(
       shockIndex,
     };
 
-    // Store in ward state
-    wardStateService.addObservation(observation);
+    // Ingest into telemetry pipeline (persists, calculates APS, and broadcasts to event stream)
+    telemetryPipelineService.processObservation(observation);
 
     // Sync to unified patient timeline
     const timelineEvent = createVitalTimelineEvent(observation, {
@@ -91,6 +92,7 @@ observationsRouter.post(
       notes: body.notes,
     });
     timelineService.addEvent(timelineEvent);
+    telemetryPipelineService.processTimelineEvent(timelineEvent, patient.wardId);
 
     res.status(201).json({
       message: 'Physiological observation successfully ingested and indexed into timeline.',

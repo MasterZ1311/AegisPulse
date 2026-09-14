@@ -10,11 +10,15 @@ import { attentionPriorityRouter } from './attention-priority';
 import { acknowledgementsRouter } from './acknowledgements';
 import { clinicalActionsRouter } from './clinical-actions';
 import { simulationRouter } from './simulation';
+import { sseRouter } from '../../stream/sse-handler';
 
 export const v1Router = Router();
 
 // 1. Health & Readiness
 v1Router.use('/', healthRouter);
+
+// 1.1 Real-Time SSE Stream
+v1Router.use('/', sseRouter);
 
 // 2. Wards & Beds
 v1Router.use('/wards', wardsRouter);
