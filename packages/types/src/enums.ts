@@ -168,8 +168,20 @@ export const AlertStatusEnum = z.enum([
 export type AlertStatus = z.infer<typeof AlertStatusEnum>;
 
 export const TimelineEventTypeEnum = z.enum([
-  'VITAL_SIGN',
+  // Unified Timeline Event Types
+  'VITAL_MEASUREMENT',
+  'SIGNAL_QUALITY_CHANGE',
+  'MANUAL_OBSERVATION',
+  'MEWS_CHANGE',
+  'QSOFA_CHANGE',
+  'APS_CHANGE',
   'LAB_RESULT',
+  'NURSE_VISIT',
+  'ACKNOWLEDGEMENT',
+  'RECOMMENDED_ACTION',
+  'COMPLETED_ACTION',
+  // Legacy / General Variants
+  'VITAL_SIGN',
   'ATTENTION_ESCALATION',
   'CLINICAL_ACTION',
   'ALERT',
@@ -177,3 +189,18 @@ export const TimelineEventTypeEnum = z.enum([
   'SYSTEM_EVENT',
 ]);
 export type TimelineEventType = z.infer<typeof TimelineEventTypeEnum>;
+
+export const UnifiedTimelineEventTypeEnum = z.enum([
+  'VITAL_MEASUREMENT',
+  'SIGNAL_QUALITY_CHANGE',
+  'MANUAL_OBSERVATION',
+  'MEWS_CHANGE',
+  'QSOFA_CHANGE',
+  'APS_CHANGE',
+  'LAB_RESULT',
+  'NURSE_VISIT',
+  'ACKNOWLEDGEMENT',
+  'RECOMMENDED_ACTION',
+  'COMPLETED_ACTION',
+]);
+export type UnifiedTimelineEventType = z.infer<typeof UnifiedTimelineEventTypeEnum>;

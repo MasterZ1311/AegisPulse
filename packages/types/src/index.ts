@@ -35,6 +35,11 @@ export * from './schemas/ward';
 export * from './schemas/events';
 
 // ============================================================================
+// 6.1 Unified Timeline Schemas
+// ============================================================================
+export * from './schemas/timeline';
+
+// ============================================================================
 // 7. Backward Compatibility & Integration Aliases
 // ============================================================================
 import { QualityStatus, QualityStatusEnum, ObservationSource } from './enums';
@@ -91,6 +96,7 @@ import {
   SBARReportSchema,
   HealthCheckResponseSchema,
 } from './schemas/events';
+import { UnifiedTimelineEventSchema } from './schemas/timeline';
 
 export const validateVitalMeasurement = (data: unknown) =>
   VitalMeasurementSchema.safeParse(data);
@@ -127,6 +133,9 @@ export const validateClinicalAction = (data: unknown) =>
 
 export const validateTimelineEvent = (data: unknown) =>
   TimelineEventSchema.safeParse(data);
+
+export const validateUnifiedTimelineEvent = (data: unknown) =>
+  UnifiedTimelineEventSchema.safeParse(data);
 
 export const validateAlert = (data: unknown) =>
   AlertSchema.safeParse(data);

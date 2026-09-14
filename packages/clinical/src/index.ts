@@ -18,6 +18,10 @@ export * from './explainability';
 export * as mews from './mews';
 export * as qsofa from './qsofa';
 
+// Unified Patient Timeline Engine
+export * from './timeline';
+export * as timeline from './timeline';
+
 // Stubs preserved for backward compatibility
 export interface LegacyMEWSInput {
   heartRate?: number;

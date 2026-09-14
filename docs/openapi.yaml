@@ -1,0 +1,704 @@
+openapi: 3.0.3
+info:
+  title: AegisPulse Clinical Deterioration Radar API
+  version: 1.0.0
+  description: |
+    Production-oriented backend API for the AegisPulse Continuous Patient Deterioration Radar.
+    Provides deterministic clinical surveillance, early warning scoring (Subbe MEWS, Singer qSOFA),
+    explainability reasoning, unified patient timeline analytics, and ward simulation controls.
+servers:
+  - url: http://localhost:3000
+    description: Local Development / Test Server
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+tags:
+  - name: System Telemetry
+    description: Health, liveness, and readiness probes
+  - name: Wards & Beds
+    description: Ward inventory, bed occupancy, and ward-wide priority radar
+  - name: Patients
+    description: Patient registry and longitudinal clinical summaries
+  - name: Observations
+    description: Validated physiological telemetry ingestion and historical queries
+  - name: Labs
+    description: Laboratory biomarker results and clinical chemistry
+  - name: Timeline
+    description: Unified chronological patient timeline and deterministic clinical query engines
+  - name: Attention Priorities
+    description: Continuous Attention Priority Score (APS) and explainability reasons
+  - name: Acknowledgements
+    description: Auditable clinician acknowledgements for alerts and priority escalations
+  - name: Clinical Actions
+    description: Closed-loop clinical action recommendations, tracking, and completion
+  - name: Simulation
+    description: Ward simulation scenario controls and virtual clock advancement
+
+paths:
+  /health:
+    get:
+      tags: [System Telemetry]
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+
+  /ready:
+    get:
+      tags: [System Telemetry]
+      summary: Readiness probe
+      responses:
+        '200':
+          description: Service is fully initialized and ready
+        '503':
+          description: Service dependencies are degraded or initializing
+
+  /api/v1/health:
+    get:
+      tags: [System Telemetry]
+      summary: Versioned liveness probe
+      responses:
+        '200':
+          description: Service is alive
+
+  /api/v1/ready:
+    get:
+      tags: [System Telemetry]
+      summary: Versioned readiness probe
+      responses:
+        '200':
+          description: Service is ready
+
+  /api/v1/wards:
+    get:
+      tags: [Wards & Beds]
+      summary: List all wards
+      responses:
+        '200':
+          description: List of wards
+
+  /api/v1/wards/{wardId}:
+    get:
+      tags: [Wards & Beds]
+      summary: Get ward details and bed inventory
+      parameters:
+        - name: wardId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ward details
+        '404':
+          description: Ward not found
+
+  /api/v1/wards/{wardId}/overview:
+    get:
+      tags: [Wards & Beds]
+      summary: Ward overview with bed occupancy and patient summary
+      parameters:
+        - name: wardId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ward overview
+
+  /api/v1/wards/{wardId}/radar:
+    get:
+      tags: [Wards & Beds, Attention Priorities]
+      summary: Ward-wide patient deterioration priority radar
+      parameters:
+        - name: wardId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ranked list of patients by APS score
+
+  /api/v1/beds:
+    get:
+      tags: [Wards & Beds]
+      summary: List beds
+      parameters:
+        - name: wardId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of beds
+
+  /api/v1/beds/{bedId}:
+    get:
+      tags: [Wards & Beds]
+      summary: Get bed details and current patient
+      parameters:
+        - name: bedId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bed details
+
+  /api/v1/patients:
+    get:
+      tags: [Patients]
+      summary: List patients
+      parameters:
+        - name: wardId
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of patients
+
+  /api/v1/patients/{patientId}:
+    get:
+      tags: [Patients]
+      summary: Get patient summary and latest observation
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Patient summary
+
+  /api/v1/patients/{patientId}/observations:
+    get:
+      tags: [Observations]
+      summary: Query patient observations
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: since
+          in: query
+          schema:
+            type: integer
+        - name: until
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Observations list
+    post:
+      tags: [Observations]
+      summary: Ingest validated bedside observation
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestObservationRequest'
+      responses:
+        '21':
+          description: Ingestion accepted and indexed
+        '400':
+          description: Validation error or out of physiological limits
+        '429':
+          description: Rate limit exceeded
+
+  /api/v1/patients/{patientId}/labs:
+    get:
+      tags: [Labs]
+      summary: Query laboratory results
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Labs list
+    post:
+      tags: [Labs]
+      summary: Ingest laboratory result
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestLabRequest'
+      responses:
+        '201':
+          description: Lab result recorded
+
+  /api/v1/patients/{patientId}/timeline:
+    get:
+      tags: [Timeline]
+      summary: Chronological unified timeline stream
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: since
+          in: query
+          schema:
+            type: integer
+        - name: until
+          in: query
+          schema:
+            type: integer
+        - name: types
+          in: query
+          description: Comma-separated list of event types
+          schema:
+            type: string
+        - name: trustedOnly
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Chronological event stream
+
+  /api/v1/patients/{patientId}/timeline/events:
+    post:
+      tags: [Timeline]
+      summary: Record timeline event (manual observation, nurse visit)
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimelineEventCreateRequest'
+      responses:
+        '201':
+          description: Event recorded
+
+  /api/v1/patients/{patientId}/timeline/changes:
+    get:
+      tags: [Timeline]
+      summary: "Answers: What changed during the last 4 hours?"
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: hours
+          in: query
+          schema:
+            type: number
+            default: 4
+      responses:
+        '200':
+          description: Structured deltas and narrative summary
+
+  /api/v1/patients/{patientId}/timeline/priority-rise:
+    get:
+      tags: [Timeline]
+      summary: "Answers: What caused the patient's priority to rise?"
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: hours
+          in: query
+          schema:
+            type: number
+            default: 4
+      responses:
+        '200':
+          description: Priority rise attribution factors and trigger events
+
+  /api/v1/patients/{patientId}/timeline/last-manual-assessment:
+    get:
+      tags: [Timeline]
+      summary: "Answers: When was the patient last manually assessed?"
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Last assessment timestamp, elapsed time, assessor, overdue status
+
+  /api/v1/patients/{patientId}/timeline/trusted-measurements:
+    get:
+      tags: [Timeline]
+      summary: "Answers: Which measurements were trusted?"
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: since
+          in: query
+          schema:
+            type: integer
+        - name: vitalType
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Segregated trusted and untrusted measurements with suppression reasons
+
+  /api/v1/patients/{patientId}/attention-priority:
+    get:
+      tags: [Attention Priorities]
+      summary: Real-time Attention Priority Score evaluation and explainability
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: APS score, category, component breakdown, and curated 3-5 reasons
+
+  /api/v1/patients/{patientId}/acknowledgements:
+    get:
+      tags: [Acknowledgements]
+      summary: List alert acknowledgements
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Acknowledgements list
+    post:
+      tags: [Acknowledgements]
+      summary: Acknowledge alert or priority escalation (Staff role required)
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                alertId:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        '201':
+          description: Acknowledged
+
+  /api/v1/patients/{patientId}/actions:
+    get:
+      tags: [Clinical Actions]
+      summary: List clinical actions
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Actions list
+    post:
+      tags: [Clinical Actions]
+      summary: Propose clinical action
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actionType, title, rationale]
+              properties:
+                actionType:
+                  type: string
+                title:
+                  type: string
+                rationale:
+                  type: string
+      responses:
+        '201':
+          description: Action proposed
+
+  /api/v1/patients/{patientId}/actions/{actionId}:
+    patch:
+      tags: [Clinical Actions]
+      summary: Update clinical action status (Mark COMPLETED with notes)
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: actionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [RECOMMENDED, ACKNOWLEDGED, IN_PROGRESS, COMPLETED, DISMISSED]
+                outcomeNotes:
+                  type: string
+      responses:
+        '200':
+          description: Action updated
+
+  /api/v1/simulation/scenarios:
+    get:
+      tags: [Simulation]
+      summary: List available simulation scenarios
+      responses:
+        '200':
+          description: Scenarios catalog
+
+  /api/v1/simulation/scenarios/run:
+    post:
+      tags: [Simulation]
+      summary: Switch active simulation scenario (Admin / System required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scenarioId]
+              properties:
+                scenarioId:
+                  type: string
+                  enum:
+                    - NORMAL_SHIFT
+                    - SINGLE_PATIENT_DETERIORATION
+                    - FALSE_ALARM_SCENARIO
+                    - SIGNAL_FAILURE_SCENARIO
+                    - MULTIPLE_PATIENT_SCENARIO
+      responses:
+        '200':
+          description: Scenario activated
+        '403':
+          description: Insufficient privileges
+
+  /api/v1/simulation/tick:
+    post:
+      tags: [Simulation]
+      summary: Advance simulation clock by N seconds (Admin / System required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                seconds:
+                  type: integer
+                  default: 60
+      responses:
+        '200':
+          description: Clock advanced
+
+  /api/v1/simulation/status:
+    get:
+      tags: [Simulation]
+      summary: Get current simulation status and clock
+      responses:
+        '200':
+          description: Simulation status
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+
+  schemas:
+    HealthCheckResponse:
+      type: object
+      required: [status, service, version, timestamp, uptimeSeconds, environment]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, error]
+        service:
+          type: string
+        version:
+          type: string
+        timestamp:
+          type: string
+        uptimeSeconds:
+          type: number
+        environment:
+          type: string
+
+    ProblemDetails:
+      type: object
+      required: [type, title, status, detail, instance, code, requestId, timestamp]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+        requestId:
+          type: string
+        timestamp:
+          type: string
+
+    IngestObservationRequest:
+      type: object
+      properties:
+        source:
+          type: string
+        confidence:
+          type: number
+        qualityState:
+          type: string
+        heartRate:
+          type: number
+        respiratoryRate:
+          type: number
+        systolicBP:
+          type: number
+        diastolicBP:
+          type: number
+        temperature:
+          type: number
+        spo2:
+          type: number
+        shockIndex:
+          type: number
+        notes:
+          type: string
+
+    IngestLabRequest:
+      type: object
+      required: [testCode, testName, value, unit, referenceRange]
+      properties:
+        testCode:
+          type: string
+        testName:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+        referenceRange:
+          type: object
+          properties:
+            low:
+              type: number
+            high:
+              type: number
+        isCritical:
+          type: boolean
+
+    TimelineEventCreateRequest:
+      type: object
+      required: [eventType, title, description]
+      properties:
+        eventType:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+        source:
+          type: string
+        isTrusted:
+          type: boolean
+        data:
+          type: object
