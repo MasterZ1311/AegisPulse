@@ -12,36 +12,49 @@ import type {
   LastManualAssessmentResponse,
   TrustedMeasurementsResponse,
 } from '@aegispulse/types';
+import { TimelineRepository } from '@aegispulse/persistence';
 import { wardStateService } from './ward-state.service';
 
 export class TimelineService {
   private readonly repo = new PatientTimelineRepository();
+  private readonly persistentRepo: TimelineRepository;
 
   constructor() {
+    this.persistentRepo = new TimelineRepository(wardStateService.getDatabase());
     this.seedFromWardState();
   }
 
   public seedFromWardState(): void {
     const patients = wardStateService.getPatients();
     for (const patient of patients) {
-      // Ingest initial observations
+      // 1. Ingest already persisted events from SQLite
+      const existingInDb = this.persistentRepo.getTimelineEvents(patient.id);
+      for (const ev of existingInDb) {
+        this.repo.addEvent(ev);
+      }
+
+      // 2. Ingest initial observations
       const observations = wardStateService.getObservations(patient.id);
       for (const obs of observations) {
-        this.repo.addEvent(
-          createVitalTimelineEvent(obs, { bedNumber: patient.bedNumber })
-        );
+        const ev = createVitalTimelineEvent(obs, { bedNumber: patient.bedNumber });
+        this.repo.addEvent(ev);
+        this.persistentRepo.insertTimelineEvent(ev);
       }
 
-      // Ingest initial labs
+      // 3. Ingest initial labs
       const labs = wardStateService.getLabs(patient.id);
       for (const lab of labs) {
-        this.repo.addEvent(createLabTimelineEvent(lab, { bedNumber: patient.bedNumber }));
+        const ev = createLabTimelineEvent(lab, { bedNumber: patient.bedNumber });
+        this.repo.addEvent(ev);
+        this.persistentRepo.insertTimelineEvent(ev);
       }
 
-      // Ingest initial actions
+      // 4. Ingest initial actions
       const actions = wardStateService.getActions(patient.id);
       for (const action of actions) {
-        this.repo.addEvent(createActionTimelineEvent(action, { bedNumber: patient.bedNumber }));
+        const ev = createActionTimelineEvent(action, { bedNumber: patient.bedNumber });
+        this.repo.addEvent(ev);
+        this.persistentRepo.insertTimelineEvent(ev);
       }
     }
   }
@@ -54,6 +67,7 @@ export class TimelineService {
   public addEvent(event: UnifiedTimelineEvent): void {
     wardStateService.getPatient(event.patientId); // Ensure patient exists
     this.repo.addEvent(event);
+    this.persistentRepo.insertTimelineEvent(event);
   }
 
   public getChangesInWindow(
@@ -87,6 +101,10 @@ export class TimelineService {
 
   public getRepository(): PatientTimelineRepository {
     return this.repo;
+  }
+
+  public getPersistentRepository(): TimelineRepository {
+    return this.persistentRepo;
   }
 }
 

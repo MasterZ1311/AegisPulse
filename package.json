@@ -13,7 +13,7 @@
     "dev": "concurrently -k -p \"[{name}]\" -n \"API,WEB\" -c \"cyan,magenta\" \"npm run dev --workspace=@aegispulse/api\" \"npm run dev --workspace=@aegispulse/web\"",
     "dev:api": "npm run dev --workspace=@aegispulse/api",
     "dev:web": "npm run dev --workspace=@aegispulse/web",
-    "build:packages": "npm run build --workspace=@aegispulse/types && npm run build --workspace=@aegispulse/clinical && npm run build --workspace=@aegispulse/signal && npm run build --workspace=@aegispulse/simulation",
+    "build:packages": "npm run build --workspace=@aegispulse/types && npm run build --workspace=@aegispulse/clinical && npm run build --workspace=@aegispulse/signal && npm run build --workspace=@aegispulse/simulation && npm run build --workspace=@aegispulse/persistence",
     "build": "npm run build:packages && npm run build --workspace=@aegispulse/api && npm run build --workspace=@aegispulse/web",
     "test": "vitest run",
     "test:watch": "vitest",

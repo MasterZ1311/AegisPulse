@@ -22,6 +22,7 @@ describe('System Telemetry & Health Probes', () => {
     expect(res.body.checks.wardSimulator).toBe('ONLINE');
     expect(res.body.checks.clinicalIntelligence).toBe('ONLINE');
     expect(res.body.checks.timelineRepository).toBe('ONLINE');
+    expect(res.body.checks.database).toBe('ONLINE');
     expect(res.body.checks.activePatients).toBeGreaterThan(0);
   });
 

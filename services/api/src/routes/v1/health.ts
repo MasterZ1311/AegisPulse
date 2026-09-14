@@ -23,21 +23,22 @@ healthRouter.get('/health', (_req: Request, res: Response) => {
   res.status(200).json(payload);
 });
 
-// Readiness Probe (Evaluates clinical & simulation engines)
+// Readiness Probe (Evaluates clinical & simulation engines & SQLite persistence)
 healthRouter.get('/ready', (_req: Request, res: Response) => {
   try {
     const simStatus = wardStateService.getSimulationStatus();
     const patientCount = wardStateService.getPatients().length;
     const timelinePatientCount = timelineService.getRepository().getAllPatientIds().length;
+    const isDbHealthy = wardStateService.isDatabaseHealthy();
 
-    const isReady = patientCount > 0 && simStatus.patientCount > 0;
+    const isReady = patientCount > 0 && simStatus.patientCount > 0 && isDbHealthy;
 
     if (!isReady) {
       res.status(503).json({
         status: 'degraded',
         service: 'aegispulse-api',
         ready: false,
-        message: 'Ward state or simulation engine is still initializing.',
+        message: 'Ward state, database, or simulation engine is still initializing or degraded.',
       });
       return;
     }
@@ -48,6 +49,7 @@ healthRouter.get('/ready', (_req: Request, res: Response) => {
       ready: true,
       timestamp: new Date().toISOString(),
       checks: {
+        database: isDbHealthy ? 'ONLINE' : 'DEGRADED',
         wardSimulator: 'ONLINE',
         clinicalIntelligence: 'ONLINE',
         timelineRepository: 'ONLINE',

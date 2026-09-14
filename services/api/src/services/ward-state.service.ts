@@ -1,3 +1,4 @@
+import { DatabaseSync } from 'node:sqlite';
 import {
   createWardSimulator,
   WardSimulator,
@@ -12,6 +13,18 @@ import type {
   LaboratoryResult,
   ClinicalAction,
 } from '@aegispulse/types';
+import {
+  createDatabaseConnection,
+  runMigrations,
+  seedDatabase,
+  WardRepository,
+  PatientRepository,
+  ObservationRepository,
+  LabRepository,
+  ClinicalActionRepository,
+  AcknowledgementRepository,
+  AttentionRepository,
+} from '@aegispulse/persistence';
 import { NotFoundError } from '../middleware/errors';
 
 export interface AcknowledgementRecord {
@@ -24,195 +37,113 @@ export interface AcknowledgementRecord {
 }
 
 export class WardStateService {
+  private db: DatabaseSync;
+  private wardRepo: WardRepository;
+  private patientRepo: PatientRepository;
+  private obsRepo: ObservationRepository;
+  private labRepo: LabRepository;
+  private actionRepo: ClinicalActionRepository;
+  private ackRepo: AcknowledgementRepository;
+  private attentionRepo: AttentionRepository;
   private simulator: WardSimulator;
-  private wards: Map<string, Ward> = new Map();
-  private beds: Map<string, Bed> = new Map();
-  private patients: Map<string, Patient> = new Map();
-  private observations: Map<string, PhysiologicalObservation[]> = new Map();
-  private labs: Map<string, LaboratoryResult[]> = new Map();
-  private actions: Map<string, ClinicalAction[]> = new Map();
-  private acknowledgements: AcknowledgementRecord[] = [];
 
-  constructor() {
+  constructor(dbPath?: string) {
     this.simulator = createWardSimulator();
-    this.initializeWardState();
+    this.db = createDatabaseConnection({ dbPath: dbPath || process.env.AEGIS_DB_PATH || ':memory:' });
+    runMigrations(this.db);
+    seedDatabase(this.db);
+
+    this.wardRepo = new WardRepository(this.db);
+    this.patientRepo = new PatientRepository(this.db);
+    this.obsRepo = new ObservationRepository(this.db);
+    this.labRepo = new LabRepository(this.db);
+    this.actionRepo = new ClinicalActionRepository(this.db);
+    this.ackRepo = new AcknowledgementRepository(this.db);
+    this.attentionRepo = new AttentionRepository(this.db);
   }
 
-  private initializeWardState(): void {
-    // 1. Initialize Wards
-    const wardA: Ward = {
-      id: 'WARD-A',
-      name: 'Step-Down & Acute Telemetry Ward 4A',
-      code: 'STEP-4A',
-      department: 'INTERNAL_MEDICINE',
-      totalBeds: 6,
-      nurseRatio: '1:6',
-      activeNursesCount: 2,
-      hospitalName: 'St. Jude General Hospital',
-      isActive: true,
-    };
-    this.wards.set(wardA.id, wardA);
+  public getDatabase(): DatabaseSync {
+    return this.db;
+  }
 
-    const ward4B: Ward = {
-      id: 'WARD-4B',
-      name: 'Acute Medical Ward 4B',
-      code: 'MED-4B',
-      department: 'INTERNAL_MEDICINE',
-      totalBeds: 6,
-      nurseRatio: '1:6',
-      activeNursesCount: 2,
-      hospitalName: 'St. Jude General Hospital',
-      isActive: true,
-    };
-    this.wards.set(ward4B.id, ward4B);
-
-    // 2. Initialize Beds & Patients from Simulator Snapshot
-    const snapshot = this.simulator.getWardSnapshot();
-
-    for (const bed of snapshot.beds) {
-      this.beds.set(bed.id, { ...bed, wardId: 'WARD-A' });
-    }
-
-    for (const patient of snapshot.patients) {
-      this.patients.set(patient.id, { ...patient, wardId: 'WARD-A' });
-
-      // Seed initial observations from snapshot
-      const rawObs = snapshot.latestObservations[patient.id] || [];
-      const pObs: PhysiologicalObservation[] = rawObs.map((ro: any) => ({
-        id: ro.id,
-        patientId: patient.id,
-        timestamp: ro.timestamp,
-        source: ro.source,
-        confidence: ro.confidence,
-        qualityState: ro.qualityStatus === 'DEGRADED' || ro.qualityStatus === 'INVALID' ? 'DEGRADED' : 'TRUSTED',
-        heartRate: ro.vitalType === 'HEART_RATE' ? ro.value : undefined,
-        respiratoryRate: ro.vitalType === 'RESPIRATORY_RATE' ? ro.value : undefined,
-        systolicBP: ro.vitalType === 'SYSTOLIC_BP' ? ro.value : undefined,
-        diastolicBP: ro.vitalType === 'DIASTOLIC_BP' ? ro.value : undefined,
-      }));
-      this.observations.set(patient.id, pObs);
-
-      // Seed initial labs
-      const pLabs = snapshot.labs[patient.id] || [];
-      this.labs.set(patient.id, [...pLabs]);
-
-      // Seed initial action
-      this.actions.set(patient.id, [
-        {
-          id: `act-init-${patient.id}`,
-          patientId: patient.id,
-          bedId: patient.bedId,
-          actionType: 'BEDSIDE_VISIT',
-          title: 'Initial Shift Nursing Assessment',
-          rationale: 'Baseline admission vital check',
-          status: 'COMPLETED',
-          urgency: 'LOW',
-          recommendedAt: Date.now() - 3 * 3600 * 1000,
-          targetCompletionTimestamp: Date.now() - 2 * 3600 * 1000,
-          completedAt: Date.now() - 2.5 * 3600 * 1000,
-          completedByUserId: 'usr-nurse-101',
-          outcomeNotes: 'Patient oriented x 4. Vitals stable.',
-        },
-      ]);
+  public isDatabaseHealthy(): boolean {
+    try {
+      const row = this.db.prepare('PRAGMA integrity_check;').get() as { integrity_check?: string } | undefined;
+      const msg = (row && (row as any).integrity_check) || 'ok';
+      return msg.toLowerCase() === 'ok';
+    } catch {
+      return false;
     }
   }
 
   // Wards
   public getWards(): Ward[] {
-    return Array.from(this.wards.values());
+    return this.wardRepo.getWards();
   }
 
   public getWard(wardId: string): Ward {
-    let ward = this.wards.get(wardId);
-    if (!ward && (wardId === 'WARD-4B' || wardId === 'WARD-A')) {
-      ward = this.wards.get('WARD-A') || this.wards.get('WARD-4B');
-    }
+    const targetId = (wardId === 'WARD-4B' || wardId === 'WARD-A') ? 'WARD-A' : wardId;
+    const ward = this.wardRepo.getWard(targetId) || this.wardRepo.getWard(wardId);
     if (!ward) throw new NotFoundError(`Ward with ID '${wardId}' not found.`);
     return ward;
   }
 
   // Beds
   public getBeds(wardId?: string, status?: string): Bed[] {
-    let result = Array.from(this.beds.values());
-    if (wardId) {
-      const targetWardId = (wardId === 'WARD-4B' || wardId === 'WARD-A') ? 'WARD-A' : wardId;
-      result = result.filter((b) => b.wardId === targetWardId || b.wardId === wardId);
-    }
-    if (status) result = result.filter((b) => b.status === status);
-    return result;
+    return this.wardRepo.getBeds(wardId, status);
   }
 
   public getBed(bedId: string): Bed {
-    const bed = this.beds.get(bedId);
+    const bed = this.wardRepo.getBed(bedId);
     if (!bed) throw new NotFoundError(`Bed with ID '${bedId}' not found.`);
     return bed;
   }
 
   // Patients
   public getPatients(wardId?: string, _category?: string): Patient[] {
-    let result = Array.from(this.patients.values());
-    if (wardId) {
-      const targetWardId = (wardId === 'WARD-4B' || wardId === 'WARD-A') ? 'WARD-A' : wardId;
-      result = result.filter((p) => p.wardId === targetWardId || p.wardId === wardId);
-    }
-    return result;
+    return this.patientRepo.getPatients(wardId);
   }
 
   public getPatient(patientId: string): Patient {
-    const patient = this.patients.get(patientId);
+    const patient = this.patientRepo.getPatient(patientId);
     if (!patient) throw new NotFoundError(`Patient with ID '${patientId}' not found.`);
     return patient;
   }
 
   // Observations
-  public getObservations(patientId: string, options?: { vitalType?: string; since?: number; until?: number }): PhysiologicalObservation[] {
+  public getObservations(
+    patientId: string,
+    options?: { vitalType?: string; since?: number; until?: number; limit?: number }
+  ): PhysiologicalObservation[] {
     this.getPatient(patientId);
-    let list = this.observations.get(patientId) || [];
-    if (options?.since !== undefined) list = list.filter((o) => o.timestamp >= options.since!);
-    if (options?.until !== undefined) list = list.filter((o) => o.timestamp <= options.until!);
-    return list;
+    return this.obsRepo.getObservations(patientId, options);
   }
 
   public addObservation(obs: PhysiologicalObservation): void {
     this.getPatient(obs.patientId);
-    let list = this.observations.get(obs.patientId);
-    if (!list) {
-      list = [];
-      this.observations.set(obs.patientId, list);
-    }
-    list.push(obs);
+    this.obsRepo.insertObservation(obs);
   }
 
   // Labs
   public getLabs(patientId: string): LaboratoryResult[] {
     this.getPatient(patientId);
-    return this.labs.get(patientId) || [];
+    return this.labRepo.getLabs(patientId);
   }
 
   public addLab(lab: LaboratoryResult): void {
     this.getPatient(lab.patientId);
-    let list = this.labs.get(lab.patientId);
-    if (!list) {
-      list = [];
-      this.labs.set(lab.patientId, list);
-    }
-    list.push(lab);
+    this.labRepo.insertLab(lab);
   }
 
   // Actions
   public getActions(patientId: string): ClinicalAction[] {
     this.getPatient(patientId);
-    return this.actions.get(patientId) || [];
+    return this.actionRepo.getActions(patientId);
   }
 
   public addAction(action: ClinicalAction): void {
     this.getPatient(action.patientId);
-    let list = this.actions.get(action.patientId);
-    if (!list) {
-      list = [];
-      this.actions.set(action.patientId, list);
-    }
-    list.push(action);
+    this.actionRepo.insertAction(action);
   }
 
   public updateActionStatus(
@@ -221,33 +152,51 @@ export class WardStateService {
     userId: string,
     outcomeNotes?: string
   ): ClinicalAction {
-    for (const list of this.actions.values()) {
-      const action = list.find((a) => a.id === actionId);
-      if (action) {
-        action.status = status;
-        if (status === 'COMPLETED') {
-          action.completedAt = Date.now();
-          action.completedByUserId = userId;
-          action.outcomeNotes = outcomeNotes;
-        }
-        return action;
-      }
+    const actions = this.actionRepo.getActions('P001').concat(
+      this.actionRepo.getActions('P002'),
+      this.actionRepo.getActions('P003'),
+      this.actionRepo.getActions('P004'),
+      this.actionRepo.getActions('P005'),
+      this.actionRepo.getActions('P006')
+    );
+    const existing = actions.find((a) => a.id === actionId);
+    if (!existing) {
+      throw new NotFoundError(`Clinical Action with ID '${actionId}' not found.`);
     }
-    throw new NotFoundError(`Clinical Action with ID '${actionId}' not found.`);
+
+    if (status === 'COMPLETED') {
+      this.actionRepo.completeAction(actionId, userId, Date.now(), outcomeNotes);
+      existing.status = 'COMPLETED';
+      existing.completedAt = Date.now();
+      existing.completedByUserId = userId;
+      existing.outcomeNotes = outcomeNotes;
+    }
+
+    return existing;
   }
 
   // Acknowledgements
   public getAcknowledgements(patientId?: string): AcknowledgementRecord[] {
     if (patientId) {
       this.getPatient(patientId);
-      return this.acknowledgements.filter((a) => a.patientId === patientId);
+      return this.ackRepo.getAcknowledgements(patientId);
     }
-    return this.acknowledgements;
+    const allP = ['P001', 'P002', 'P003', 'P004', 'P005', 'P006'];
+    const result: AcknowledgementRecord[] = [];
+    for (const pid of allP) {
+      result.push(...this.ackRepo.getAcknowledgements(pid));
+    }
+    return result;
   }
 
   public addAcknowledgement(record: AcknowledgementRecord): void {
     this.getPatient(record.patientId);
-    this.acknowledgements.push(record);
+    this.ackRepo.insertAcknowledgement(record);
+  }
+
+  // Attention Priority
+  public getAttentionRepo(): AttentionRepository {
+    return this.attentionRepo;
   }
 
   // Simulation Controls

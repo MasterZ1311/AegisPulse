@@ -1,0 +1,23 @@
+{
+  "name": "@aegispulse/persistence",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Embedded SQLite persistence layer for AegisPulse Patient Deterioration Radar",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aegispulse/simulation": "*",
+    "@aegispulse/types": "*"
+  },
+  "devDependencies": {
+    "@aegispulse/config": "*",
+    "@types/node": "^22.13.1",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.7"
+  }
+}
