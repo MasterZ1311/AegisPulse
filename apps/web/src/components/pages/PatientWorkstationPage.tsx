@@ -33,6 +33,8 @@ interface PatientWorkstationPageProps {
     vitals: { heartRate: number; respiratoryRate?: number | null; confidence: number }
   ) => void;
   onOpenCamera?: () => void;
+  isAdmin?: boolean;
+  onEditPatient?: (patient: WardPatientRadarState) => void;
 }
 
 export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
@@ -45,6 +47,8 @@ export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
   onEscalate,
   onSpotCheckComplete,
   onOpenCamera,
+  isAdmin = false,
+  onEditPatient,
 }) => {
   const [rosterSearch, setRosterSearch] = useState('');
   const [showFullDossier, setShowFullDossier] = useState(false);
@@ -395,6 +399,20 @@ export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
                 >
                   <Camera className="h-3.5 w-3.5" />
                   <span>Spot-Check [C]</span>
+                </Button>
+              )}
+
+              {/* Admin Edit Details Button */}
+              {isAdmin && onEditPatient && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEditPatient(selectedPatient)}
+                  className="gap-1 text-xs font-bold text-sky-700 border-sky-300 bg-sky-50/60 hover:bg-sky-100 rounded-xl h-8"
+                  title="Edit Patient Details (Admin CRUD)"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  <span>Edit Details</span>
                 </Button>
               )}
 

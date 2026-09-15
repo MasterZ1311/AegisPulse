@@ -77,6 +77,32 @@ export class PatientRepository {
     return row ? this.mapPatient(row) : undefined;
   }
 
+  public createPatient(patient: Patient): Patient {
+    this.upsertPatient(patient);
+    return patient;
+  }
+
+  public updatePatient(id: string, updates: Partial<Patient>): Patient {
+    const existing = this.getPatient(id);
+    if (!existing) {
+      throw new Error(`Patient with ID '${id}' not found.`);
+    }
+    const updated: Patient = {
+      ...existing,
+      ...updates,
+      id: existing.id,
+      mrn: updates.mrn ?? existing.mrn,
+    };
+    this.upsertPatient(updated);
+    return updated;
+  }
+
+  public deletePatient(id: string): boolean {
+    const stmt = this.db.prepare('DELETE FROM patients WHERE id = ?');
+    const result = stmt.run(id);
+    return (result as any).changes > 0;
+  }
+
   public upsertClinicalContext(context: ClinicalContext): void {
     const now = Date.now();
     const stmt = this.db.prepare(`

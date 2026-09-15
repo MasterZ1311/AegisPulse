@@ -17,6 +17,9 @@ import {
   ChevronDown,
   HeartPulse,
   Clock,
+  ShieldAlert,
+  KeyRound,
+  UserPlus,
 } from 'lucide-react';
 import type { AppPage } from './Navigation';
 import type { StreamConnectionStatus } from '../services/stream-client';
@@ -38,6 +41,10 @@ interface ExecutiveLayoutProps {
   pendingSyncCount?: number;
   onOpenDiagnostics?: () => void;
   onOpenCamera?: () => void;
+  isAdmin?: boolean;
+  adminUser?: { username: string; fullName: string } | null;
+  onOpenAdminAuth?: () => void;
+  onOpenAdmitPatient?: () => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
   searchQuery: string;
@@ -61,6 +68,10 @@ export const ExecutiveLayout: React.FC<ExecutiveLayoutProps> = ({
   pendingSyncCount = 0,
   onOpenDiagnostics,
   onOpenCamera,
+  isAdmin = false,
+  adminUser = null,
+  onOpenAdminAuth,
+  onOpenAdmitPatient,
   theme,
   onToggleTheme,
   searchQuery,
@@ -301,15 +312,61 @@ export const ExecutiveLayout: React.FC<ExecutiveLayoutProps> = ({
               </button>
             )}
 
+            {/* Admin Controls */}
+            {isAdmin && onOpenAdmitPatient && (
+              <button
+                type="button"
+                onClick={onOpenAdmitPatient}
+                className="flex items-center gap-1.5 px-3 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-full text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                title="Admit a New Patient to Ward Census (Admin)"
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">+ Admit Patient</span>
+              </button>
+            )}
+
+            {onOpenAdminAuth && (
+              <button
+                type="button"
+                onClick={onOpenAdminAuth}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer border ${
+                  isAdmin
+                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-800 dark:text-amber-300'
+                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                }`}
+                title="Manage Admin Access & Mock Credentials"
+              >
+                {isAdmin ? (
+                  <>
+                    <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
+                    <span className="hidden sm:inline">Admin Active</span>
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="h-3.5 w-3.5 text-slate-500" />
+                    <span className="hidden sm:inline">Admin Access</span>
+                  </>
+                )}
+              </button>
+            )}
+
             {/* Clinician Avatar */}
-            <div className="flex items-center gap-1.5 pl-1.5 border-l border-slate-200">
+            <div
+              onClick={onOpenAdminAuth}
+              className="flex items-center gap-1.5 pl-1.5 border-l border-slate-200 cursor-pointer hover:opacity-85 transition-opacity"
+              title="Click to manage credentials"
+            >
               <div className="relative h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 text-[11px] sm:text-xs font-bold shadow-xs">
-                <span>SC</span>
-                <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+                <span>{isAdmin ? 'AD' : 'SC'}</span>
+                <span className={`absolute bottom-0 right-0 h-2 w-2 rounded-full ${isAdmin ? 'bg-amber-500' : 'bg-emerald-500'} ring-2 ring-white`} />
               </div>
               <div className="hidden sm:block text-left text-xs">
-                <p className="font-bold text-slate-900 leading-tight">Dr. S. Chen</p>
-                <p className="text-[9px] text-slate-500 font-medium">Attending MD</p>
+                <p className="font-bold text-slate-900 leading-tight">
+                  {isAdmin ? adminUser?.fullName || 'Administrator' : 'Dr. S. Chen'}
+                </p>
+                <p className="text-[9px] text-slate-500 font-medium">
+                  {isAdmin ? 'System Admin' : 'Attending MD'}
+                </p>
               </div>
             </div>
           </div>

@@ -37,6 +37,58 @@ export const PatientSchema = z.object({
 });
 export type Patient = z.infer<typeof PatientSchema>;
 
+export const CreatePatientSchema = z.object({
+  id: z.string().optional(),
+  mrn: z.string().optional(),
+  name: z.string().min(1, 'Patient full name is required'),
+  age: z
+    .number()
+    .int('Age must be an integer')
+    .min(0, 'Age cannot be negative')
+    .max(125, 'Age exceeds human biological maximum'),
+  gender: GenderEnum,
+  wardId: z.string().default('WARD-A'),
+  bedId: z.string().optional(),
+  bedNumber: z.string().min(1, 'Bed number is required'),
+  admissionDiagnosis: z.string().min(1, 'Admission diagnosis is required'),
+  admissionTimestamp: TimestampSchema.optional(),
+  attendingPhysician: z.string().default('Staff Attending'),
+  primaryNurse: z.string().optional(),
+  codeStatus: CodeStatusEnum.default('FULL_CODE'),
+  baselineMEWS: z
+    .number()
+    .int('Baseline MEWS must be an integer')
+    .min(0, 'MEWS cannot be negative')
+    .max(14, 'MEWS cannot exceed 14')
+    .default(0),
+  allergies: z.array(z.string()).default([]),
+  isolationStatus: IsolationStatusEnum.default('NONE'),
+  isActive: z.boolean().default(true),
+  history: z.array(z.string()).optional(),
+  notes: z.array(z.string()).optional(),
+});
+export type CreatePatientInput = z.infer<typeof CreatePatientSchema>;
+
+export const UpdatePatientSchema = z.object({
+  name: z.string().min(1).optional(),
+  age: z.number().int().min(0).max(125).optional(),
+  gender: GenderEnum.optional(),
+  wardId: z.string().optional(),
+  bedId: z.string().optional(),
+  bedNumber: z.string().optional(),
+  admissionDiagnosis: z.string().min(1).optional(),
+  attendingPhysician: z.string().optional(),
+  primaryNurse: z.string().optional(),
+  codeStatus: CodeStatusEnum.optional(),
+  baselineMEWS: z.number().int().min(0).max(14).optional(),
+  allergies: z.array(z.string()).optional(),
+  isolationStatus: IsolationStatusEnum.optional(),
+  isActive: z.boolean().optional(),
+  history: z.array(z.string()).optional(),
+  notes: z.array(z.string()).optional(),
+});
+export type UpdatePatientInput = z.infer<typeof UpdatePatientSchema>;
+
 // ============================================================================
 // 2. Bed Entity Schema
 // ============================================================================

@@ -11,6 +11,9 @@ import {
   Sun,
   Moon,
   Sparkles,
+  ShieldAlert,
+  KeyRound,
+  UserPlus,
 } from 'lucide-react';
 import type { StreamConnectionStatus } from '../services/stream-client';
 import { Button } from '@/components/ui/button';
@@ -33,6 +36,10 @@ interface WardHeaderProps {
   onScenarioChange: (scenario: string) => void;
   onOpenDiagnostics?: () => void;
   onOpenCamera?: () => void;
+  isAdmin?: boolean;
+  adminUser?: { username: string; fullName: string } | null;
+  onOpenAdminAuth?: () => void;
+  onOpenAdmitPatient?: () => void;
   theme?: 'dark' | 'light';
   onToggleTheme?: () => void;
 }
@@ -54,6 +61,10 @@ export const WardHeader: React.FC<WardHeaderProps> = ({
   onScenarioChange,
   onOpenDiagnostics,
   onOpenCamera,
+  isAdmin = false,
+  adminUser,
+  onOpenAdminAuth,
+  onOpenAdmitPatient,
   theme = 'dark',
   onToggleTheme,
 }) => {
@@ -218,6 +229,47 @@ export const WardHeader: React.FC<WardHeaderProps> = ({
             <option value="MULTIPLE_PATIENT_SCENARIO">Dual Decompensation</option>
             <option value="SIGNAL_FAILURE_SCENARIO">Optical Dropout</option>
           </Select>
+
+          {/* Admin Access / Status Button */}
+          {onOpenAdminAuth && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenAdminAuth}
+              className={`gap-1.5 font-mono ${
+                isAdmin
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400 font-bold'
+                  : 'text-slate-600 dark:text-slate-300'
+              }`}
+              title={isAdmin ? `Administrator: ${adminUser?.fullName || 'Aegis System Admin'}` : 'Manage Admin Access & Credentials'}
+            >
+              {isAdmin ? (
+                <>
+                  <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="hidden xl:inline">Admin Active</span>
+                </>
+              ) : (
+                <>
+                  <KeyRound className="h-3.5 w-3.5 text-slate-400" />
+                  <span className="hidden sm:inline">Admin Access</span>
+                </>
+              )}
+            </Button>
+          )}
+
+          {/* Admit Patient Button (Visible when Admin) */}
+          {isAdmin && onOpenAdmitPatient && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onOpenAdmitPatient}
+              className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs"
+              title="Admit a New Patient to Ward Census"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              <span className="hidden md:inline">+ Admit Patient</span>
+            </Button>
+          )}
 
           {/* Diagnostics Button */}
           {onOpenDiagnostics && (

@@ -19,6 +19,8 @@ import { DiagnosticsModal } from './components/DiagnosticsModal';
 import { BedsideCameraModal } from './components/BedsideCameraModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TabLifecycleManager } from './services/tab-lifecycle';
+import { AdminAuthModal } from './components/AdminAuthModal';
+import { AdminPatientModal } from './components/AdminPatientModal';
 import { INITIAL_WARD_PATIENTS } from './data/ward-simulated-data';
 import type { WardPatientRadarState } from './types/radar';
 import { AlertTriangle } from 'lucide-react';
@@ -35,6 +37,32 @@ export default function App() {
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState<boolean>(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState<boolean>(false);
+
+  // Admin Authentication & Patient CRUD State
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('aegis-admin-token') !== null;
+    }
+    return false;
+  });
+
+  const [adminUser, setAdminUser] = useState<{ username: string; fullName: string } | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('aegis-admin-user');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {}
+      }
+    }
+    return null;
+  });
+
+  const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState<boolean>(false);
+  const [isAdminPatientModalOpen, setIsAdminPatientModalOpen] = useState<boolean>(false);
+  const [adminPatientModalMode, setAdminPatientModalMode] = useState<'CREATE' | 'EDIT'>('CREATE');
+  const [patientToEdit, setPatientToEdit] = useState<WardPatientRadarState | null>(null);
+
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [_recentEvents, setRecentEvents] = useState<TelemetryStreamEnvelope[]>([]);
   const [_health, setHealth] = useState<HealthCheckResponse | null>(null);
@@ -536,6 +564,43 @@ export default function App() {
     }
   }, []);
 
+  // Admin Patient CRUD Handlers
+  const handleOpenAdmitPatient = useCallback(() => {
+    setAdminPatientModalMode('CREATE');
+    setPatientToEdit(null);
+    setIsAdminPatientModalOpen(true);
+  }, []);
+
+  const handleOpenEditPatient = useCallback((patient: WardPatientRadarState) => {
+    setAdminPatientModalMode('EDIT');
+    setPatientToEdit(patient);
+    setIsAdminPatientModalOpen(true);
+  }, []);
+
+  const handlePatientSaved = useCallback((savedPatient: WardPatientRadarState) => {
+    setPatients((prev) => {
+      const idx = prev.findIndex((p) => p.patientId === savedPatient.patientId);
+      if (idx !== -1) {
+        const updated = [...prev];
+        updated[idx] = savedPatient;
+        return updated;
+      }
+      return [savedPatient, ...prev];
+    });
+    setSelectedPatientId(savedPatient.patientId);
+  }, []);
+
+  const handlePatientDeleted = useCallback((patientId: string) => {
+    setPatients((prev) => {
+      const remaining = prev.filter((p) => p.patientId !== patientId);
+      if (selectedPatientId === patientId && remaining.length > 0) {
+        setSelectedPatientId(remaining[0].patientId);
+      }
+      return remaining;
+    });
+    navigateTo('RADAR');
+  }, [selectedPatientId, navigateTo]);
+
   // 3. Accessible Keyboard Navigation Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -600,6 +665,10 @@ export default function App() {
         pendingSyncCount={pendingSyncCount}
         onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
         onOpenCamera={() => setIsCameraModalOpen(true)}
+        isAdmin={isAdmin}
+        adminUser={adminUser}
+        onOpenAdminAuth={() => setIsAdminAuthModalOpen(true)}
+        onOpenAdmitPatient={handleOpenAdmitPatient}
         theme={theme}
         onToggleTheme={toggleTheme}
         searchQuery={searchQuery}
@@ -669,6 +738,8 @@ export default function App() {
               onEscalate={handleEscalate}
               onSpotCheckComplete={handleSpotCheckComplete}
               onOpenCamera={() => setIsCameraModalOpen(true)}
+              isAdmin={isAdmin}
+              onEditPatient={handleOpenEditPatient}
             />
           )}
 
@@ -756,6 +827,32 @@ export default function App() {
             );
           }
         }}
+      />
+
+      {/* Admin Authentication & Mock Credentials Modal */}
+      <AdminAuthModal
+        isOpen={isAdminAuthModalOpen}
+        onClose={() => setIsAdminAuthModalOpen(false)}
+        isAdmin={isAdmin}
+        currentAdmin={adminUser}
+        onLoginSuccess={(admin) => {
+          setIsAdmin(true);
+          setAdminUser({ username: admin.username, fullName: admin.fullName });
+        }}
+        onLogout={() => {
+          setIsAdmin(false);
+          setAdminUser(null);
+        }}
+      />
+
+      {/* Admin Patient CRUD (Admit & Edit) Modal */}
+      <AdminPatientModal
+        isOpen={isAdminPatientModalOpen}
+        onClose={() => setIsAdminPatientModalOpen(false)}
+        mode={adminPatientModalMode}
+        initialPatient={patientToEdit}
+        onSuccess={handlePatientSaved}
+        onDelete={handlePatientDeleted}
       />
     </div>
   );

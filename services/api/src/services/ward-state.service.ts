@@ -140,6 +140,68 @@ export class WardStateService {
     return patient;
   }
 
+  public createPatient(patient: Patient): Patient {
+    this.checkDbActive();
+
+    // 1. Resolve or ensure Bed exists to satisfy foreign key constraint
+    let targetBedId = patient.bedId;
+    const existingBeds = this.wardRepo.getBeds(patient.wardId);
+    const matchedBed = existingBeds.find(
+      (b) => b.id === patient.bedId || b.bedNumber === patient.bedNumber
+    );
+
+    if (matchedBed) {
+      targetBedId = matchedBed.id;
+      this.wardRepo.setBedOccupant(matchedBed.id, patient.id, 'OCCUPIED');
+    } else {
+      const newBedId =
+        targetBedId && targetBedId !== 'BED-UNASSIGNED'
+          ? targetBedId
+          : `BED-${patient.bedNumber.replace(/\s+/g, '-').toUpperCase()}`;
+      targetBedId = newBedId;
+      this.wardRepo.upsertBed({
+        id: newBedId,
+        bedNumber: patient.bedNumber,
+        wardId: patient.wardId,
+        roomNumber: patient.bedNumber.split('-')[0] || '400',
+        status: 'OCCUPIED',
+        currentPatientId: patient.id,
+      });
+    }
+
+    const patientWithBed: Patient = {
+      ...patient,
+      bedId: targetBedId,
+    };
+
+    this.patientRepo.createPatient(patientWithBed);
+    return patientWithBed;
+  }
+
+  public updatePatient(patientId: string, updates: Partial<Patient>): Patient {
+    this.checkDbActive();
+    const existing = this.getPatient(patientId);
+    const updated = this.patientRepo.updatePatient(patientId, updates);
+
+    if (updates.bedId && updates.bedId !== existing.bedId) {
+      if (existing.bedId) {
+        this.wardRepo.setBedOccupant(existing.bedId, null, 'AVAILABLE');
+      }
+      this.wardRepo.setBedOccupant(updates.bedId, patientId, 'OCCUPIED');
+    }
+    return updated;
+  }
+
+  public deletePatient(patientId: string): boolean {
+    this.checkDbActive();
+    const patient = this.getPatient(patientId);
+    this.wardRepo.clearBedByPatientId(patientId);
+    if (patient.bedId) {
+      this.wardRepo.setBedOccupant(patient.bedId, null, 'AVAILABLE');
+    }
+    return this.patientRepo.deletePatient(patientId);
+  }
+
   // Observations
   public getObservations(
     patientId: string,

@@ -126,4 +126,22 @@ export class WardRepository {
       cameraDeviceId: r.camera_device_id ? String(r.camera_device_id) : undefined,
     };
   }
+
+  public setBedOccupant(bedId: string, patientId: string | null, status: Bed['status'] = patientId ? 'OCCUPIED' : 'AVAILABLE'): void {
+    const now = Date.now();
+    this.db.prepare(`
+      UPDATE beds 
+      SET current_patient_id = ?, status = ?, updated_at = ?
+      WHERE id = ?
+    `).run(patientId, status, now, bedId);
+  }
+
+  public clearBedByPatientId(patientId: string): void {
+    const now = Date.now();
+    this.db.prepare(`
+      UPDATE beds 
+      SET current_patient_id = NULL, status = 'AVAILABLE', updated_at = ?
+      WHERE current_patient_id = ?
+    `).run(now, patientId);
+  }
 }
