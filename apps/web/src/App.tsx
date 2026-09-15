@@ -8,7 +8,8 @@ import {
   offlineSyncQueue,
   type WardConnectivityState,
 } from './services/offline-sync-queue';
-import { Navigation, type AppPage } from './components/Navigation';
+import type { AppPage } from './components/Navigation';
+import { ExecutiveLayout } from './components/ExecutiveLayout';
 import { WardRadarPage } from './components/pages/WardRadarPage';
 import { PatientWorkstationPage } from './components/pages/PatientWorkstationPage';
 import { WardAnalyticsPage } from './components/pages/WardAnalyticsPage';
@@ -34,6 +35,7 @@ export default function App() {
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState<boolean>(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [_recentEvents, setRecentEvents] = useState<TelemetryStreamEnvelope[]>([]);
   const [_health, setHealth] = useState<HealthCheckResponse | null>(null);
 
@@ -54,7 +56,7 @@ export default function App() {
       const saved = localStorage.getItem('aegispulse-theme') as 'dark' | 'light' | null;
       if (saved) return saved;
     }
-    return 'dark';
+    return 'light';
   });
 
   // Synchronize URL hash with activePage and browser history
@@ -130,7 +132,17 @@ export default function App() {
 
   const selectedPatient = patients.find((p) => p.patientId === selectedPatientId) || sortedPatients[0] || null;
 
-  // 1. Health Probe Polling & Real-Time Telemetry Stream Client
+  // Dynamically filtered patients by search query
+  const filteredPatients = useMemo(() => {
+    if (!searchQuery.trim()) return patients;
+    const q = searchQuery.toLowerCase();
+    return patients.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.bedNumber.toLowerCase().includes(q) ||
+        p.admissionDiagnosis.toLowerCase().includes(q)
+    );
+  }, [patients, searchQuery]);
   useEffect(() => {
     const checkHealth = async () => {
       try {
@@ -570,20 +582,17 @@ export default function App() {
   }, [focusedPatientIndex, sortedPatients, selectedPatient, handleAcknowledge, activePage, navigateTo]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col antialiased transition-colors duration-200">
-      {/* 1. Master Application Navigation Bar */}
-      <Navigation
+    <div className="min-h-screen bg-[#DCE6DC] antialiased">
+      <ExecutiveLayout
         activePage={activePage}
         onNavigate={(page) => navigateTo(page)}
         wardName="Ward 4B — Acute Surgical & Step-Down"
-        shiftLead="Nurse Rachel Hayes, RN"
-        shiftHours="Day Shift 07:00 - 19:00"
-        selectedBedNumber={selectedPatient?.bedNumber}
         totalPatients={patients.length}
         criticalCount={criticalCount}
         evaluateCount={evaluateCount}
         watchCount={watchCount}
         lowCount={lowCount}
+        maxApsScore={Math.max(...patients.map((p) => p.apsScore), 0)}
         streamStatus={streamStatus}
         streamSeq={streamSeq}
         connectivityState={connectivityState}
@@ -592,37 +601,125 @@ export default function App() {
         onOpenCamera={() => setIsCameraModalOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
-      />
-
-      {/* Realtime Telemetry Interruption / Reconnecting Clinical Banner */}
-      {streamStatus === 'RECONNECTING' && (
-        <div className="bg-amber-950/90 border-b border-amber-600/50 px-6 py-2.5 text-amber-200 text-xs font-mono flex items-center justify-between animate-pulse">
-          <div className="flex items-center gap-2.5">
-            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
-            <span>
-              <strong>REALTIME TELEMETRY INTERRUPTED:</strong> Reconnecting to Ward 4B telemetry broker... Bedside vitals frozen at sequence #{streamSeq}. Dead-man watchdog active.
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      >
+        {/* Realtime Telemetry Interruption / Reconnecting Clinical Banner */}
+        {streamStatus === 'RECONNECTING' && (
+          <div className="bg-amber-500/10 border border-amber-300 px-4 py-2.5 rounded-2xl text-amber-800 text-xs font-mono flex items-center justify-between mb-4 animate-pulse">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>REALTIME TELEMETRY INTERRUPTED:</strong> Reconnecting to Ward 4B telemetry broker... Bedside vitals frozen at sequence #{streamSeq}.
+              </span>
+            </div>
+            <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 text-[10px] uppercase tracking-wider font-bold">
+              Anti-Rollback Active
             </span>
           </div>
-          <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-amber-900/60 text-amber-300 border border-amber-700/50 text-[10px] uppercase tracking-wider font-bold">
-            Anti-Rollback Engaged
-          </span>
-        </div>
-      )}
-      {streamStatus === 'DISCONNECTED' && (
-        <div className="bg-rose-950/90 border-b border-rose-600/50 px-6 py-2.5 text-rose-200 text-xs font-mono flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0" />
-            <span>
-              <strong>TELEMETRY OFFLINE:</strong> Realtime stream connection lost. Clinical actions will queue locally in edge storage.
+        )}
+        {streamStatus === 'DISCONNECTED' && (
+          <div className="bg-rose-500/10 border border-rose-300 px-4 py-2.5 rounded-2xl text-rose-800 text-xs font-mono flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+              <span>
+                <strong>TELEMETRY OFFLINE:</strong> Realtime stream connection lost. Clinical actions will queue locally in edge storage.
+              </span>
+            </div>
+            <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 text-[10px] uppercase tracking-wider font-bold">
+              Edge Queue Buffered
             </span>
           </div>
-          <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-rose-900/60 text-rose-300 border border-rose-700/50 text-[10px] uppercase tracking-wider font-bold">
-            Edge Queue Buffered
-          </span>
-        </div>
-      )}
+        )}
 
-      {/* 2. Diagnostics Telemetry Modal */}
+        <ErrorBoundary fallbackTitle="Clinical View Exception Guard" isRoot={false}>
+          {activePage === 'RADAR' && (
+            <WardRadarPage
+              patients={filteredPatients}
+              selectedPatientId={selectedPatientId}
+              onSelectPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+                if (idx !== -1) setFocusedPatientIndex(idx);
+              }}
+              onAcknowledgePatient={handleAcknowledge}
+              onNavigateToPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+                if (idx !== -1) setFocusedPatientIndex(idx);
+                navigateTo('PATIENT', p.patientId);
+              }}
+            />
+          )}
+
+          {activePage === 'PATIENT' && (
+            <PatientWorkstationPage
+              patients={filteredPatients}
+              selectedPatient={selectedPatient}
+              onSelectPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+                if (idx !== -1) setFocusedPatientIndex(idx);
+                navigateTo('PATIENT', p.patientId);
+              }}
+              onBackToRadar={() => navigateTo('RADAR')}
+              onAcknowledge={handleAcknowledge}
+              onLogAssessment={handleLogAssessment}
+              onEscalate={handleEscalate}
+              onSpotCheckComplete={handleSpotCheckComplete}
+              onOpenCamera={() => setIsCameraModalOpen(true)}
+            />
+          )}
+
+          {activePage === 'ANALYTICS' && (
+            <WardAnalyticsPage
+              patients={filteredPatients}
+              onNavigateToPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+                if (idx !== -1) setFocusedPatientIndex(idx);
+                navigateTo('PATIENT', p.patientId);
+              }}
+            />
+          )}
+
+          {activePage === 'AUDIT' && (
+            <WardAuditPage
+              patients={filteredPatients}
+              onNavigateToPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+                if (idx !== -1) setFocusedPatientIndex(idx);
+                navigateTo('PATIENT', p.patientId);
+              }}
+            />
+          )}
+
+          {activePage === 'SIMULATION' && (
+            <SimulationPage
+              activeScenario={activeScenario}
+              onScenarioChange={handleScenarioChange}
+              onApplyStep={(updatedPatients, targetPatientId) => {
+                setPatients(updatedPatients);
+                if (targetPatientId) {
+                  setSelectedPatientId(targetPatientId);
+                  const idx = updatedPatients.findIndex((p) => p.patientId === targetPatientId);
+                  if (idx !== -1) setFocusedPatientIndex(idx);
+                }
+              }}
+              onNavigateToPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+                if (idx !== -1) setFocusedPatientIndex(idx);
+                navigateTo('PATIENT', p.patientId);
+              }}
+              patients={filteredPatients}
+            />
+          )}
+        </ErrorBoundary>
+      </ExecutiveLayout>
+
+      {/* Diagnostics Telemetry Modal */}
       <DiagnosticsModal
         isOpen={isDiagnosticsOpen}
         onClose={() => setIsDiagnosticsOpen(false)}
@@ -659,95 +756,6 @@ export default function App() {
           }
         }}
       />
-
-      {/* 3. Main Multi-Page Content Area with Section Error Boundary */}
-      <main className="flex-1 w-full max-w-[1780px] mx-auto p-4 sm:p-6 lg:p-8">
-        <ErrorBoundary fallbackTitle="Clinical View Exception Guard" isRoot={false}>
-          {activePage === 'RADAR' && (
-            <WardRadarPage
-              patients={patients}
-              selectedPatientId={selectedPatientId}
-              onSelectPatient={(p) => {
-                setSelectedPatientId(p.patientId);
-                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
-                if (idx !== -1) setFocusedPatientIndex(idx);
-              }}
-              onAcknowledgePatient={handleAcknowledge}
-              onNavigateToPatient={(p) => {
-                setSelectedPatientId(p.patientId);
-                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
-                if (idx !== -1) setFocusedPatientIndex(idx);
-                navigateTo('PATIENT', p.patientId);
-              }}
-            />
-          )}
-
-          {activePage === 'PATIENT' && (
-            <PatientWorkstationPage
-              patients={patients}
-              selectedPatient={selectedPatient}
-              onSelectPatient={(p) => {
-                setSelectedPatientId(p.patientId);
-                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
-                if (idx !== -1) setFocusedPatientIndex(idx);
-                navigateTo('PATIENT', p.patientId);
-              }}
-              onBackToRadar={() => navigateTo('RADAR')}
-              onAcknowledge={handleAcknowledge}
-              onLogAssessment={handleLogAssessment}
-              onEscalate={handleEscalate}
-              onSpotCheckComplete={handleSpotCheckComplete}
-              onOpenCamera={() => setIsCameraModalOpen(true)}
-            />
-          )}
-
-          {activePage === 'ANALYTICS' && (
-            <WardAnalyticsPage
-              patients={patients}
-              onNavigateToPatient={(p) => {
-                setSelectedPatientId(p.patientId);
-                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
-                if (idx !== -1) setFocusedPatientIndex(idx);
-                navigateTo('PATIENT', p.patientId);
-              }}
-            />
-          )}
-
-          {activePage === 'AUDIT' && (
-            <WardAuditPage
-              patients={patients}
-              onNavigateToPatient={(p) => {
-                setSelectedPatientId(p.patientId);
-                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
-                if (idx !== -1) setFocusedPatientIndex(idx);
-                navigateTo('PATIENT', p.patientId);
-              }}
-            />
-          )}
-
-          {activePage === 'SIMULATION' && (
-            <SimulationPage
-              activeScenario={activeScenario}
-              onScenarioChange={handleScenarioChange}
-              onApplyStep={(updatedPatients, targetPatientId) => {
-                setPatients(updatedPatients);
-                if (targetPatientId) {
-                  setSelectedPatientId(targetPatientId);
-                  const idx = updatedPatients.findIndex((p) => p.patientId === targetPatientId);
-                  if (idx !== -1) setFocusedPatientIndex(idx);
-                }
-              }}
-              onNavigateToPatient={(p) => {
-                setSelectedPatientId(p.patientId);
-                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
-                if (idx !== -1) setFocusedPatientIndex(idx);
-                navigateTo('PATIENT', p.patientId);
-              }}
-              patients={patients}
-            />
-          )}
-        </ErrorBoundary>
-      </main>
     </div>
   );
 }

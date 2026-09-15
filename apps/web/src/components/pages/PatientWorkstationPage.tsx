@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
   User,
   Check,
   CheckCircle2,
+  HeartPulse,
+  Wind,
+  Droplets,
+  Activity,
+  Camera,
+  FileText,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 import type { WardPatientRadarState } from '../../types/radar';
 import { Button } from '@/components/ui/button';
@@ -37,15 +46,18 @@ export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
   onSpotCheckComplete,
   onOpenCamera,
 }) => {
+  const [rosterSearch, setRosterSearch] = useState('');
+  const [showFullDossier, setShowFullDossier] = useState(false);
+
   if (!selectedPatient) {
     return (
-      <div className="neu-flat rounded-2xl p-12 text-center max-w-xl mx-auto my-12">
-        <User className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-        <h2 className="text-lg font-bold text-foreground">No Patient Selected</h2>
-        <p className="text-xs text-muted-foreground mt-1 mb-4">
+      <div className="bg-white rounded-3xl p-12 text-center max-w-xl mx-auto my-12 border border-slate-200/60 shadow-lg">
+        <User className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+        <h2 className="text-lg font-bold text-slate-900">No Patient Selected</h2>
+        <p className="text-xs text-slate-500 mt-1 mb-4">
           Please select a bed from the Ward Radar to review patient telemetry.
         </p>
-        <Button onClick={onBackToRadar} className="gap-2 bg-sky-600 text-white font-bold">
+        <Button onClick={onBackToRadar} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
           <ArrowLeft className="h-4 w-4" />
           <span>Go to Ward Radar</span>
         </Button>
@@ -53,115 +65,589 @@ export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
     );
   }
 
-  // Find index for prev/next cycling
-  const currentIndex = patients.findIndex((p) => p.patientId === selectedPatient.patientId);
-  const prevPatient = currentIndex > 0 ? patients[currentIndex - 1] : patients[patients.length - 1];
-  const nextPatient = currentIndex < patients.length - 1 ? patients[currentIndex + 1] : patients[0];
+  // Filtered patients for left triage roster
+  const filteredRoster = useMemo(() => {
+    return patients.filter((p) => {
+      if (!rosterSearch.trim()) return true;
+      const q = rosterSearch.toLowerCase();
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.bedNumber.toLowerCase().includes(q) ||
+        p.admissionDiagnosis.toLowerCase().includes(q)
+      );
+    });
+  }, [patients, rosterSearch]);
+
+  const criticalPatients = filteredRoster.filter((p) => p.category === 'CRITICAL_REVIEW');
+  const watchPatients = filteredRoster.filter((p) => p.category === 'EVALUATE' || p.category === 'WATCH');
+  const stablePatients = filteredRoster.filter((p) => p.category === 'LOW');
+
+  // Simulated sparkline points for Heart Rate (6 data points)
+  const hrTrend = [
+    { time: '10:00', value: 84 },
+    { time: '10:15', value: 92 },
+    { time: '10:30', value: 98 },
+    { time: '10:45', value: 106 },
+    { time: '11:00', value: selectedPatient.vitals.heartRate ?? 118 },
+    { time: '11:15', value: selectedPatient.vitals.heartRate ? selectedPatient.vitals.heartRate + 2 : 120 },
+  ];
+
+  // Simulated sparkline points for APS Risk Score (6 data points)
+  const apsTrend = [
+    { time: '10:00', value: 34 },
+    { time: '10:15', value: 48 },
+    { time: '10:30', value: 62 },
+    { time: '10:45', value: 76 },
+    { time: '11:00', value: selectedPatient.apsScore },
+    { time: '11:15', value: Math.min(100, selectedPatient.apsScore + 1) },
+  ];
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-300">
-      {/* 1. Patient Workstation Header & Switcher Strip */}
-      <section className="neu-flat rounded-2xl p-4 sm:p-5 transition-colors border-l-4 border-l-sky-600">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          {/* Back button & Patient selector */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onBackToRadar}
-              className="gap-1.5 text-xs font-semibold"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Ward Radar</span>
-            </Button>
-
-            {/* Quick Switcher Buttons */}
-            <div className="neu-inset rounded-xl p-1 flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onSelectPatient(prevPatient)}
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                title={`Previous Patient: Bed ${prevPatient.bedNumber}`}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-
-              <div className="flex items-center gap-1 px-1">
-                {patients.map((p, idx) => {
-                  const isActive = p.patientId === selectedPatient.patientId;
-                  const isCrit = p.category === 'CRITICAL_REVIEW';
-                  const isEval = p.category === 'EVALUATE';
-
-                  return (
-                    <button
-                      key={p.patientId}
-                      type="button"
-                      onClick={() => onSelectPatient(p)}
-                      className={`px-2 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
-                        isActive
-                          ? 'neu-button bg-sky-600 text-white shadow-sm'
-                          : isCrit
-                          ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/10'
-                          : isEval
-                          ? 'text-orange-600 dark:text-orange-400 hover:bg-orange-500/10'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                      title={`[${idx + 1}] Bed ${p.bedNumber} - ${p.name}`}
-                    >
-                      <span>{p.bedNumber.split('-')[0]}</span>
-                      {isCrit && !isActive && <span className="text-rose-500 ml-0.5">•</span>}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onSelectPatient(nextPatient)}
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                title={`Next Patient: Bed ${nextPatient.bedNumber}`}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+    <div className="space-y-6">
+      {/* Upper Layout: Split View with Left Roster & Right Workstation Cards */}
+      <div className="flex flex-col xl:flex-row gap-6 items-start">
+        {/* ================================================================= */}
+        {/* 1. LEFT COLUMN: PATIENT TRIAGE ROSTER (Like Salary list in shot)  */}
+        {/* ================================================================= */}
+        <div className="w-full xl:w-[310px] bg-white rounded-2xl border border-slate-200/70 p-4 shrink-0 shadow-xs">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">Patients</h2>
+              <p className="text-[10px] text-slate-500 font-medium">Triage Priority Queue</p>
             </div>
+            <span className="text-xs font-mono font-bold text-slate-800 bg-[#F3F6F4] px-2.5 py-1 rounded-full border border-slate-200/60">
+              {patients.length} Monitored
+            </span>
           </div>
 
-          {/* Quick Bedside Acknowledge CTA */}
-          <div className="flex items-center gap-3 justify-end">
-            {!selectedPatient.isAcknowledged &&
-            (selectedPatient.category === 'CRITICAL_REVIEW' || selectedPatient.category === 'EVALUATE') ? (
-              <Button
-                size="sm"
-                variant="default"
-                onClick={(e) => onAcknowledge(selectedPatient.patientId, e)}
-                className="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs gap-1.5 h-9 px-4 shadow-sm"
-              >
-                <Check className="h-4 w-4" />
-                <span>Acknowledge [A]</span>
-              </Button>
-            ) : (
-              <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-700 dark:text-emerald-400 neu-inset-sm px-3 py-1.5 rounded-xl">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>Telemetry Verified</span>
+          {/* Search Box */}
+          <div className="relative my-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              value={rosterSearch}
+              onChange={(e) => setRosterSearch(e.target.value)}
+              placeholder="Search patient or bed..."
+              className="w-full bg-[#F3F6F4] text-slate-800 placeholder:text-slate-400 rounded-xl pl-8 pr-3 py-1.5 text-xs font-medium border border-slate-200/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            />
+          </div>
+
+          {/* Grouped Patient List */}
+          <div className="space-y-4 max-h-[560px] overflow-y-auto pr-1">
+            {/* Critical Group */}
+            {criticalPatients.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                  Critical Deterioration ({criticalPatients.length})
+                </p>
+                <div className="space-y-1.5">
+                  {criticalPatients.map((p) => {
+                    const isSelected = p.patientId === selectedPatient.patientId;
+                    return (
+                      <button
+                        key={p.patientId}
+                        type="button"
+                        onClick={() => onSelectPatient(p)}
+                        className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#F3F6F4] border border-slate-200/90 shadow-xs'
+                            : 'hover:bg-slate-50 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-8 w-8 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-center shrink-0">
+                            {getInitials(p.name)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900 truncate leading-tight">
+                              {p.name}
+                            </p>
+                            <p className="text-[10px] text-slate-500 truncate">
+                              Bed {p.bedNumber} • {p.admissionDiagnosis}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 pl-2">
+                          <span className="text-xs font-mono font-black text-rose-600">
+                            {p.apsScore}
+                          </span>
+                          <p className="text-[9px] font-semibold text-rose-500 uppercase">APS</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Watch / Escalating Group */}
+            {watchPatients.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  Escalating / Watch ({watchPatients.length})
+                </p>
+                <div className="space-y-1.5">
+                  {watchPatients.map((p) => {
+                    const isSelected = p.patientId === selectedPatient.patientId;
+                    return (
+                      <button
+                        key={p.patientId}
+                        type="button"
+                        onClick={() => onSelectPatient(p)}
+                        className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#F3F6F4] border border-slate-200/90 shadow-xs'
+                            : 'hover:bg-slate-50 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-8 w-8 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold flex items-center justify-center shrink-0">
+                            {getInitials(p.name)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900 truncate leading-tight">
+                              {p.name}
+                            </p>
+                            <p className="text-[10px] text-slate-500 truncate">
+                              Bed {p.bedNumber} • {p.admissionDiagnosis}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 pl-2">
+                          <span className="text-xs font-mono font-bold text-amber-600">
+                            {p.apsScore}
+                          </span>
+                          <p className="text-[9px] font-semibold text-amber-500 uppercase">APS</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Stable Group */}
+            {stablePatients.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Stable Ward Beds ({stablePatients.length})
+                </p>
+                <div className="space-y-1.5">
+                  {stablePatients.map((p) => {
+                    const isSelected = p.patientId === selectedPatient.patientId;
+                    return (
+                      <button
+                        key={p.patientId}
+                        type="button"
+                        onClick={() => onSelectPatient(p)}
+                        className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#F3F6F4] border border-slate-200/90 shadow-xs'
+                            : 'hover:bg-slate-50 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-8 w-8 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-center shrink-0">
+                            {getInitials(p.name)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900 truncate leading-tight">
+                              {p.name}
+                            </p>
+                            <p className="text-[10px] text-slate-500 truncate">
+                              Bed {p.bedNumber} • {p.admissionDiagnosis}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 pl-2">
+                          <span className="text-xs font-mono font-bold text-emerald-600">
+                            {p.apsScore}
+                          </span>
+                          <p className="text-[9px] font-semibold text-emerald-500 uppercase">APS</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
         </div>
-      </section>
 
-      {/* 2. Full-Width Patient Detail Deep-Dive Panel */}
-      <div className="w-full">
-        <PatientDetailPanel
-          patient={selectedPatient}
-          isEmbedded={true}
-          onAcknowledge={onAcknowledge}
-          onLogAssessment={onLogAssessment}
-          onEscalate={onEscalate}
-          onSpotCheckComplete={onSpotCheckComplete}
-          onOpenCamera={onOpenCamera}
-        />
+        {/* ================================================================= */}
+        {/* 2. RIGHT MAIN AREA: DUAL WORKSTATION PANELS (Cash In / Cash Out)  */}
+        {/* ================================================================= */}
+        <div className="flex-1 w-full space-y-5">
+          {/* Patient Overview Header Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 border-b border-slate-100">
+            {/* Left: Patient Identity & Breadcrumbs */}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onBackToRadar}
+                className="gap-1.5 text-xs font-semibold rounded-xl"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                <span>Ward Radar</span>
+              </Button>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-black text-slate-900">
+                    {selectedPatient.name}
+                  </h2>
+                  <span className="bg-[#F3F6F4] text-slate-700 font-mono text-xs font-bold px-2.5 py-0.5 rounded-md border border-slate-200">
+                    Bed {selectedPatient.bedNumber}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium">
+                  {selectedPatient.admissionDiagnosis} • Admitted {selectedPatient.lastTrustedElapsedMinutes}m ago
+                </p>
+              </div>
+            </div>
+
+            {/* Right: Quick Clinical Actions */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {onOpenCamera && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onOpenCamera}
+                  className="gap-1.5 text-xs font-bold text-emerald-700 border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100 rounded-xl"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  <span>Optical Spot-Check [C]</span>
+                </Button>
+              )}
+
+              {!selectedPatient.isAcknowledged &&
+              (selectedPatient.category === 'CRITICAL_REVIEW' || selectedPatient.category === 'EVALUATE') ? (
+                <Button
+                  size="sm"
+                  onClick={(e) => onAcknowledge(selectedPatient.patientId, e)}
+                  className="gap-1.5 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xs"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Acknowledge [A]</span>
+                </Button>
+              ) : (
+                <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-3 py-1.5 rounded-xl font-semibold">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>Verified at Bedside</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Two Comparison Cards Side-by-Side (Like Cash In & Cash Out) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* ------------------------------------------------------------- */}
+            {/* CARD 1: LIVE BEDSIDE TELEMETRY & OPTICAL SENSING (Cash In)    */}
+            {/* ------------------------------------------------------------- */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col justify-between">
+              {/* Top Mint Gradient Banner */}
+              <div className="bg-gradient-to-b from-[#EAF7EC] to-white p-5 border-b border-emerald-100/70">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                      Live Telemetry Stream
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-medium">Physiological Vitals & rPPG</p>
+                  </div>
+                  <span className="bg-white/90 text-emerald-700 font-mono text-xs font-bold px-3 py-1 rounded-full border border-emerald-200/60 shadow-2xs">
+                    {selectedPatient.signalQuality?.confidencePercent ?? 98}% SQI • Valid
+                  </span>
+                </div>
+
+                {/* Vitals Table */}
+                <div className="space-y-2 pt-1 text-xs">
+                  <div className="flex items-center justify-between py-1 border-b border-emerald-50">
+                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                      <HeartPulse className="h-3.5 w-3.5 text-rose-500" />
+                      <span>Heart Rate (ECG / rPPG)</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono font-black text-slate-900 text-sm">
+                        {selectedPatient.vitals.heartRate ?? '--'} BPM
+                      </span>
+                      <span className="text-[10px] text-rose-600 font-bold ml-1.5">Tachycardia</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1 border-b border-emerald-50">
+                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                      <Droplets className="h-3.5 w-3.5 text-sky-500" />
+                      <span>Blood Pressure (NIBP)</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono font-black text-slate-900 text-sm">
+                        {selectedPatient.vitals.systolicBP && selectedPatient.vitals.diastolicBP
+                          ? `${selectedPatient.vitals.systolicBP}/${selectedPatient.vitals.diastolicBP}`
+                          : '--/--'}{' '}
+                        mmHg
+                      </span>
+                      <span className="text-[10px] text-amber-600 font-bold ml-1.5">Hypotensive</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1 border-b border-emerald-50">
+                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                      <Activity className="h-3.5 w-3.5 text-blue-500" />
+                      <span>Oxygen Saturation (SpO2)</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono font-black text-slate-900 text-sm">
+                        {selectedPatient.vitals.spo2 ?? '--'}%
+                      </span>
+                      <span className="text-[10px] text-rose-600 font-bold ml-1.5">Hypoxic</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1 border-b border-emerald-50">
+                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                      <Wind className="h-3.5 w-3.5 text-emerald-500" />
+                      <span>Respiratory Rate</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono font-black text-slate-900 text-sm">
+                        {selectedPatient.vitals.respiratoryRate ?? '--'} /min
+                      </span>
+                      <span className="text-[10px] text-amber-600 font-bold ml-1.5">Tachypneic</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Sparkline Graph */}
+              <div className="p-5 pt-3">
+                <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2 font-medium">
+                  <span>Heart Rate Trajectory (60m)</span>
+                  <span className="font-mono text-emerald-700 font-bold">● High Frequency</span>
+                </div>
+
+                {/* SVG Smooth Curve Waveform */}
+                <div className="relative h-32 w-full">
+                  <svg className="w-full h-full overflow-visible" viewBox="0 0 300 100" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="emerald-sparkline" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#059669" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#059669" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Subtle Horizontal Grid lines */}
+                    <line x1="0" y1="20" x2="300" y2="20" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="0" y1="50" x2="300" y2="50" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="0" y1="80" x2="300" y2="80" stroke="#f1f5f9" strokeDasharray="3 3" />
+
+                    {/* Area under curve */}
+                    <path
+                      d="M 0 85 C 50 80, 80 65, 120 50 C 160 35, 200 40, 240 25 C 270 15, 290 10, 300 8 L 300 100 L 0 100 Z"
+                      fill="url(#emerald-sparkline)"
+                    />
+
+                    {/* Smooth Spline Curve Line */}
+                    <path
+                      d="M 0 85 C 50 80, 80 65, 120 50 C 160 35, 200 40, 240 25 C 270 15, 290 10, 300 8"
+                      fill="none"
+                      stroke="#059669"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    />
+
+                    {/* Peak Point Beacon */}
+                    <circle cx="280" cy="12" r="4" fill="#059669" className="animate-ping" opacity="0.75" />
+                    <circle cx="280" cy="12" r="3.5" fill="#059669" />
+                  </svg>
+
+                  {/* Floating Pill Tooltip (Like 109M € badge in screenshot) */}
+                  <div className="absolute right-4 top-1 bg-slate-900 text-white rounded-full px-3 py-1 flex items-center gap-2 shadow-lg text-[11px] font-bold">
+                    <div className="h-4 w-4 rounded-full bg-rose-500 text-[9px] flex items-center justify-center font-mono">
+                      HR
+                    </div>
+                    <span>{selectedPatient.vitals.heartRate ?? 118} BPM</span>
+                  </div>
+                </div>
+
+                {/* X-Axis Timestamps */}
+                <div className="flex justify-between text-[10px] text-slate-400 font-mono pt-2 border-t border-slate-100">
+                  {hrTrend.map((pt, i) => (
+                    <span key={i}>{pt.time}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ------------------------------------------------------------- */}
+            {/* CARD 2: CLINICAL DETERIORATION & ACTIONS (Cash Out)           */}
+            {/* ------------------------------------------------------------- */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col justify-between">
+              {/* Top Sky Gradient Banner */}
+              <div className="bg-gradient-to-b from-[#EBF4FA] to-white p-5 border-b border-sky-100/70">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                      Clinical Trajectory & Actions
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-medium">Attention Allocation Protocol</p>
+                  </div>
+                  <span className="bg-white/90 text-rose-700 font-mono text-xs font-bold px-3 py-1 rounded-full border border-rose-200/60 shadow-2xs">
+                    APS {selectedPatient.apsScore} • Immediate Action
+                  </span>
+                </div>
+
+                {/* Actions Table */}
+                <div className="space-y-2 pt-1 text-xs">
+                  <div className="flex items-center justify-between py-1 border-b border-sky-50">
+                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                      <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                      <span>Draw Blood Cultures & Lactate</span>
+                    </div>
+                    <span className="bg-rose-50 text-rose-700 font-bold px-2 py-0.5 rounded text-[10px] border border-rose-200/60">
+                      STAT • Required
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1 border-b border-sky-50">
+                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                      <Droplets className="h-3.5 w-3.5 text-sky-500" />
+                      <span>IV Fluid Resuscitation (500mL)</span>
+                    </div>
+                    <span className="bg-sky-50 text-sky-700 font-bold px-2 py-0.5 rounded text-[10px] border border-sky-200/60">
+                      In Progress
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1 border-b border-sky-50">
+                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                      <User className="h-3.5 w-3.5 text-purple-500" />
+                      <span>Notify Attending MD (Dr. Chen)</span>
+                    </div>
+                    <span className="bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded text-[10px] border border-purple-200/60">
+                      Paged • 10m ago
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1 border-b border-sky-50">
+                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                      <span>Bedside QR Safety Verification</span>
+                    </div>
+                    <span className="bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded text-[10px] border border-emerald-200/60">
+                      Verified
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Sparkline Graph */}
+              <div className="p-5 pt-3">
+                <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2 font-medium">
+                  <span>Deterioration Index Progression</span>
+                  <span className="font-mono text-sky-700 font-bold">● Multi-Organ MEWS</span>
+                </div>
+
+                {/* SVG Smooth Curve Waveform in Sky Blue */}
+                <div className="relative h-32 w-full">
+                  <svg className="w-full h-full overflow-visible" viewBox="0 0 300 100" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="sky-sparkline" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#0284c7" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#0284c7" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Subtle Horizontal Grid lines */}
+                    <line x1="0" y1="20" x2="300" y2="20" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="0" y1="50" x2="300" y2="50" stroke="#f1f5f9" strokeDasharray="3 3" />
+                    <line x1="0" y1="80" x2="300" y2="80" stroke="#f1f5f9" strokeDasharray="3 3" />
+
+                    {/* Area under curve */}
+                    <path
+                      d="M 0 75 C 60 70, 90 55, 140 45 C 180 35, 220 28, 250 18 C 275 10, 290 8, 300 6 L 300 100 L 0 100 Z"
+                      fill="url(#sky-sparkline)"
+                    />
+
+                    {/* Smooth Spline Curve Line */}
+                    <path
+                      d="M 0 75 C 60 70, 90 55, 140 45 C 180 35, 220 28, 250 18 C 275 10, 290 8, 300 6"
+                      fill="none"
+                      stroke="#0284c7"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    />
+
+                    {/* Peak Point Beacon */}
+                    <circle cx="285" cy="8" r="4" fill="#0284c7" className="animate-ping" opacity="0.75" />
+                    <circle cx="285" cy="8" r="3.5" fill="#0284c7" />
+                  </svg>
+
+                  {/* Floating Pill Tooltip (Like 109M € badge in screenshot) */}
+                  <div className="absolute right-4 top-1 bg-slate-900 text-white rounded-full px-3 py-1 flex items-center gap-2 shadow-lg text-[11px] font-bold">
+                    <div className="h-4 w-4 rounded-full bg-amber-500 text-[9px] flex items-center justify-center font-mono">
+                      APS
+                    </div>
+                    <span>Score {selectedPatient.apsScore} Peak</span>
+                  </div>
+                </div>
+
+                {/* X-Axis Timestamps */}
+                <div className="flex justify-between text-[10px] text-slate-400 font-mono pt-2 border-t border-slate-100">
+                  {apsTrend.map((pt, i) => (
+                    <span key={i}>{pt.time}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Expandable Section: Comprehensive Clinical Dossier & Deep Dive */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+            <button
+              type="button"
+              onClick={() => setShowFullDossier(!showFullDossier)}
+              className="w-full flex items-center justify-between text-xs font-bold text-slate-800 hover:text-slate-950 transition-colors cursor-pointer py-1"
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-emerald-600" />
+                <span>Full Clinical Dossier & Labs (Timeline, SBAR, Diagnostic Provenance)</span>
+              </div>
+              {showFullDossier ? (
+                <ChevronUp className="h-4 w-4 text-slate-400" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-slate-400" />
+              )}
+            </button>
+
+            {showFullDossier && (
+              <div className="pt-4 border-t border-slate-100 mt-3">
+                <PatientDetailPanel
+                  patient={selectedPatient}
+                  isEmbedded={true}
+                  onAcknowledge={onAcknowledge}
+                  onLogAssessment={onLogAssessment}
+                  onEscalate={onEscalate}
+                  onSpotCheckComplete={onSpotCheckComplete}
+                  onOpenCamera={onOpenCamera}
+                />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
