@@ -90,10 +90,10 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* 1. Simulation Header */}
-      <section className="neu-flat rounded-2xl p-6 transition-colors">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <section className="rounded-xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition-colors">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
               <img src="/aegis-logo.png" alt="AegisPulse" className="h-6 w-6 object-contain inline-block" />
               AegisPulse Simulation & Time-Travel Lab
             </h2>
@@ -108,19 +108,19 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
               variant={isPlaying ? 'default' : 'outline'}
               size="sm"
               onClick={() => setIsPlaying(!isPlaying)}
-              className={`gap-1.5 font-bold text-xs h-9 ${
+              className={`gap-1.5 font-bold text-xs h-8 ${
                 isPlaying ? 'bg-amber-500 hover:bg-amber-600 text-slate-950' : 'text-foreground'
               }`}
             >
-              {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 text-emerald-500" />}
-              <span>{isPlaying ? 'Pause Simulation' : 'Auto Play'}</span>
+              {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 text-emerald-500" />}
+              <span>{isPlaying ? 'Pause' : 'Auto Play'}</span>
             </Button>
 
             <Button
               variant="outline"
               size="sm"
               onClick={handlePrev}
-              className="h-9 w-9 p-0"
+              className="h-8 w-8 p-0"
               title="Previous Step"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -130,7 +130,7 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
               variant="outline"
               size="sm"
               onClick={handleNext}
-              className="h-9 w-9 p-0"
+              className="h-8 w-8 p-0"
               title="Next Step"
             >
               <ChevronRight className="h-4 w-4" />
@@ -140,7 +140,7 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
               variant="outline"
               size="sm"
               onClick={handleReset}
-              className="h-9 gap-1 text-xs font-mono"
+              className="h-8 gap-1 text-xs font-mono"
               title="Reset Simulation to Initial State"
             >
               <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
@@ -151,22 +151,22 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
       </section>
 
       {/* 2. Step Scrubber Ribbon */}
-      <Card className="neu-flat p-6">
-        <div className="flex items-center justify-between mb-4">
+      <Card className="p-4 sm:p-6 shadow-xs">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <Layers className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+            <Layers className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
               Step {currentStep.index + 1} of {ORDERED_DEMO_STEPS.length}: {currentStep.title}
             </h3>
           </div>
 
-          <span className="text-xs font-mono neu-inset px-2.5 py-1 rounded-lg text-foreground font-bold">
+          <span className="text-xs font-mono bg-muted/60 border border-border/50 px-2.5 py-1 rounded-lg text-foreground font-bold">
             Sim Step: #{currentStep.index + 1}
           </span>
         </div>
 
         {/* Interactive Step Pill Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-5">
           {ORDERED_DEMO_STEPS.map((stepKey, idx) => {
             const isCurrent = currentStep.index === idx;
             const isPassed = idx < currentStep.index;
@@ -176,12 +176,12 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
                 key={stepKey}
                 type="button"
                 onClick={() => handleJump(idx)}
-                className={`p-3 rounded-xl text-left transition-all cursor-pointer ${
+                className={`p-2.5 sm:p-3 rounded-xl text-left transition-all cursor-pointer border ${
                   isCurrent
-                    ? 'neu-button bg-sky-600 text-white shadow-md font-bold ring-2 ring-sky-400/50'
+                    ? 'bg-primary text-primary-foreground shadow-xs font-bold border-primary'
                     : isPassed
-                    ? 'neu-inset text-foreground'
-                    : 'neu-flat text-muted-foreground hover:text-foreground'
+                    ? 'bg-muted/40 border-border/60 text-foreground'
+                    : 'bg-card border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/20'
                 }`}
               >
                 <div className="flex items-center justify-between text-[11px] font-mono mb-1">
@@ -210,10 +210,10 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
         </div>
 
         {/* Current Step Detailed Impact Box */}
-        <div className="neu-inset rounded-2xl p-5 space-y-3">
+        <div className="rounded-xl border border-border/60 bg-muted/30 p-4 sm:p-5 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-sky-600 dark:text-sky-400 font-bold">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-primary font-bold">
                 Clinical Narrative & Mechanics
               </span>
               <h4 className="text-base font-bold text-foreground mt-0.5">{currentStep.subtitle}</h4>
@@ -224,7 +224,7 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => onNavigateToPatient(targetPatient)}
-                className="gap-1.5 text-xs font-semibold self-start sm:self-auto"
+                className="gap-1.5 text-xs font-semibold self-start sm:self-auto h-8"
               >
                 <span>Inspect Bed {targetPatient.bedNumber}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -245,7 +245,7 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
             </div>
             <div>
               <span className="text-muted-foreground">Recommended Action: </span>
-              <span className="font-bold text-sky-600 dark:text-sky-400">{currentStep.recommendedAction}</span>
+              <span className="font-bold text-primary">{currentStep.recommendedAction}</span>
             </div>
           </div>
         </div>
@@ -254,7 +254,7 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
       {/* 3. Scenario Presets & Signal Quality Assurance */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Scenario Presets */}
-        <Card className="neu-flat p-6">
+        <Card className="p-4 sm:p-6 shadow-xs">
           <h3 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider mb-4">
             Available Simulation Scenarios
           </h3>
@@ -288,14 +288,14 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
                   onClick={() => onScenarioChange(sc.id)}
                   className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
                     isSel
-                      ? 'neu-inset border-sky-500/50 bg-sky-500/5'
-                      : 'neu-flat-sm border-transparent hover:border-border'
+                      ? 'border-primary/50 bg-primary/10'
+                      : 'border-border/50 bg-card hover:border-border'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <h4 className="font-bold text-xs text-foreground">{sc.name}</h4>
                     {isSel && (
-                      <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
                         ACTIVE
                       </span>
                     )}
@@ -308,12 +308,12 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
         </Card>
 
         {/* Signal Quality & Hardware Edge Telemetry */}
-        <Card className="neu-flat p-6">
+        <Card className="p-4 sm:p-6 shadow-xs">
           <h3 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider mb-4">
             Edge Hardware & Signal Integrity
           </h3>
-          <div className="space-y-4 text-xs font-mono">
-            <div className="neu-inset p-3 rounded-xl flex items-center justify-between">
+          <div className="space-y-3 text-xs font-mono">
+            <div className="p-3 rounded-xl bg-muted/40 border border-border/40 flex items-center justify-between">
               <span className="text-muted-foreground">Video Exfiltration:</span>
               <span className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
                 <ShieldCheck className="h-4 w-4" />
@@ -321,17 +321,17 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
               </span>
             </div>
 
-            <div className="neu-inset p-3 rounded-xl flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-muted/40 border border-border/40 flex items-center justify-between">
               <span className="text-muted-foreground">Signal-to-Noise Ratio (SNR):</span>
               <span className="font-bold text-foreground">18.4 dB (Optimal)</span>
             </div>
 
-            <div className="neu-inset p-3 rounded-xl flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-muted/40 border border-border/40 flex items-center justify-between">
               <span className="text-muted-foreground">Motion Artifact Suppressor:</span>
-              <span className="font-bold text-sky-600 dark:text-sky-400">POS rPPG Active</span>
+              <span className="font-bold text-primary">POS rPPG Active</span>
             </div>
 
-            <div className="neu-inset p-3 rounded-xl flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-muted/40 border border-border/40 flex items-center justify-between">
               <span className="text-muted-foreground">Edge Persistence:</span>
               <span className="font-bold text-foreground">SQLite WAL (Zero Data Loss)</span>
             </div>

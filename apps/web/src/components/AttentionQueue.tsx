@@ -137,12 +137,12 @@ export const AttentionQueue: React.FC<AttentionQueueProps> = ({
   return (
     <section aria-label="Ward Primary Attention Queue" className="w-full flex flex-col space-y-4">
       {/* Question & Sort Command Bar */}
-      <div className="neu-flat rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="rounded-xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <span className="text-[10px] font-mono tracking-wider uppercase text-sky-700 dark:text-sky-400 font-black block">
+          <span className="text-[10px] font-mono tracking-wider uppercase text-primary font-bold block">
             Clinical Attention Allocation
           </span>
-          <h2 className="text-base sm:text-lg font-black text-foreground flex items-center gap-2">
+          <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
             Priority Attention Queue
             <span className="text-xs font-normal text-muted-foreground hidden md:inline">
               ({sortedPatients.length} active beds)
@@ -151,9 +151,9 @@ export const AttentionQueue: React.FC<AttentionQueueProps> = ({
         </div>
 
         {/* Dynamic Sort Controls & Keyboard Legend */}
-        <div className="flex items-center gap-3">
-          <div className="hidden xl:flex items-center gap-2 text-[11px] font-mono text-slate-700 dark:text-slate-300 neu-inset-sm px-3 py-1.5 rounded-xl font-semibold">
-            <span className="text-sky-700 dark:text-sky-400 font-black">KEYS:</span>
+        <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
+          <div className="hidden xl:flex items-center gap-2 text-[11px] font-mono text-muted-foreground bg-muted/60 border border-border/50 px-3 py-1.5 rounded-lg font-medium">
+            <span className="text-primary font-bold">KEYS:</span>
             <span>[↑/↓] Navigate</span>
             <span>•</span>
             <span>[1-6] Jump</span>
@@ -177,7 +177,7 @@ export const AttentionQueue: React.FC<AttentionQueueProps> = ({
       </div>
 
       {/* Spacious Restructured Patient Cards */}
-      <div className="space-y-4" role="list" aria-label="Patients Queue">
+      <div className="space-y-3.5" role="list" aria-label="Patients Queue">
         {sortedPatients.map((patient, index) => {
           const config = getCategoryConfig(patient.category);
           const isSelected = selectedPatientId === patient.patientId;
@@ -187,7 +187,6 @@ export const AttentionQueue: React.FC<AttentionQueueProps> = ({
             <Card
               key={patient.patientId}
               glow={patient.category === 'CRITICAL_REVIEW' ? 'critical' : patient.category === 'EVALUATE' ? 'evaluate' : 'none'}
-              variant={isSelected ? 'inset' : 'flat'}
               role="listitem"
               tabIndex={0}
               onClick={() => onSelectPatient(patient)}
@@ -197,22 +196,22 @@ export const AttentionQueue: React.FC<AttentionQueueProps> = ({
                   onSelectPatient(patient);
                 }
               }}
-              className={`relative border-l-[6px] cursor-pointer p-5 transition-all duration-200 ${
+              className={`relative border-l-4 cursor-pointer p-4 sm:p-5 transition-all duration-200 ${
                 config.borderLeft
               } ${
                 isSelected
-                  ? 'border-sky-500 ring-2 ring-sky-400/60 shadow-xl'
+                  ? 'border-primary ring-2 ring-primary/60 shadow-md'
                   : isKeyboardFocused
-                  ? 'border-sky-400 ring-2 ring-sky-500/40'
-                  : 'hover:scale-[1.008]'
+                  ? 'border-primary/80 ring-2 ring-primary/40'
+                  : 'hover:border-border hover:shadow-xs'
               }`}
             >
               {/* Card Section 1: Bed Demographics & Priority Badge */}
-              <div className="flex items-center justify-between gap-3 pb-3 border-b border-border/60">
-                <div className="flex items-center gap-3.5">
+              <div className="flex items-center justify-between gap-3 pb-3 border-b border-border/50">
+                <div className="flex items-center gap-3">
                   {/* Bed Number Inset Box */}
-                  <div className="neu-inset flex flex-col items-center justify-center h-12 w-16 rounded-xl text-center">
-                    <span className="text-[9px] font-mono uppercase text-slate-600 dark:text-slate-400 font-bold">
+                  <div className="flex flex-col items-center justify-center h-10 w-14 sm:h-11 sm:w-16 rounded-xl bg-muted/70 border border-border/60 text-center shrink-0">
+                    <span className="text-[9px] font-mono uppercase text-muted-foreground font-bold">
                       BED
                     </span>
                     <span className="text-sm font-black text-foreground font-mono">
@@ -222,32 +221,32 @@ export const AttentionQueue: React.FC<AttentionQueueProps> = ({
 
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-base font-black text-foreground hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+                      <h3 className="text-base font-bold text-foreground hover:text-primary transition-colors">
                         {patient.name}
                       </h3>
                       <span className="text-xs font-mono font-semibold text-muted-foreground">
                         ({patient.gender === 'FEMALE' ? 'F' : 'M'}, {patient.age}y)
                       </span>
-                      <span className="neu-inset-sm text-[10px] font-mono font-bold px-2 py-0.5 rounded text-slate-700 dark:text-slate-300">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-muted/60 border border-border/50 text-foreground">
                         {patient.mrn}
                       </span>
                     </div>
 
-                    <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                    <p className="text-xs text-muted-foreground font-medium mt-0.5 truncate max-w-xs sm:max-w-md">
                       {patient.admissionDiagnosis}
                     </p>
                   </div>
                 </div>
 
                 {/* Status Badges on Top-Right */}
-                <div className="flex items-center gap-2.5">
-                  <Badge variant={config.badgeVariant} dot className="py-1 px-3 text-xs font-mono">
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge variant={config.badgeVariant} dot className="py-1 px-2.5 text-xs font-mono">
                     {config.label}
                   </Badge>
 
                   {/* APS Score Pill */}
-                  <div className="neu-inset px-3 py-1 rounded-xl flex items-baseline gap-1">
-                    <span className="text-[9px] font-mono text-slate-600 dark:text-slate-400 font-bold">APS</span>
+                  <div className="px-2.5 py-1 rounded-lg bg-muted/60 border border-border/50 flex items-baseline gap-1">
+                    <span className="text-[9px] font-mono text-muted-foreground font-bold">APS</span>
                     <span
                       className={`text-xl font-black font-mono tracking-tight ${
                         patient.apsScore >= 80
@@ -261,31 +260,31 @@ export const AttentionQueue: React.FC<AttentionQueueProps> = ({
                     >
                       {patient.apsScore}
                     </span>
-                    <span className="text-[10px] font-mono text-slate-500 font-medium">/100</span>
+                    <span className="text-[10px] font-mono text-muted-foreground font-medium">/100</span>
                   </div>
                 </div>
               </div>
 
               {/* Card Section 2: Clinical Trigger ("Why Now?") Synthesis */}
-              <div className="my-3.5">
+              <div className="my-3">
                 <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <span className="text-[10px] font-mono uppercase font-black text-slate-700 dark:text-slate-300">
+                  <span className="text-[10px] font-mono uppercase font-bold text-muted-foreground">
                     PRIMARY CLINICAL TRIGGER:
                   </span>
                   {getTrendIcon(patient.trendDirection)}
                 </div>
 
-                <div className="neu-inset rounded-xl p-3.5 text-xs sm:text-sm text-foreground font-medium leading-relaxed border border-border/40">
+                <div className="rounded-xl p-3 sm:p-3.5 text-xs sm:text-sm text-foreground font-medium leading-relaxed bg-muted/30 border border-border/50">
                   {patient.topContributingReasons[0]?.explanation || patient.whyNowSummary}
                 </div>
               </div>
 
               {/* Card Section 3: High-Contrast Distinct Vitals Channels & Acknowledge Action */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-border/60">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-border/50">
                 {/* 4 Distinct Vital Channels: Cardiac Rose, Respiratory Mint, O2 Sky, BP Indigo */}
-                <div className="grid grid-cols-4 gap-2.5 flex-1 max-w-xl">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1 max-w-xl">
                   {/* HR - Cardiac Channel (Rose Red) */}
-                  <div className="rounded-xl p-2.5 text-center neu-inset-sm bg-rose-500/10 border border-rose-500/30">
+                  <div className="rounded-lg p-2 text-center bg-rose-500/10 border border-rose-500/30 shadow-xs">
                     <span className="text-[10px] font-mono font-bold text-rose-700 dark:text-rose-300 flex items-center justify-center gap-1">
                       <HeartPulse className="h-3 w-3 text-rose-600 dark:text-rose-400" /> HR
                     </span>
@@ -297,8 +296,8 @@ export const AttentionQueue: React.FC<AttentionQueueProps> = ({
                     </span>
                   </div>
 
-                  {/* RR - Respiratory Channel (Mint Emerald - NOT Blue!) */}
-                  <div className="rounded-xl p-2.5 text-center neu-inset-sm bg-emerald-500/10 border border-emerald-500/30">
+                  {/* RR - Respiratory Channel */}
+                  <div className="rounded-lg p-2 text-center bg-emerald-500/10 border border-emerald-500/30 shadow-xs">
                     <span className="text-[10px] font-mono font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-1">
                       <Wind className="h-3 w-3 text-emerald-600 dark:text-emerald-400" /> RR
                     </span>
@@ -311,7 +310,7 @@ export const AttentionQueue: React.FC<AttentionQueueProps> = ({
                   </div>
 
                   {/* SpO2 - Oxygen Channel (Sky Blue) */}
-                  <div className="rounded-xl p-2.5 text-center neu-inset-sm bg-sky-500/10 border border-sky-500/30">
+                  <div className="rounded-lg p-2 text-center bg-sky-500/10 border border-sky-500/30 shadow-xs">
                     <span className="text-[10px] font-mono font-bold text-sky-800 dark:text-sky-300 flex items-center justify-center gap-1">
                       <Droplets className="h-3 w-3 text-sky-600 dark:text-sky-400" /> SpO2
                     </span>
@@ -324,7 +323,7 @@ export const AttentionQueue: React.FC<AttentionQueueProps> = ({
                   </div>
 
                   {/* BP - Hemodynamic Channel (Precision Indigo) */}
-                  <div className="rounded-xl p-2.5 text-center neu-inset-sm bg-indigo-500/10 border border-indigo-500/30">
+                  <div className="rounded-lg p-2 text-center bg-indigo-500/10 border border-indigo-500/30 shadow-xs">
                     <span className="text-[10px] font-mono font-bold text-indigo-800 dark:text-indigo-300 flex items-center justify-center gap-1">
                       <Activity className="h-3 w-3 text-indigo-600 dark:text-indigo-400" /> BP
                     </span>
@@ -341,7 +340,7 @@ export const AttentionQueue: React.FC<AttentionQueueProps> = ({
                 <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                   <div className="text-[10px] font-mono text-muted-foreground text-right">
                     <div className="flex items-center gap-1 justify-end text-foreground font-semibold">
-                      <Radio className="h-3 w-3 text-sky-600 dark:text-sky-400" />
+                      <Radio className="h-3 w-3 text-primary" />
                       {patient.signalQuality.confidencePercent}% SNR
                     </div>
                     <div
@@ -362,13 +361,13 @@ export const AttentionQueue: React.FC<AttentionQueueProps> = ({
                     onClick={(e) => onAcknowledgePatient(patient.patientId, e)}
                     title={patient.isAcknowledged ? 'Priority Acknowledged' : 'Acknowledge Priority Alert'}
                     aria-label={`Acknowledge Priority for ${patient.name}`}
-                    className={`h-9 px-3.5 text-xs font-mono font-bold ${
+                    className={`h-8 px-3 text-xs font-mono font-bold ${
                       patient.isAcknowledged
                         ? 'text-emerald-700 dark:text-emerald-400 border border-emerald-500/50 bg-emerald-500/10'
-                        : 'bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/30'
+                        : 'shadow-xs'
                     }`}
                   >
-                    <Check className={`h-3.5 w-3.5 ${patient.isAcknowledged ? 'text-emerald-600 dark:text-emerald-400' : 'text-white'}`} />
+                    <Check className={`h-3.5 w-3.5 ${patient.isAcknowledged ? 'text-emerald-600 dark:text-emerald-400' : ''}`} />
                     <span>{patient.isAcknowledged ? 'Acked' : 'Acknowledge'}</span>
                     <span className="text-[9px] opacity-80 hidden md:inline">[A]</span>
                   </Button>

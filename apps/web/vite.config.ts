@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -9,7 +10,22 @@ const __dirname = path.dirname(__filename);
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    basicSsl(),
+    {
+      name: 'suppress-tls-reset',
+      configureServer(server) {
+        server.httpServer?.on('clientError', (err: any, socket) => {
+          if (err?.code === 'ECONNRESET' || !socket.writable) return;
+          try {
+            socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+          } catch {}
+        });
+      },
+    },
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

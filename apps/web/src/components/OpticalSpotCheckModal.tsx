@@ -45,7 +45,7 @@ interface OpticalSpotCheckModalProps {
   patient: WardPatientRadarState;
   onCommitVitals: (
     patientId: string,
-    vitals: { heartRate: number; respiratoryRate: number; confidence: number }
+    vitals: { heartRate: number; respiratoryRate?: number | null; confidence: number }
   ) => void;
 }
 
@@ -232,12 +232,12 @@ export const OpticalSpotCheckModal: React.FC<OpticalSpotCheckModalProps> = ({
     startCamera(facingMode);
   };
 
-  // Commit Vitals to Bedside Record
+  // Commit Vitals to Bedside Record (STRICT: only genuine optical values, never fabricated)
   const handleCommit = () => {
     if (liveHr && liveHr > 0) {
       onCommitVitals(patient.patientId, {
         heartRate: liveHr,
-        respiratoryRate: liveRr ?? Math.round(liveHr / 4.5),
+        respiratoryRate: liveRr ?? null,
         confidence: sqiScore / 100,
       });
       sessionManagerRef.current.completeSession();
@@ -439,12 +439,17 @@ export const OpticalSpotCheckModal: React.FC<OpticalSpotCheckModalProps> = ({
             setSqiScore(measurement.signalQuality.sqiScore);
 
             if (measurement.status === 'VALID' && measurement.confidence >= 0.60) {
-              setLiveHr(measurement.heartRate);
-              if (measurement.respiratoryRate) {
-                setLiveRr(measurement.respiratoryRate);
+              setLiveHr(Math.round(measurement.heartRate));
+              if (measurement.respiratoryRate && measurement.respiratoryRate > 0) {
+                setLiveRr(Math.round(measurement.respiratoryRate));
               } else {
-                setLiveRr(Math.round(measurement.heartRate / 4.4));
+                // Strictly DO NOT fabricate dummy value! Leave empty/null if unresolvable from spectrum
+                setLiveRr(null);
               }
+            } else if (measurement.status === 'UNUSABLE') {
+              // Gated / unresolvable signal - suppress live vitals
+              setLiveHr(null);
+              setLiveRr(null);
             }
           }
         }
@@ -614,17 +619,16 @@ export const OpticalSpotCheckModal: React.FC<OpticalSpotCheckModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
       <DialogContent onClose={handleModalClose} className="max-w-2xl p-5 font-sans">
-        {/* HEADER */}
         <DialogHeader className="border-b border-border/40 pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="neu-button p-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 shadow-xs flex items-center justify-center">
+              <div className="p-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-primary/20 shadow-xs flex items-center justify-center">
                 <img src="/aegis-logo.png" alt="AegisPulse" className="h-7 w-7 object-contain" />
               </div>
               <div>
                 <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
                   15-Second Optical Spot-Check
-                  <Badge variant="outline" className="font-mono text-[10px] text-sky-600 dark:text-sky-400">
+                  <Badge variant="outline" className="font-mono text-[10px] text-primary border-primary/30">
                     Bed {patient.bedNumber}
                   </Badge>
                 </DialogTitle>
@@ -657,7 +661,7 @@ export const OpticalSpotCheckModal: React.FC<OpticalSpotCheckModalProps> = ({
 
         {/* GUIDANCE ALERT BANNER */}
         <div className="pt-2 pb-1">
-          <div className="neu-inset-sm px-3.5 py-2 rounded-xl flex items-center justify-between text-xs font-mono bg-slate-950/40">
+          <div className="px-3.5 py-2 rounded-xl flex items-center justify-between text-xs font-mono bg-muted/60 border border-border/50">
             <div className="flex items-center gap-2 font-bold tracking-wide">
               <GuidanceIcon className={`h-4 w-4 ${guidance.color} animate-pulse`} />
               <span className={guidance.color}>{guidance.text}</span>
@@ -671,7 +675,7 @@ export const OpticalSpotCheckModal: React.FC<OpticalSpotCheckModalProps> = ({
         {/* MAIN BODY */}
         <div className="space-y-4 py-1">
           {/* CAMERA FEED VIEWPORT WITH OVERLAYS */}
-          <div className="relative w-full h-[270px] sm:h-[300px] rounded-2xl neu-inset overflow-hidden flex items-center justify-center bg-slate-950 text-slate-100">
+          <div className="relative w-full h-[270px] sm:h-[300px] rounded-xl border border-border/80 overflow-hidden flex items-center justify-center bg-black text-slate-100 shadow-inner">
             {/* Real Hardware Video Stream */}
             <video
               ref={videoRef}
@@ -757,7 +761,7 @@ export const OpticalSpotCheckModal: React.FC<OpticalSpotCheckModalProps> = ({
           {/* LIVE EXTRACTED VITALS & PROGRESS STRIP */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* HEART RATE */}
-            <div className="neu-inset-sm p-3 rounded-xl flex items-center justify-between">
+            <div className="p-3 rounded-xl border border-border/60 bg-muted/40 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground">
                   <HeartPulse className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
@@ -776,7 +780,7 @@ export const OpticalSpotCheckModal: React.FC<OpticalSpotCheckModalProps> = ({
             </div>
 
             {/* RESPIRATORY RATE */}
-            <div className="neu-inset-sm p-3 rounded-xl flex items-center justify-between">
+            <div className="p-3 rounded-xl border border-border/60 bg-muted/40 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground">
                   <Wind className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -786,28 +790,28 @@ export const OpticalSpotCheckModal: React.FC<OpticalSpotCheckModalProps> = ({
                   {liveRr !== null ? `${liveRr} /min` : '--'}
                 </div>
                 <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
-                  {liveRr !== null ? 'Green baseline wander' : 'Requires 6s buffer'}
+                  {liveRr !== null ? 'rPPG baseline wander' : 'Requires steady 6s signal'}
                 </div>
               </div>
               <Badge variant={liveRr !== null ? 'default' : 'outline'} className="text-[10px] font-mono">
-                {liveRr !== null ? 'ESTIMATED' : 'GATED'}
+                {liveRr !== null ? 'MEASURED' : 'EMPTY'}
               </Badge>
             </div>
 
             {/* SIGNAL QUALITY (SQI) & PROGRESS */}
-            <div className="neu-inset-sm p-3 rounded-xl flex flex-col justify-between">
+            <div className="p-3 rounded-xl border border-border/60 bg-muted/40 flex flex-col justify-between">
               <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
                 <span className="flex items-center gap-1.5">
-                  <Radio className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                  <Radio className="h-3.5 w-3.5 text-primary" />
                   Spot Progress
                 </span>
                 <span className="font-bold text-foreground">{progressSeconds}s / 15s</span>
               </div>
 
               {/* Countdown Progress Bar */}
-              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden my-2">
+              <div className="w-full bg-muted h-2 rounded-full overflow-hidden my-2">
                 <div
-                  className="bg-gradient-to-r from-sky-500 to-emerald-500 h-full transition-all duration-300"
+                  className="bg-primary h-full transition-all duration-300"
                   style={{ width: `${(progressSeconds / 15) * 100}%` }}
                 />
               </div>
@@ -820,9 +824,9 @@ export const OpticalSpotCheckModal: React.FC<OpticalSpotCheckModalProps> = ({
           </div>
 
           {/* REAL-TIME PPG PULSE WAVEFORM CANVAS */}
-          <div className="neu-inset-sm p-2 rounded-xl bg-slate-950 flex flex-col justify-center">
+          <div className="p-2.5 rounded-xl border border-border/60 bg-black flex flex-col justify-center shadow-inner">
             <div className="flex items-center justify-between px-2 pb-1 text-[10px] font-mono text-slate-400">
-              <span className="flex items-center gap-1 text-sky-400">
+              <span className="flex items-center gap-1 text-primary">
                 <Activity className="h-3 w-3" />
                 POS Pulse Chrominance Waveform (Ephemeral Volatile Buffer)
               </span>
@@ -897,7 +901,9 @@ export const OpticalSpotCheckModal: React.FC<OpticalSpotCheckModalProps> = ({
             >
               <CheckCircle2 className="h-4 w-4" />
               {isCompleted && liveHr !== null
-                ? `Commit Verified Vitals (${liveHr} BPM)`
+                ? `Commit Verified Vitals (${liveHr} BPM${liveRr ? `, ${liveRr} /min` : ''})`
+                : isCompleted && liveHr === null
+                ? 'No Signal Locked - Retry'
                 : `Measuring (${progressSeconds}/15s)...`}
             </Button>
           </div>

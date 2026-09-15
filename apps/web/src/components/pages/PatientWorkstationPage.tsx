@@ -30,7 +30,7 @@ interface PatientWorkstationPageProps {
   onEscalate: (patientId: string) => void;
   onSpotCheckComplete?: (
     patientId: string,
-    vitals: { heartRate: number; respiratoryRate: number; confidence: number }
+    vitals: { heartRate: number; respiratoryRate?: number | null; confidence: number }
   ) => void;
   onOpenCamera?: () => void;
 }

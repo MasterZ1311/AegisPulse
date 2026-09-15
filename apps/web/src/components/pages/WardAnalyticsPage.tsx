@@ -41,10 +41,10 @@ export const WardAnalyticsPage: React.FC<WardAnalyticsPageProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* 1. Executive Analytics Header */}
-      <section className="neu-flat rounded-2xl p-6 transition-colors">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <section className="rounded-xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition-colors">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
               <img src="/aegis-logo.png" alt="AegisPulse" className="h-6 w-6 object-contain inline-block" />
               AegisPulse Ward Acuity & Deterioration Analytics
             </h2>
@@ -53,8 +53,8 @@ export const WardAnalyticsPage: React.FC<WardAnalyticsPageProps> = ({
             </p>
           </div>
 
-          <div className="neu-inset rounded-xl px-3.5 py-2 font-mono text-xs flex items-center gap-2">
-            <Clock className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+          <div className="rounded-lg border border-border/50 bg-muted/60 px-3 py-1.5 font-mono text-xs flex items-center gap-2 shrink-0 self-start md:self-auto">
+            <Clock className="h-3.5 w-3.5 text-primary" />
             <span className="text-muted-foreground">Rolling Window:</span>
             <span className="font-bold text-foreground">Last 60 Minutes</span>
           </div>
@@ -64,12 +64,12 @@ export const WardAnalyticsPage: React.FC<WardAnalyticsPageProps> = ({
       {/* 2. Top Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Mean APS */}
-        <Card className="neu-flat p-5">
+        <Card className="p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
               Mean Ward APS
             </span>
-            <Activity className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+            <Activity className="h-4 w-4 text-primary" />
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-3xl font-black font-mono text-foreground">{meanAps}</span>
@@ -81,7 +81,7 @@ export const WardAnalyticsPage: React.FC<WardAnalyticsPageProps> = ({
         </Card>
 
         {/* Escalating Patients */}
-        <Card className="neu-flat p-5">
+        <Card className="p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
               Acuity Velocity
@@ -100,7 +100,7 @@ export const WardAnalyticsPage: React.FC<WardAnalyticsPageProps> = ({
         </Card>
 
         {/* Mean Vitals */}
-        <Card className="neu-flat p-5">
+        <Card className="p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
               Mean Vital Telemetry
@@ -108,15 +108,15 @@ export const WardAnalyticsPage: React.FC<WardAnalyticsPageProps> = ({
             <HeartPulse className="h-4 w-4 text-emerald-500" />
           </div>
           <div className="mt-2 grid grid-cols-3 gap-2 text-center font-mono">
-            <div className="neu-inset p-1.5 rounded-lg">
+            <div className="bg-muted/60 border border-border/40 p-1.5 rounded-lg">
               <span className="text-[10px] text-muted-foreground block">HR</span>
               <span className="text-sm font-extrabold text-foreground">{meanHr}</span>
             </div>
-            <div className="neu-inset p-1.5 rounded-lg">
+            <div className="bg-muted/60 border border-border/40 p-1.5 rounded-lg">
               <span className="text-[10px] text-muted-foreground block">RR</span>
               <span className="text-sm font-extrabold text-foreground">{meanRr}</span>
             </div>
-            <div className="neu-inset p-1.5 rounded-lg">
+            <div className="bg-muted/60 border border-border/40 p-1.5 rounded-lg">
               <span className="text-[10px] text-muted-foreground block">SpO2</span>
               <span className="text-sm font-extrabold text-foreground">{meanSpo2}%</span>
             </div>
@@ -124,7 +124,7 @@ export const WardAnalyticsPage: React.FC<WardAnalyticsPageProps> = ({
         </Card>
 
         {/* Unacknowledged High Priority */}
-        <Card className="neu-flat p-5">
+        <Card className="p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
               Active Priority Alerts
@@ -144,12 +144,12 @@ export const WardAnalyticsPage: React.FC<WardAnalyticsPageProps> = ({
       </div>
 
       {/* 3. Acuity Tier Distribution Visual Bar */}
-      <Card className="neu-flat p-6">
+      <Card className="p-4 sm:p-6 shadow-xs">
         <h3 className="text-sm font-bold text-foreground uppercase tracking-wider font-mono mb-3">
           Ward Triage Acuity Distribution
         </h3>
         {/* Proportional Stacked Bar */}
-        <div className="h-5 w-full rounded-xl overflow-hidden flex neu-inset p-0.5 gap-0.5">
+        <div className="h-5 w-full rounded-xl overflow-hidden flex bg-muted/70 border border-border/50 p-0.5 gap-0.5">
           {critical.length > 0 && (
             <div
               style={{ width: `${(critical.length / total) * 100}%` }}
@@ -205,7 +205,7 @@ export const WardAnalyticsPage: React.FC<WardAnalyticsPageProps> = ({
       </Card>
 
       {/* 4. Shock Index & Hemodynamic Surveillance Table */}
-      <Card className="neu-flat p-6">
+      <Card className="p-4 sm:p-6 shadow-xs">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wider font-mono flex items-center gap-2">
@@ -242,7 +242,7 @@ export const WardAnalyticsPage: React.FC<WardAnalyticsPageProps> = ({
                 const isHrAbnormal = hr > 100 || hr < 55;
 
                 return (
-                  <tr key={p.patientId} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                  <tr key={p.patientId} className="hover:bg-muted/40 transition-colors">
                     <td className="py-3 font-extrabold text-foreground">{p.bedNumber}</td>
                     <td className="py-3 font-sans font-semibold text-foreground">{p.name}</td>
                     <td className={`py-3 ${isHrAbnormal ? 'text-rose-600 font-bold' : 'text-foreground'}`}>
@@ -258,7 +258,7 @@ export const WardAnalyticsPage: React.FC<WardAnalyticsPageProps> = ({
                             ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 font-extrabold'
                             : isModerateShock
                             ? 'bg-orange-500/20 text-orange-800 dark:text-orange-300'
-                            : 'neu-inset-sm text-foreground'
+                            : 'bg-muted/50 border border-border/40 text-foreground'
                         }`}
                       >
                         {si}

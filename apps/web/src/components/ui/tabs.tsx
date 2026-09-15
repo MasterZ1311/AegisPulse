@@ -48,7 +48,7 @@ export const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HT
     <div
       ref={ref}
       className={cn(
-        'neu-inset inline-flex h-11 items-center justify-start rounded-xl p-1 text-muted-foreground',
+        'inline-flex items-center justify-start rounded-xl bg-muted/60 p-1 text-muted-foreground border border-border/50',
         className
       )}
       role="tablist"
@@ -76,11 +76,11 @@ export const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>
         aria-selected={isSelected}
         onClick={() => context.onValueChange(value)}
         className={cn(
-          'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-semibold font-mono transition-all duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 cursor-pointer select-none',
+          'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150',
+          'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer select-none',
           isSelected
-            ? 'neu-button text-sky-600 dark:text-sky-300 font-bold'
-            : 'text-muted-foreground hover:text-foreground',
+            ? 'bg-background text-foreground shadow-xs font-bold'
+            : 'text-muted-foreground hover:text-foreground hover:bg-background/40',
           className
         )}
         {...props}
