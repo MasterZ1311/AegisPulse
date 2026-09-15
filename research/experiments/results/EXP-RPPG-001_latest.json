@@ -179,7 +179,7 @@
         ],
         "diagnosis": "WELL_CALIBRATED"
       },
-      "throughputFps": 110097
+      "throughputFps": 26750
     },
     "CHROM": {
       "metrics": {
@@ -260,7 +260,7 @@
         ],
         "diagnosis": "WELL_CALIBRATED"
       },
-      "throughputFps": 276577
+      "throughputFps": 172581
     },
     "POS": {
       "metrics": {
@@ -341,7 +341,7 @@
         ],
         "diagnosis": "WELL_CALIBRATED"
       },
-      "throughputFps": 49198
+      "throughputFps": 22484
     }
   },
   "disclaimer": "Never make clinical claims from a dataset without documenting its population and limitations. Investigational algorithm research only."

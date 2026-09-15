@@ -160,8 +160,9 @@ export class RppgSensorProvider implements SensorProvider {
       }
     }
 
-    // Check if face was lost in ROI
-    if (roi.faceDetected === false || roi.skinFraction === 0) {
+    // Strict Invariant: If face was lost or skinFraction below threshold (< 0.30), immediately purge buffer & emit NO_FACE
+    if (roi.faceDetected === false || roi.skinFraction === 0 || (roi.skinFraction !== undefined && roi.skinFraction < 0.30)) {
+      this.clearBuffer(patientId);
       const reading: SensorReading = {
         id: `sr-rppg-${patientId}-${roi.timestampMs}`,
         patientId,
@@ -177,7 +178,7 @@ export class RppgSensorProvider implements SensorProvider {
           state: 'LOST',
           isUsable: false,
           faceDetected: false,
-          reason: 'No face detected in camera field of view',
+          reason: 'No face detected in camera field of view (face lost or occluded)',
         },
         measurementStatus: 'NO_FACE',
         measurement_status: 'NO_FACE',
@@ -408,6 +409,64 @@ export class RppgSensorProvider implements SensorProvider {
   }
 
   /**
+   * Immediately clears the temporal ROI signal buffer for a given patient.
+   * Essential for eliminating the No-Face bug and cross-patient signal leakage.
+   */
+  public clearBuffer(patientId: string = this.defaultPatientId): void {
+    this.roiBuffers.delete(patientId);
+  }
+
+  /**
+   * Clears all buffered ROI histories across all patients.
+   */
+  public clearAllBuffers(): void {
+    this.roiBuffers.clear();
+  }
+
+  /**
+   * Hard Invalidation: Emits an explicit TARGET_LOST / NO_FACE event for a patient.
+   * Immediately purges active buffers and guarantees zero vitals fabrication.
+   */
+  public invalidatePatient(
+    patientId: string = this.defaultPatientId,
+    bedId: string = this.defaultBedId,
+    reason = 'Patient face not detected in sensing area'
+  ): SensorReading {
+    this.clearBuffer(patientId);
+    const timestamp = Date.now();
+
+    const reading: SensorReading = {
+      id: `sr-rppg-lost-${patientId}-${timestamp}`,
+      patientId,
+      bedId,
+      source: this.source,
+      timestamp,
+      confidence: 0,
+      signalQuality: {
+        sqiPercentage: 0,
+        snrDb: -20,
+        illuminationLux: 0,
+        motionArtifactIndex: 0,
+        state: 'LOST',
+        isUsable: false,
+        faceDetected: false,
+        reason,
+      },
+      measurementStatus: 'TARGET_LOST',
+      measurement_status: 'TARGET_LOST',
+      heartRate: undefined,
+      respiratoryRate: undefined,
+      metadata: {
+        algorithm: this.algorithm,
+        disclaimer: 'Face lost. Vitals immediately invalidated and withheld.',
+      },
+    };
+
+    this.notifyReading(reading);
+    return reading;
+  }
+
+  /**
    * Hardware & Environmental Lifecycle Recovery Handlers
    */
   public handleCameraDisconnect(
@@ -486,7 +545,7 @@ export class RppgSensorProvider implements SensorProvider {
       bedId,
       source: this.source,
       timestamp: Date.now(),
-      confidence: 0.10,
+      confidence: 0.1,
       signalQuality: {
         sqiPercentage: 10,
         snrDb: 0,
@@ -511,9 +570,9 @@ export class RppgSensorProvider implements SensorProvider {
     patientId: string = this.defaultPatientId,
     bedId: string = this.defaultBedId
   ): SensorReading {
-    this.roiBuffers.delete(patientId);
+    this.clearBuffer(patientId);
     const reading: SensorReading = {
-      id: `sr-rppg-${patientId}-${Date.now()}`,
+      id: `sr-rppg-lost-${patientId}-${Date.now()}`,
       patientId,
       bedId,
       source: this.source,
@@ -522,7 +581,7 @@ export class RppgSensorProvider implements SensorProvider {
       signalQuality: {
         sqiPercentage: 0,
         snrDb: -20,
-        illuminationLux: 240,
+        illuminationLux: 0,
         motionArtifactIndex: 0,
         state: 'LOST',
         isUsable: false,
@@ -533,6 +592,10 @@ export class RppgSensorProvider implements SensorProvider {
       measurement_status: 'NO_FACE',
       heartRate: undefined,
       respiratoryRate: undefined,
+      metadata: {
+        algorithm: this.algorithm,
+        disclaimer: 'Face lost. Vitals immediately invalidated and withheld.',
+      },
     };
     this.notifyReading(reading);
     return reading;
@@ -549,7 +612,7 @@ export class RppgSensorProvider implements SensorProvider {
       bedId,
       source: this.source,
       timestamp: Date.now(),
-      confidence: 0.10,
+      confidence: 0.1,
       signalQuality: {
         sqiPercentage: 10,
         snrDb: 0,
@@ -580,7 +643,7 @@ export class RppgSensorProvider implements SensorProvider {
       bedId,
       source: this.source,
       timestamp: Date.now(),
-      confidence: 0.10,
+      confidence: 0.1,
       signalQuality: {
         sqiPercentage: 10,
         snrDb: 0,
@@ -611,7 +674,7 @@ export class RppgSensorProvider implements SensorProvider {
       bedId,
       source: this.source,
       timestamp: Date.now(),
-      confidence: 0.10,
+      confidence: 0.1,
       signalQuality: {
         sqiPercentage: 15,
         snrDb: 1.0,

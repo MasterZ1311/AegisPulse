@@ -106,3 +106,6 @@ export const signalModuleInfo: SignalModuleInfo = {
   status: 'ready',
 };
 
+// Face-First Sensing Subsystem
+export * from './face';
+

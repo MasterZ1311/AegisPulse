@@ -1,9 +1,248 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
-  body {
-    background-color: #020617;
-    color: #f8fafc;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  :root {
+    /* ===================================================================== */
+    /* LIGHT NEUMORPHIC SYSTEM: Titanium Clinical Alabaster                */
+    /* Distinct 3-Tier Layering: Canvas -> Raised Card -> Sunken Well       */
+    /* ===================================================================== */
+    --background: 215 25% 91%; /* #e2e8f0 - Crisp cool medical canvas */
+    --foreground: 222 47% 11%; /* #0f172a - Slate 900 for razor-sharp readability */
+
+    --card: 214 32% 96%; /* #edf3f9 - Raised bright card surface */
+    --card-foreground: 222 47% 11%;
+
+    --popover: 214 32% 97%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Brand Primary: Precision Clinical Cyan */
+    --primary: 199 89% 44%; /* #0284c7 - High contrast Sky 600 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 20% 87%;
+    --secondary-foreground: 222 35% 20%;
+
+    --muted: 215 20% 85%;
+    --muted-foreground: 215 18% 38%; /* #4b5869 - Stronger contrast */
+
+    --accent: 214 28% 90%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 347 87% 50%; /* #e11d48 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 20% 80%;
+    --input: 215 20% 80%;
+    --ring: 199 89% 44%;
+
+    --radius: 0.875rem;
+
+    /* Neumorphic Dual-Lighting Shadows (Light Mode) */
+    --neu-shadow-dark: rgba(168, 180, 198, 0.8);
+    --neu-shadow-light: rgba(255, 255, 255, 0.98);
+    --neu-bg: #edf3f9;              /* Raised Card */
+    --neu-inset-bg: #dfe7f0;        /* Sunken Inset Well (Visibly darker than card) */
+    --neu-bg-elevated: #f4f8fc;
+    --neu-border: rgba(148, 163, 184, 0.45);
+    --neu-inset-border: rgba(148, 163, 184, 0.35);
+
+    /* Triage Semantic Colors (Light Mode) */
+    --color-critical: #e11d48;
+    --color-evaluate: #ea580c;
+    --color-watch: #ca8a04;
+    --color-stable: #059669;
+
+    /* Telemetry Vitals Palette (Light Mode - Completely distinct hues) */
+    --color-vital-hr: #e11d48;    /* Crimson Red */
+    --color-vital-rr: #059669;    /* Mint Teal Green */
+    --color-vital-spo2: #0284c7;  /* Sky Blue */
+    --color-vital-bp: #4f46e5;    /* Precision Indigo */
+    --color-vital-temp: #d97706;  /* Warm Amber */
   }
+
+  .dark {
+    /* ===================================================================== */
+    /* DARK NEUMORPHIC SYSTEM: Deep Obsidian Slate                          */
+    /* Distinct 3-Tier Layering: Canvas -> Raised Card -> Sunken Well       */
+    /* ===================================================================== */
+    --background: 224 35% 6%; /* #090c12 - Deep night canvas */
+    --foreground: 210 40% 98%; /* #f8fafc */
+
+    --card: 222 30% 11%; /* #131923 - Elevated dark card */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 30% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Brand Primary: Glowing Precision Cyan */
+    --primary: 199 89% 48%; /* #38bdf8 - Vivid Sky 400 */
+    --primary-foreground: 222 30% 10%;
+
+    --secondary: 222 20% 15%;
+    --secondary-foreground: 210 30% 90%;
+
+    --muted: 222 18% 16%;
+    --muted-foreground: 215 20% 65%; /* #94a3b8 */
+
+    --accent: 222 20% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 347 90% 58%; /* #f43f5e */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 20% 18%;
+    --input: 222 20% 18%;
+    --ring: 199 89% 48%;
+
+    /* Neumorphic Dual-Lighting Shadows (Dark Mode) */
+    --neu-shadow-dark: rgba(4, 6, 10, 0.95);
+    --neu-shadow-light: rgba(30, 39, 56, 0.65);
+    --neu-bg: #131923;              /* Raised Card */
+    --neu-inset-bg: #090d14;        /* Sunken Inset Well (Visibly deeper than card) */
+    --neu-bg-elevated: #171e2c;
+    --neu-border: rgba(255, 255, 255, 0.08);
+    --neu-inset-border: rgba(0, 0, 0, 0.5);
+
+    /* Triage Semantic Colors (Dark Mode) */
+    --color-critical: #fb7185;
+    --color-evaluate: #fb923c;
+    --color-watch: #facc15;
+    --color-stable: #34d399;
+
+    /* Telemetry Vitals Palette (Dark Mode - Distinct hues) */
+    --color-vital-hr: #fb7185;    /* Crimson Red */
+    --color-vital-rr: #34d399;    /* Mint Teal Green */
+    --color-vital-spo2: #38bdf8;  /* Sky Blue */
+    --color-vital-bp: #818cf8;    /* Precision Indigo */
+    --color-vital-temp: #fbbf24;  /* Warm Amber */
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.015em;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* ========================================================================= */
+/* NEUMORPHIC SOFT UI SURFACES (Scoped in @layer utilities for proper cascade)*/
+/* ========================================================================= */
+
+@layer utilities {
+  /* 1. Flat Extruded Surface (Standard Card & Raised Container) */
+  .neu-flat {
+    background-color: var(--neu-bg);
+    box-shadow: 
+      6px 6px 14px var(--neu-shadow-dark), 
+      -6px -6px 14px var(--neu-shadow-light);
+    border: 1px solid var(--neu-border);
+  }
+
+  .neu-flat-sm {
+    background-color: var(--neu-bg);
+    box-shadow: 
+      3px 3px 8px var(--neu-shadow-dark), 
+      -3px -3px 8px var(--neu-shadow-light);
+    border: 1px solid var(--neu-border);
+  }
+
+  /* 2. Debossed Inset Surface (Sunken wells: vitals tiles, inputs, tabs, why-now) */
+  .neu-inset {
+    background-color: var(--neu-inset-bg);
+    box-shadow: 
+      inset 4px 4px 8px var(--neu-shadow-dark), 
+      inset -4px -4px 8px var(--neu-shadow-light);
+    border: 1px solid var(--neu-inset-border);
+  }
+
+  .neu-inset-sm {
+    background-color: var(--neu-inset-bg);
+    box-shadow: 
+      inset 2px 2px 5px var(--neu-shadow-dark), 
+      inset -2px -2px 5px var(--neu-shadow-light);
+    border: 1px solid var(--neu-inset-border);
+  }
+
+  /* 3. Convex Tactile Buttons */
+  .neu-button {
+    background-color: var(--neu-bg);
+    box-shadow: 
+      4px 4px 10px var(--neu-shadow-dark), 
+      -4px -4px 10px var(--neu-shadow-light);
+    border: 1px solid var(--neu-border);
+    transition: all 0.15s ease;
+  }
+
+  .neu-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 
+      5px 5px 12px var(--neu-shadow-dark), 
+      -5px -5px 12px var(--neu-shadow-light);
+  }
+
+  .neu-button:active, .neu-button-active {
+    transform: translateY(0);
+    background-color: var(--neu-inset-bg);
+    box-shadow: 
+      inset 3px 3px 6px var(--neu-shadow-dark), 
+      inset -3px -3px 6px var(--neu-shadow-light);
+  }
+
+  /* 4. Clinical Soft Halos (Luminous Bevel Glows) */
+  .neu-glow-critical {
+    box-shadow: 
+      6px 6px 16px var(--neu-shadow-dark), 
+      -6px -6px 16px var(--neu-shadow-light),
+      0 0 20px -3px rgba(244, 63, 94, 0.35);
+  }
+
+  .neu-glow-evaluate {
+    box-shadow: 
+      6px 6px 16px var(--neu-shadow-dark), 
+      -6px -6px 16px var(--neu-shadow-light),
+      0 0 18px -3px rgba(249, 115, 22, 0.32);
+  }
+
+  .neu-glow-primary {
+    box-shadow: 
+      6px 6px 16px var(--neu-shadow-dark), 
+      -6px -6px 16px var(--neu-shadow-light),
+      0 0 18px -3px rgba(14, 165, 233, 0.3);
+  }
+
+  .neu-glow-stable {
+    box-shadow: 
+      6px 6px 16px var(--neu-shadow-dark), 
+      -6px -6px 16px var(--neu-shadow-light),
+      0 0 16px -3px rgba(16, 185, 129, 0.25);
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neu-shadow-dark);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
 }
