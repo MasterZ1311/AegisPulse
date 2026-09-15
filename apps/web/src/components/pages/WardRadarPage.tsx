@@ -141,15 +141,15 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-3.5 sm:space-y-4 animate-in fade-in duration-300">
       {/* 1. Executive Triage Summary Ribbon */}
-      <section className="neu-flat rounded-2xl p-4 sm:p-6 transition-colors" aria-label="Ward Overview Triage Stats">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <section className="neu-flat rounded-2xl p-3 sm:p-4 transition-colors" aria-label="Ward Overview Triage Stats">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
           <div>
-            <h2 className="text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-              <img src="/aegis-logo.png" alt="AegisPulse" className="h-6 w-6 object-contain inline-block" />
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+              <img src="/aegis-logo.png" alt="AegisPulse" className="h-5 w-5 sm:h-6 sm:w-6 object-contain inline-block" />
               Ward Deterioration Radar
-              <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-lg neu-inset-sm text-sky-600 dark:text-sky-400">
+              <span className="text-[10px] sm:text-xs font-mono font-semibold px-2 py-0.5 rounded-lg neu-inset-sm text-sky-600 dark:text-sky-400">
                 LIVE TELEMETRY
               </span>
             </h2>
@@ -159,18 +159,18 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
           </div>
 
           {/* Metric Stat Pills */}
-          <div className="neu-inset rounded-2xl p-1.5 flex items-center gap-2 overflow-x-auto">
+          <div className="neu-inset rounded-xl p-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
             {/* Total Beds */}
-            <div className="px-4 py-2 rounded-xl neu-flat-sm flex items-center gap-2.5 text-xs font-mono">
-              <span className="text-muted-foreground font-medium">Monitored Beds:</span>
-              <span className="font-extrabold text-foreground text-sm">{totalBeds}</span>
+            <div className="px-3 py-1.5 rounded-lg neu-flat-sm flex items-center gap-1.5 text-xs font-mono shrink-0">
+              <span className="text-muted-foreground font-medium">Beds:</span>
+              <span className="font-extrabold text-foreground">{totalBeds}</span>
             </div>
 
             {/* Critical */}
             <button
               type="button"
               onClick={() => setCategoryFilter(categoryFilter === 'CRITICAL_REVIEW' ? 'ALL' : 'CRITICAL_REVIEW')}
-              className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-mono transition-all cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-mono transition-all cursor-pointer shrink-0 ${
                 categoryFilter === 'CRITICAL_REVIEW'
                   ? 'neu-button bg-rose-600 text-white font-bold'
                   : criticalCount > 0
@@ -178,16 +178,16 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
                   : 'neu-flat-sm text-muted-foreground'
               }`}
             >
-              <AlertOctagon className="h-3.5 w-3.5 text-rose-500" />
+              <AlertOctagon className="h-3 w-3 text-rose-500" />
               <span>Critical:</span>
-              <span className="font-black text-sm">{criticalCount}</span>
+              <span className="font-black">{criticalCount}</span>
             </button>
 
             {/* Evaluate */}
             <button
               type="button"
               onClick={() => setCategoryFilter(categoryFilter === 'EVALUATE' ? 'ALL' : 'EVALUATE')}
-              className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-mono transition-all cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-mono transition-all cursor-pointer shrink-0 ${
                 categoryFilter === 'EVALUATE'
                   ? 'neu-button bg-orange-600 text-white font-bold'
                   : evaluateCount > 0
@@ -195,39 +195,39 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
                   : 'neu-flat-sm text-muted-foreground'
               }`}
             >
-              <span className="h-2 w-2 rounded-full bg-orange-500" />
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
               <span>Evaluate:</span>
-              <span className="font-black text-sm">{evaluateCount}</span>
+              <span className="font-black">{evaluateCount}</span>
             </button>
 
             {/* Watch */}
             <button
               type="button"
               onClick={() => setCategoryFilter(categoryFilter === 'WATCH' ? 'ALL' : 'WATCH')}
-              className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-mono transition-all cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-mono transition-all cursor-pointer shrink-0 ${
                 categoryFilter === 'WATCH'
                   ? 'neu-button bg-yellow-600 text-white font-bold'
                   : 'neu-flat-sm text-yellow-700 dark:text-yellow-300'
               }`}
             >
-              <span className="h-2 w-2 rounded-full bg-yellow-400" />
+              <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
               <span>Watch:</span>
-              <span className="font-black text-sm">{watchCount}</span>
+              <span className="font-black">{watchCount}</span>
             </button>
 
             {/* Low */}
             <button
               type="button"
               onClick={() => setCategoryFilter(categoryFilter === 'LOW' ? 'ALL' : 'LOW')}
-              className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-mono transition-all cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-mono transition-all cursor-pointer shrink-0 ${
                 categoryFilter === 'LOW'
                   ? 'neu-button bg-emerald-600 text-white font-bold'
                   : 'neu-flat-sm text-emerald-700 dark:text-emerald-400'
               }`}
             >
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               <span>Low:</span>
-              <span className="font-black text-sm">{lowCount}</span>
+              <span className="font-black">{lowCount}</span>
             </button>
           </div>
         </div>
@@ -321,7 +321,7 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
 
       {/* 4. Patients Cards Grid */}
       {viewMode === 'GRID' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4">
           {filteredPatients.map((patient) => {
             const isSelected = selectedPatientId === patient.patientId;
             const isCritical = patient.category === 'CRITICAL_REVIEW';
@@ -340,7 +340,7 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
             return (
               <Card
                 key={patient.patientId}
-                className={`neu-flat p-5 transition-all duration-200 relative group flex flex-col justify-between ${
+                className={`neu-flat p-3.5 sm:p-4 transition-all duration-200 relative group flex flex-col justify-between ${
                   isSelected ? 'neu-inset ring-2 ring-sky-500/50' : 'hover:scale-[1.01]'
                 } ${isCritical ? 'border-l-4 border-l-rose-500' : isEvaluate ? 'border-l-4 border-l-orange-500' : ''}`}
               >
@@ -482,8 +482,8 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
                   </div>
 
                   {/* Why Now Clinical Reason Preview */}
-                  <div className="text-xs text-muted-foreground line-clamp-2 mb-4 bg-black/5 dark:bg-white/5 p-2 rounded-lg font-sans">
-                    <span className="font-semibold text-foreground">Why Now: </span>
+                  <div className="text-[11px] text-muted-foreground mb-3 bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 p-2.5 rounded-xl font-sans leading-relaxed">
+                    <span className="font-bold text-foreground block mb-0.5">Clinical Rationale:</span>
                     {patient.whyNowSummary}
                   </div>
                 </div>
