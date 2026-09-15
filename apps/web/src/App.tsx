@@ -397,6 +397,56 @@ export default function App() {
     );
   }, []);
 
+  const handleSpotCheckComplete = useCallback(
+    (patientId: string, vitals: { heartRate: number; respiratoryRate: number; confidence: number }) => {
+      offlineSyncQueue.enqueueClinicalAction(
+        patientId,
+        'MANUAL_OBSERVATION',
+        '15-Second Guided Optical Spot-Check Logged',
+        `Contactless optical rPPG: Heart Rate ${vitals.heartRate} bpm, Respiratory Rate ${vitals.respiratoryRate} /min (SQI ${vitals.confidence}%).`,
+        'INFO'
+      );
+
+      setPatients((prev) =>
+        prev.map((p) =>
+          p.patientId === patientId
+            ? {
+                ...p,
+                vitals: {
+                  ...p.vitals,
+                  heartRate: vitals.heartRate,
+                  respiratoryRate: vitals.respiratoryRate,
+                },
+                signalQuality: {
+                  ...p.signalQuality,
+                  confidencePercent: vitals.confidence,
+                  motionDetected: false,
+                },
+                lastTrustedObservationIso: new Date().toISOString(),
+                lastTrustedElapsedMinutes: 0,
+                isStale: false,
+                timeline: [
+                  {
+                    id: `TL-RPPG-${Date.now()}`,
+                    patientId,
+                    timestamp: Date.now(),
+                    eventType: 'MANUAL_OBSERVATION',
+                    title: 'Contactless Optical Spot-Check Verified',
+                    description: `Guided 15s rPPG: HR ${vitals.heartRate} bpm, RR ${vitals.respiratoryRate} /min (Confidence ${vitals.confidence}%). Zero raw video stored.`,
+                    severity: 'INFO',
+                    source: 'OPTICAL_RPPG',
+                    isTrusted: true,
+                  },
+                  ...p.timeline,
+                ],
+              }
+            : p
+        )
+      );
+    },
+    []
+  );
+
   const handleScenarioChange = useCallback((scenario: string) => {
     setActiveScenario(scenario);
 
@@ -560,6 +610,7 @@ export default function App() {
             onAcknowledge={handleAcknowledge}
             onLogAssessment={handleLogAssessment}
             onEscalate={handleEscalate}
+            onSpotCheckComplete={handleSpotCheckComplete}
           />
         )}
 

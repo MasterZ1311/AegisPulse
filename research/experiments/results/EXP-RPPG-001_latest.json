@@ -1,8 +1,8 @@
 {
   "experimentId": "EXP-RPPG-001",
   "name": "Resting Baseline rPPG Accuracy & Optical Convergence",
-  "timestamp": "2026-09-15T05:02:46.513Z",
-  "executionDurationMs": 44,
+  "timestamp": "2026-09-15T07:06:37.315Z",
+  "executionDurationMs": 163,
   "dataset": {
     "slug": "ubfc-rppg",
     "name": "UBFC-rPPG (University of Bourgogne Franche-Comté)",
@@ -179,7 +179,7 @@
         ],
         "diagnosis": "WELL_CALIBRATED"
       },
-      "throughputFps": 192972
+      "throughputFps": 43272
     },
     "CHROM": {
       "metrics": {
@@ -260,7 +260,7 @@
         ],
         "diagnosis": "WELL_CALIBRATED"
       },
-      "throughputFps": 499950
+      "throughputFps": 124556
     },
     "POS": {
       "metrics": {
@@ -341,7 +341,7 @@
         ],
         "diagnosis": "WELL_CALIBRATED"
       },
-      "throughputFps": 110602
+      "throughputFps": 33477
     }
   },
   "disclaimer": "Never make clinical claims from a dataset without documenting its population and limitations. Investigational algorithm research only."

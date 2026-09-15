@@ -25,6 +25,7 @@ import {
   ChevronUp,
   Search,
   HelpCircle,
+  Camera,
 } from 'lucide-react';
 import type { WardPatientRadarState } from '../types/radar';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +40,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { OpticalSpotCheckModal } from './OpticalSpotCheckModal';
+import { SbarModal } from './SbarModal';
 
 interface PatientDetailPanelProps {
   patient: WardPatientRadarState | null;
@@ -47,6 +50,10 @@ interface PatientDetailPanelProps {
   onAcknowledge: (patientId: string, event?: React.MouseEvent) => void;
   onLogAssessment: (patientId: string, note: string) => void;
   onEscalate: (patientId: string) => void;
+  onSpotCheckComplete?: (
+    patientId: string,
+    vitals: { heartRate: number; respiratoryRate: number; confidence: number }
+  ) => void;
 }
 
 interface ProvenanceModalData {
@@ -65,12 +72,15 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
   onAcknowledge,
   onLogAssessment,
   onEscalate,
+  onSpotCheckComplete,
 }) => {
   const [activeTab, setActiveTab] = useState<string>('ALL_OVERVIEW');
   const [expandedProvenanceId, setExpandedProvenanceId] = useState<string | null>(null);
   const [provenanceModal, setProvenanceModal] = useState<ProvenanceModalData | null>(null);
   const [assessmentNote, setAssessmentNote] = useState('');
   const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState(false);
+  const [isSpotCheckModalOpen, setIsSpotCheckModalOpen] = useState(false);
+  const [isSbarModalOpen, setIsSbarModalOpen] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [completedCheckIds, setCompletedCheckIds] = useState<Record<string, boolean>>({});
 
@@ -675,18 +685,28 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                 </div>
               </div>
 
-              {/* NON-INVASIVE OPTICAL TELEMETRY PRIVACY SEAL */}
-              <div className="neu-inset-sm rounded-xl p-3 flex items-center justify-between text-xs font-mono">
-                <div className="flex items-center gap-2 text-foreground font-medium">
+              {/* NON-INVASIVE OPTICAL TELEMETRY PRIVACY SEAL & SPOT-CHECK TRIGGER */}
+              <div className="neu-inset-sm rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+                <div className="flex items-center gap-2 text-foreground font-medium flex-wrap">
                   <Radio className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                   <span>rPPG Optical Pulse ({patient.signalQuality.cameraDeviceId})</span>
-                  <span>|</span>
+                  <span className="text-muted-foreground">|</span>
                   <span className="text-muted-foreground">{patient.signalQuality.illuminationLux} Lux</span>
+                  <span className="text-muted-foreground">|</span>
+                  <Badge variant="low" className="text-[10px] py-0 px-2 font-mono">
+                    <ShieldCheck className="h-3.5 w-3.5 mr-1 text-emerald-500" />
+                    Zero Video Stored
+                  </Badge>
                 </div>
-                <Badge variant="low" className="text-[10px] py-0 px-2 font-mono">
-                  <ShieldCheck className="h-3.5 w-3.5 mr-1 text-emerald-500" />
-                  Zero Raw Video Transmitted or Stored
-                </Badge>
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => setIsSpotCheckModalOpen(true)}
+                  className="bg-sky-600 hover:bg-sky-700 text-white font-bold font-mono text-xs gap-1.5 h-8 px-3 shadow-sm cursor-pointer"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  <span>Launch 15s Optical Spot-Check</span>
+                </Button>
               </div>
             </TabsContent>
 
@@ -928,7 +948,27 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSpotCheckModalOpen(true)}
+                className="font-mono text-xs font-semibold gap-1.5 text-sky-600 dark:text-sky-400 hover:text-sky-700"
+              >
+                <Camera className="h-3.5 w-3.5" />
+                <span>Optical Spot-Check</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSbarModalOpen(true)}
+                className="font-mono text-xs font-semibold gap-1.5 text-foreground"
+              >
+                <FileText className="h-3.5 w-3.5 text-amber-500" />
+                <span>Generate SBAR</span>
+              </Button>
+
               <Button
                 variant={patient.isAcknowledged ? 'outline' : 'default'}
                 size="sm"
@@ -1059,6 +1099,29 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
           </DialogContent>
         </Dialog>
       )}
+      {/* 15-SECOND OPTICAL SPOT-CHECK MODAL */}
+      <OpticalSpotCheckModal
+        isOpen={isSpotCheckModalOpen}
+        onClose={() => setIsSpotCheckModalOpen(false)}
+        patient={patient}
+        onCommitVitals={(pId, vitals) => {
+          if (onSpotCheckComplete) {
+            onSpotCheckComplete(pId, vitals);
+          } else {
+            onLogAssessment(
+              pId,
+              `15-Second Optical Spot-Check: HR ${vitals.heartRate} bpm, RR ${vitals.respiratoryRate} /min (SQI ${vitals.confidence}%). Zero raw video stored.`
+            );
+          }
+        }}
+      />
+
+      {/* SBAR CLINICAL HANDOFF DOSSIER MODAL */}
+      <SbarModal
+        isOpen={isSbarModalOpen}
+        onClose={() => setIsSbarModalOpen(false)}
+        patient={patient}
+      />
     </div>
   );
 };

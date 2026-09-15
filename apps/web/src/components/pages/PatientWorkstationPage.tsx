@@ -19,6 +19,10 @@ interface PatientWorkstationPageProps {
   onAcknowledge: (patientId: string, event?: React.MouseEvent) => void;
   onLogAssessment: (patientId: string, note: string) => void;
   onEscalate: (patientId: string) => void;
+  onSpotCheckComplete?: (
+    patientId: string,
+    vitals: { heartRate: number; respiratoryRate: number; confidence: number }
+  ) => void;
 }
 
 export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
@@ -29,6 +33,7 @@ export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
   onAcknowledge,
   onLogAssessment,
   onEscalate,
+  onSpotCheckComplete,
 }) => {
   if (!selectedPatient) {
     return (
@@ -152,6 +157,7 @@ export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
           onAcknowledge={onAcknowledge}
           onLogAssessment={onLogAssessment}
           onEscalate={onEscalate}
+          onSpotCheckComplete={onSpotCheckComplete}
         />
       </div>
     </div>
