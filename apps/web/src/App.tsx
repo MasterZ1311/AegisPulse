@@ -398,12 +398,13 @@ export default function App() {
   }, []);
 
   const handleSpotCheckComplete = useCallback(
-    (patientId: string, vitals: { heartRate: number; respiratoryRate: number; confidence: number }) => {
+    (patientId: string, vitals: { heartRate: number; respiratoryRate?: number | null; confidence: number }) => {
+      const rrStr = vitals.respiratoryRate ? `, Respiratory Rate ${vitals.respiratoryRate} /min` : '';
       offlineSyncQueue.enqueueClinicalAction(
         patientId,
         'MANUAL_OBSERVATION',
         '15-Second Guided Optical Spot-Check Logged',
-        `Contactless optical rPPG: Heart Rate ${vitals.heartRate} bpm, Respiratory Rate ${vitals.respiratoryRate} /min (SQI ${vitals.confidence}%).`,
+        `Contactless optical rPPG: Heart Rate ${vitals.heartRate} bpm${rrStr} (SQI ${vitals.confidence}%).`,
         'INFO'
       );
 
@@ -415,7 +416,7 @@ export default function App() {
                 vitals: {
                   ...p.vitals,
                   heartRate: vitals.heartRate,
-                  respiratoryRate: vitals.respiratoryRate,
+                  ...(vitals.respiratoryRate ? { respiratoryRate: vitals.respiratoryRate } : {}),
                 },
                 signalQuality: {
                   ...p.signalQuality,

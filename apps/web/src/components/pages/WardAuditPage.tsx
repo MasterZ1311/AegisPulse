@@ -115,11 +115,11 @@ export const WardAuditPage: React.FC<WardAuditPageProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* 1. Header */}
-      <section className="neu-flat rounded-2xl p-6 transition-colors">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <section className="rounded-xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition-colors">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-              <ScrollText className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+              <ScrollText className="h-5 w-5 text-primary" />
               Ward Clinical Audit Ledger
             </h2>
             <p className="text-xs text-muted-foreground mt-1">
@@ -127,7 +127,7 @@ export const WardAuditPage: React.FC<WardAuditPageProps> = ({
             </p>
           </div>
 
-          <div className="neu-inset rounded-xl px-3.5 py-2 font-mono text-xs flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold">
+          <div className="rounded-lg border border-border/50 bg-muted/60 px-3 py-1.5 font-mono text-xs flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold shrink-0 self-start md:self-auto">
             <ShieldCheck className="h-4 w-4" />
             <span>Cryptographic Log Integrity Verified</span>
           </div>
@@ -135,11 +135,11 @@ export const WardAuditPage: React.FC<WardAuditPageProps> = ({
       </section>
 
       {/* 2. Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 neu-flat rounded-2xl p-3.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-border/80 bg-card p-3 sm:p-4 shadow-xs">
         <div className="flex items-center gap-3 flex-wrap">
           {/* Bed filter */}
           <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground">
-            <Filter className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+            <Filter className="h-3.5 w-3.5 text-primary" />
             <span>Bed:</span>
             <Select
               value={selectedBed}
@@ -181,7 +181,7 @@ export const WardAuditPage: React.FC<WardAuditPageProps> = ({
       </div>
 
       {/* 3. Audit Stream List */}
-      <div className="neu-flat rounded-2xl p-4 sm:p-6 divide-y divide-border/40">
+      <div className="rounded-xl border border-border/80 bg-card p-4 sm:p-6 shadow-xs divide-y divide-border/40">
         {filteredEvents.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-xs font-mono">
             No audit events found for selected filters.
@@ -193,11 +193,11 @@ export const WardAuditPage: React.FC<WardAuditPageProps> = ({
             return (
               <div
                 key={ev.id}
-                className="py-4 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-start justify-between gap-4 group"
+                className="py-3.5 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-start justify-between gap-3 sm:gap-4 group"
               >
-                <div className="flex items-start gap-3.5 flex-1">
+                <div className="flex items-start gap-3 flex-1">
                   {/* Bed Badge */}
-                  <div className="neu-button px-2.5 py-1 rounded-xl font-mono font-extrabold text-xs text-foreground shrink-0 mt-0.5">
+                  <div className="rounded-lg border border-border/60 bg-muted/70 px-2.5 py-1 font-mono font-extrabold text-xs text-foreground shrink-0 mt-0.5">
                     {ev.bedNumber}
                   </div>
 
@@ -216,12 +216,12 @@ export const WardAuditPage: React.FC<WardAuditPageProps> = ({
 
                     <div className="flex items-center gap-3 pt-1 text-[11px] font-mono text-muted-foreground flex-wrap">
                       <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3 text-sky-600 dark:text-sky-400" />
+                        <Clock className="h-3 w-3 text-primary" />
                         {ev.minutesAgo === 0 ? 'Just now' : `${ev.minutesAgo} min ago`}
                       </span>
                       <span>•</span>
                       <span className="flex items-center gap-1">
-                        <User className="h-3 w-3 text-sky-600 dark:text-sky-400" />
+                        <User className="h-3 w-3 text-primary" />
                         {ev.actor}
                       </span>
                       <span>•</span>

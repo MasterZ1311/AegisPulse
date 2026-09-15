@@ -77,7 +77,7 @@ export class BrowserEdgeFaceDetector {
     const now = Date.now();
 
     // 1. Attempt Native FaceDetector if present
-    if (this.nativeDetectorInstance && typeof (source as any).drawImage !== 'undefined') {
+    if (this.nativeDetectorInstance) {
       try {
         const detected = await this.nativeDetectorInstance.detect(source);
         if (Array.isArray(detected) && detected.length > 0) {

@@ -94,8 +94,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   ];
 
   return (
-    <header className="neu-flat sticky top-0 z-40 w-full transition-colors duration-200 border-b border-border/40">
-      <div className="max-w-[1780px] mx-auto px-3 sm:px-6 py-2.5 space-y-2 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-4">
+    <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur border-b border-border/70 supports-[backdrop-filter]:bg-background/80 transition-colors">
+      <div className="max-w-[1780px] mx-auto px-3 sm:px-6 py-2.5 space-y-2.5 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-4">
         {/* Top Tier (Mobile) / Left (Desktop): Brand & All Key Utilities */}
         <div className="flex items-center justify-between gap-3 w-full lg:w-auto">
           {/* Brand Mark */}
@@ -104,7 +104,7 @@ export const Navigation: React.FC<NavigationProps> = ({
             onClick={() => onNavigate('RADAR')}
             className="flex items-center gap-2.5 text-left cursor-pointer group shrink-0"
           >
-            <div className="neu-button relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sky-600 dark:text-sky-400 group-hover:scale-105 transition-transform">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 group-hover:scale-105 transition-transform shadow-xs">
               <Activity className="h-5 w-5 stroke-[2.5]" />
               <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             </div>
@@ -113,7 +113,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               <span className="text-base font-black tracking-tight text-foreground">
                 AegisPulse
               </span>
-              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md neu-inset-sm text-sky-600 dark:text-sky-400">
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground border border-border/60">
                 {wardName.split('—')[0]?.trim() || 'Ward 4B'}
               </span>
             </div>
@@ -126,10 +126,10 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('RADAR')}
-                className="neu-button bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2 py-1 rounded-lg flex items-center gap-1 text-[11px] font-mono animate-pulse cursor-pointer shrink-0"
+                className="bg-rose-500/15 hover:bg-rose-500/25 text-rose-700 dark:text-rose-300 border border-rose-500/40 font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 text-[11px] font-mono animate-pulse cursor-pointer shrink-0 shadow-xs"
                 title={`${criticalCount} patient(s) in Critical Review`}
               >
-                <AlertOctagon className="h-3 w-3 text-rose-500" />
+                <AlertOctagon className="h-3.5 w-3.5 text-rose-500" />
                 <span>{criticalCount} Crit</span>
               </button>
             )}
@@ -138,7 +138,7 @@ export const Navigation: React.FC<NavigationProps> = ({
             <button
               type="button"
               onClick={onOpenDiagnostics}
-              className="neu-flat-sm rounded-xl px-2 py-1 flex items-center gap-1.5 text-xs font-mono font-semibold cursor-pointer hover:opacity-90 transition-opacity shrink-0"
+              className="bg-secondary/70 hover:bg-secondary border border-border/60 rounded-lg px-2.5 py-1 flex items-center gap-1.5 text-xs font-mono font-semibold cursor-pointer transition-colors shrink-0 shadow-xs"
               title={`Connection: ${isOnline ? 'ONLINE' : connectivityState}`}
             >
               {isOnline ? (
@@ -193,7 +193,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
         {/* Center / Row 2: 100% Fit Grid Segmented Navigation Bar (Zero Hidden Items) */}
         <nav
-          className="neu-inset rounded-xl p-1 grid grid-cols-5 w-full lg:w-auto lg:min-w-[500px] gap-1"
+          className="bg-muted/60 border border-border/50 rounded-xl p-1 grid grid-cols-5 w-full lg:w-auto lg:min-w-[520px] gap-1 shadow-xs"
           aria-label="Main Navigation"
         >
           {navItems.map((item) => {
@@ -205,14 +205,14 @@ export const Navigation: React.FC<NavigationProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => onNavigate(item.id)}
-                className={`flex items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 cursor-pointer w-full text-center ${
+                className={`flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer w-full text-center ${
                   isActive
-                    ? 'neu-button bg-sky-600 text-white shadow-sm font-bold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+                    ? 'bg-background text-foreground shadow-xs font-bold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/40'
                 }`}
                 title={item.label}
               >
-                <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-white' : 'text-sky-600 dark:text-sky-400'}`} />
+                <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-sky-600 dark:text-sky-400' : 'text-muted-foreground'}`} />
                 <span className="hidden sm:inline truncate">{item.label}</span>
                 <span className="inline sm:hidden truncate">{item.shortLabel}</span>
 

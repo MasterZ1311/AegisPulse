@@ -79,11 +79,11 @@ export const DemoScrubber: React.FC<DemoScrubberProps> = ({ onApplyStep }) => {
 
   return (
     <div className="w-full max-w-[1780px] mx-auto px-4 sm:px-8 mb-4">
-      <Card className="neu-flat p-3 sm:p-4 transition-all duration-200">
+      <Card className="p-3 sm:p-4 transition-all duration-200 shadow-xs border-border/80">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Step indicator and title */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl neu-inset-sm text-sky-600 dark:text-sky-400 font-mono text-xs font-bold tracking-wide">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary font-mono text-xs font-bold tracking-wide">
               <Sparkles className="h-3.5 w-3.5" />
               DEMO SCRUBBER
             </div>
@@ -92,14 +92,14 @@ export const DemoScrubber: React.FC<DemoScrubberProps> = ({ onApplyStep }) => {
               <span className="text-xs font-mono font-bold text-foreground">
                 Step {currentStep.index}/{ORDERED_DEMO_STEPS.length - 1}:
               </span>
-              <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold font-mono">
+              <span className="text-xs text-primary font-semibold font-mono">
                 {currentStep.title}
               </span>
             </div>
           </div>
 
           {/* Stepper Timeline Pills */}
-          <div className="hidden lg:flex items-center gap-1.5 neu-inset rounded-xl p-1 overflow-x-auto">
+          <div className="hidden lg:flex items-center gap-1 bg-muted/70 rounded-lg p-1 border border-border/50 overflow-x-auto">
             {ORDERED_DEMO_STEPS.map((stepKey, idx) => {
               const meta = DEMO_STEPS_METADATA[stepKey];
               const isActive = meta.index === currentStep.index;
@@ -109,10 +109,10 @@ export const DemoScrubber: React.FC<DemoScrubberProps> = ({ onApplyStep }) => {
                   key={meta.stepId}
                   type="button"
                   onClick={() => handleJump(idx)}
-                  className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-sky-600 text-white font-bold scale-105 shadow-md shadow-sky-600/30'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-foreground'
+                      ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                   title={meta.title}
                 >
@@ -184,7 +184,7 @@ export const DemoScrubber: React.FC<DemoScrubberProps> = ({ onApplyStep }) => {
           <div className="mt-3 pt-3 border-t border-border/40 grid grid-cols-1 md:grid-cols-12 gap-3 text-xs animate-in fade-in duration-200">
             <div className="md:col-span-8 flex flex-col justify-center space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono uppercase font-bold text-sky-600 dark:text-sky-400">
+                <span className="text-[10px] font-mono uppercase font-bold text-primary">
                   Event Narrative:
                 </span>
                 <span className="text-foreground font-semibold">{currentStep.changeDescription}</span>
@@ -194,14 +194,14 @@ export const DemoScrubber: React.FC<DemoScrubberProps> = ({ onApplyStep }) => {
               </p>
             </div>
 
-            <div className="md:col-span-4 flex items-center justify-end gap-2 neu-inset-sm p-2 rounded-xl">
+            <div className="md:col-span-4 flex items-center justify-end gap-2 bg-muted/40 border border-border/50 p-2 rounded-xl">
               <div className="text-right">
                 <span className="text-[10px] font-mono text-muted-foreground uppercase block">Focal Patient</span>
-                <span className="text-xs font-bold font-mono text-sky-600 dark:text-sky-400">
+                <span className="text-xs font-bold font-mono text-primary">
                   {currentStep.targetPatientId === 'ALL' ? 'Entire Ward (6 Beds)' : 'Bed 403 (Eleanor Vance)'}
                 </span>
               </div>
-              <ArrowRight className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+              <ArrowRight className="h-4 w-4 text-primary" />
             </div>
           </div>
         )}

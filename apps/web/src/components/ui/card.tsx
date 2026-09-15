@@ -5,23 +5,29 @@ export const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
     glow?: 'none' | 'critical' | 'evaluate' | 'primary' | 'stable';
-    variant?: 'flat' | 'inset';
+    variant?: 'flat' | 'inset' | 'elevated';
   }
 >(({ className, glow = 'none', variant = 'flat', ...props }, ref) => {
   const glowClasses = {
     none: '',
-    critical: 'neu-glow-critical border-rose-500/50',
-    evaluate: 'neu-glow-evaluate border-orange-500/50',
-    primary: 'neu-glow-primary border-sky-500/50',
-    stable: 'neu-glow-stable border-emerald-500/40',
+    critical: 'border-rose-500/50 shadow-sm shadow-rose-500/10',
+    evaluate: 'border-orange-500/50 shadow-sm shadow-orange-500/10',
+    primary: 'border-sky-500/50 shadow-sm shadow-sky-500/10',
+    stable: 'border-emerald-500/40 shadow-sm shadow-emerald-500/10',
+  };
+
+  const variantClasses = {
+    flat: 'bg-card text-card-foreground border border-border/70 shadow-xs',
+    inset: 'bg-muted/40 text-foreground border border-border/60 shadow-inner',
+    elevated: 'bg-card text-card-foreground border border-border/80 shadow-md',
   };
 
   return (
     <div
       ref={ref}
       className={cn(
-        'rounded-2xl transition-all duration-200 text-card-foreground',
-        variant === 'inset' ? 'neu-inset' : 'neu-flat',
+        'rounded-xl transition-all duration-200',
+        variantClasses[variant],
         glowClasses[glow],
         className
       )}
@@ -33,7 +39,7 @@ Card.displayName = 'Card';
 
 export const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex flex-col space-y-1.5 p-5 sm:p-6', className)} {...props} />
+    <div ref={ref} className={cn('flex flex-col space-y-1.5 p-4 sm:p-5', className)} {...props} />
   )
 );
 CardHeader.displayName = 'CardHeader';
@@ -42,7 +48,7 @@ export const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttribut
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('text-base font-bold leading-none tracking-tight text-foreground', className)}
+      className={cn('text-sm sm:text-base font-bold leading-tight tracking-tight text-foreground', className)}
       {...props}
     />
   )
@@ -58,14 +64,14 @@ CardDescription.displayName = 'CardDescription';
 
 export const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('p-5 sm:p-6 pt-0', className)} {...props} />
+    <div ref={ref} className={cn('p-4 sm:p-5 pt-0', className)} {...props} />
   )
 );
 CardContent.displayName = 'CardContent';
 
 export const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex items-center p-5 sm:p-6 pt-0', className)} {...props} />
+    <div ref={ref} className={cn('flex items-center p-4 sm:p-5 pt-0', className)} {...props} />
   )
 );
 CardFooter.displayName = 'CardFooter';

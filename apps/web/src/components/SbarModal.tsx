@@ -84,7 +84,7 @@ ${recommendation}
         <DialogHeader className="border-b border-border/40 pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="neu-button p-2 rounded-xl text-sky-600 dark:text-sky-400">
+              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 text-primary">
                 <FileText className="h-5 w-5" />
               </div>
               <div>
@@ -110,9 +110,9 @@ ${recommendation}
         </DialogHeader>
 
         {/* SBAR STRUCTURED SECTIONS */}
-        <div className="space-y-4 py-2 text-xs">
+        <div className="space-y-3.5 py-2 text-xs">
           {/* Situation */}
-          <div className="neu-flat p-4 rounded-xl space-y-1.5 border-l-4 border-l-rose-500">
+          <div className="rounded-xl border border-border/70 bg-card p-4 space-y-1.5 shadow-xs border-l-4 border-l-rose-500">
             <div className="flex items-center justify-between">
               <span className="font-mono font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
                 S — Situation
@@ -123,28 +123,28 @@ ${recommendation}
           </div>
 
           {/* Background */}
-          <div className="neu-flat p-4 rounded-xl space-y-1.5 border-l-4 border-l-sky-500">
-            <span className="font-mono font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+          <div className="rounded-xl border border-border/70 bg-card p-4 space-y-1.5 shadow-xs border-l-4 border-l-primary">
+            <span className="font-mono font-bold uppercase tracking-wider text-primary">
               B — Background
             </span>
             <p className="text-foreground leading-relaxed">{background}</p>
           </div>
 
           {/* Assessment */}
-          <div className="neu-flat p-4 rounded-xl space-y-1.5 border-l-4 border-l-amber-500">
+          <div className="rounded-xl border border-border/70 bg-card p-4 space-y-1.5 shadow-xs border-l-4 border-l-amber-500">
             <div className="flex items-center justify-between">
               <span className="font-mono font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
                 A — Assessment (Trajectories & Rules)
               </span>
               <span className="text-[10px] font-mono text-muted-foreground">Deterministic Provenance</span>
             </div>
-            <pre className="text-foreground text-[11px] font-mono whitespace-pre-wrap leading-relaxed bg-black/5 dark:bg-black/40 p-3 rounded-lg border border-border/40">
+            <pre className="text-foreground text-[11px] font-mono whitespace-pre-wrap leading-relaxed bg-muted/50 p-3 rounded-lg border border-border/50">
               {assessment}
             </pre>
           </div>
 
           {/* Recommendation */}
-          <div className="neu-flat p-4 rounded-xl space-y-1.5 border-l-4 border-l-emerald-500">
+          <div className="rounded-xl border border-border/70 bg-card p-4 space-y-1.5 shadow-xs border-l-4 border-l-emerald-500">
             <span className="font-mono font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               R — Recommendation
             </span>
@@ -178,7 +178,7 @@ ${recommendation}
               variant="default"
               size="sm"
               onClick={handleCopy}
-              className="gap-1.5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white font-mono"
+              className="gap-1.5 text-xs font-bold font-mono"
             >
               {isCopied ? <Check className="h-4 w-4 text-emerald-300" /> : <Copy className="h-4 w-4" />}
               <span>{isCopied ? 'Copied to Clipboard!' : 'Copy SBAR'}</span>

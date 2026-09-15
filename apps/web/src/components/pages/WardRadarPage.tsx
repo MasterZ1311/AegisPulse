@@ -23,6 +23,7 @@ import type { WardPatientRadarState } from '../../types/radar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 
 interface WardRadarPageProps {
@@ -143,12 +144,12 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* 1. Executive Triage Summary Ribbon */}
-      <section className="neu-flat rounded-2xl p-4 sm:p-6 transition-colors" aria-label="Ward Overview Triage Stats">
+      <Card className="p-4 sm:p-5 transition-colors border-border/70" aria-label="Ward Overview Triage Stats">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h2 className="text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
               Ward Deterioration Radar
-              <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-lg neu-inset-sm text-sky-600 dark:text-sky-400">
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30">
                 LIVE TELEMETRY
               </span>
             </h2>
@@ -158,10 +159,10 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
           </div>
 
           {/* Metric Stat Pills */}
-          <div className="neu-inset rounded-2xl p-1.5 flex items-center gap-2 overflow-x-auto">
+          <div className="bg-muted/50 border border-border/60 rounded-xl p-1.5 flex items-center gap-1.5 sm:gap-2 overflow-x-auto">
             {/* Total Beds */}
-            <div className="px-4 py-2 rounded-xl neu-flat-sm flex items-center gap-2.5 text-xs font-mono">
-              <span className="text-muted-foreground font-medium">Monitored Beds:</span>
+            <div className="px-3 py-1.5 rounded-lg bg-background border border-border/60 flex items-center gap-2 text-xs font-mono shadow-xs shrink-0">
+              <span className="text-muted-foreground font-medium">Beds:</span>
               <span className="font-extrabold text-foreground text-sm">{totalBeds}</span>
             </div>
 
@@ -169,12 +170,12 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
             <button
               type="button"
               onClick={() => setCategoryFilter(categoryFilter === 'CRITICAL_REVIEW' ? 'ALL' : 'CRITICAL_REVIEW')}
-              className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-mono transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-mono transition-all cursor-pointer shrink-0 border ${
                 categoryFilter === 'CRITICAL_REVIEW'
-                  ? 'neu-button bg-rose-600 text-white font-bold'
+                  ? 'bg-rose-600 text-white font-bold border-rose-600 shadow-xs'
                   : criticalCount > 0
-                  ? 'neu-button bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold'
-                  : 'neu-flat-sm text-muted-foreground'
+                  ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/40 font-bold hover:bg-rose-500/25'
+                  : 'bg-background text-muted-foreground border-border/60 hover:text-foreground'
               }`}
             >
               <AlertOctagon className="h-3.5 w-3.5 text-rose-500" />
@@ -186,12 +187,12 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
             <button
               type="button"
               onClick={() => setCategoryFilter(categoryFilter === 'EVALUATE' ? 'ALL' : 'EVALUATE')}
-              className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-mono transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-mono transition-all cursor-pointer shrink-0 border ${
                 categoryFilter === 'EVALUATE'
-                  ? 'neu-button bg-orange-600 text-white font-bold'
+                  ? 'bg-orange-600 text-white font-bold border-orange-600 shadow-xs'
                   : evaluateCount > 0
-                  ? 'neu-button bg-orange-500/20 text-orange-800 dark:text-orange-300 font-bold'
-                  : 'neu-flat-sm text-muted-foreground'
+                  ? 'bg-orange-500/15 text-orange-800 dark:text-orange-300 border-orange-500/40 font-bold hover:bg-orange-500/25'
+                  : 'bg-background text-muted-foreground border-border/60 hover:text-foreground'
               }`}
             >
               <span className="h-2 w-2 rounded-full bg-orange-500" />
@@ -203,13 +204,13 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
             <button
               type="button"
               onClick={() => setCategoryFilter(categoryFilter === 'WATCH' ? 'ALL' : 'WATCH')}
-              className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-mono transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-mono transition-all cursor-pointer shrink-0 border ${
                 categoryFilter === 'WATCH'
-                  ? 'neu-button bg-yellow-600 text-white font-bold'
-                  : 'neu-flat-sm text-yellow-700 dark:text-yellow-300'
+                  ? 'bg-amber-600 text-white font-bold border-amber-600 shadow-xs'
+                  : 'bg-background text-amber-700 dark:text-amber-300 border-border/60 hover:text-foreground'
               }`}
             >
-              <span className="h-2 w-2 rounded-full bg-yellow-400" />
+              <span className="h-2 w-2 rounded-full bg-amber-400" />
               <span>Watch:</span>
               <span className="font-black text-sm">{watchCount}</span>
             </button>
@@ -218,10 +219,10 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
             <button
               type="button"
               onClick={() => setCategoryFilter(categoryFilter === 'LOW' ? 'ALL' : 'LOW')}
-              className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-mono transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-mono transition-all cursor-pointer shrink-0 border ${
                 categoryFilter === 'LOW'
-                  ? 'neu-button bg-emerald-600 text-white font-bold'
-                  : 'neu-flat-sm text-emerald-700 dark:text-emerald-400'
+                  ? 'bg-emerald-600 text-white font-bold border-emerald-600 shadow-xs'
+                  : 'bg-background text-emerald-700 dark:text-emerald-400 border-border/60 hover:text-foreground'
               }`}
             >
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -230,27 +231,27 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
             </button>
           </div>
         </div>
-      </section>
+      </Card>
 
       {/* 2. Search, Category Filters, Sorting, and View Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 neu-flat rounded-2xl p-3.5">
+      <Card className="p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-border/70">
         <div className="flex items-center gap-2.5 flex-1 max-w-md">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by bed, patient name, diagnosis..."
-              className="w-full neu-inset rounded-xl pl-9 pr-4 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className="pl-9 pr-8 h-8 text-xs"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
               >
-                Clear
+                ×
               </button>
             )}
           </div>
@@ -274,30 +275,30 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
             </Select>
           </div>
 
-          <div className="neu-inset p-1 rounded-xl flex items-center gap-1">
+          <div className="bg-muted/60 border border-border/50 p-0.5 rounded-lg flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => setViewMode('GRID')}
-              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                viewMode === 'GRID' ? 'neu-button bg-sky-600 text-white font-bold' : 'text-muted-foreground hover:text-foreground'
+              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                viewMode === 'GRID' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
               }`}
               title="Grid View"
             >
-              <LayoutGrid className="h-4 w-4" />
+              <LayoutGrid className="h-3.5 w-3.5" />
             </button>
             <button
               type="button"
               onClick={() => setViewMode('LIST')}
-              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                viewMode === 'LIST' ? 'neu-button bg-sky-600 text-white font-bold' : 'text-muted-foreground hover:text-foreground'
+              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                viewMode === 'LIST' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
               }`}
               title="Dense List View"
             >
-              <List className="h-4 w-4" />
+              <List className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* 3. Empty State */}
       {filteredPatients.length === 0 && (
@@ -320,7 +321,7 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
 
       {/* 4. Patients Cards Grid */}
       {viewMode === 'GRID' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5">
           {filteredPatients.map((patient) => {
             const isSelected = selectedPatientId === patient.patientId;
             const isCritical = patient.category === 'CRITICAL_REVIEW';
@@ -339,19 +340,27 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
             return (
               <Card
                 key={patient.patientId}
-                className={`neu-flat p-5 transition-all duration-200 relative group flex flex-col justify-between ${
-                  isSelected ? 'neu-inset ring-2 ring-sky-500/50' : 'hover:scale-[1.01]'
-                } ${isCritical ? 'border-l-4 border-l-rose-500' : isEvaluate ? 'border-l-4 border-l-orange-500' : ''}`}
+                className={`p-4 sm:p-5 transition-all duration-200 relative group flex flex-col justify-between border-border/70 ${
+                  isSelected ? 'ring-2 ring-primary bg-accent/30' : 'hover:border-primary/50 hover:shadow-md'
+                } ${
+                  isCritical
+                    ? 'border-l-4 border-l-rose-500'
+                    : isEvaluate
+                    ? 'border-l-4 border-l-orange-500'
+                    : patient.category === 'WATCH'
+                    ? 'border-l-4 border-l-amber-500'
+                    : 'border-l-4 border-l-emerald-500'
+                }`}
               >
                 <div>
                   {/* Top Bar: Bed #, Patient Name, Triage Category */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="neu-button px-2.5 py-1 rounded-xl font-mono font-extrabold text-sm text-foreground">
+                      <div className="bg-secondary text-secondary-foreground border border-border/70 px-2.5 py-1 rounded-lg font-mono font-extrabold text-xs shadow-xs">
                         Bed {patient.bedNumber}
                       </div>
                       <div>
-                        <h3 className="text-base font-bold text-foreground leading-tight group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                        <h3 className="text-base font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
                           {patient.name}
                         </h3>
                         <p className="text-[11px] text-muted-foreground font-medium">
@@ -370,32 +379,32 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
                   </div>
 
                   {/* Diagnosis & Code Status */}
-                  <div className="mb-4">
+                  <div className="mb-3.5">
                     <p className="text-xs text-foreground/90 font-medium line-clamp-1" title={patient.admissionDiagnosis}>
                       {patient.admissionDiagnosis}
                     </p>
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted/30 text-muted-foreground mt-1 inline-block">
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground mt-1 inline-block border border-border/40">
                       {patient.codeStatus}
                     </span>
                   </div>
 
                   {/* APS Score + Trend Row */}
-                  <div className="neu-inset rounded-xl p-3 mb-4 flex items-center justify-between">
+                  <div className="bg-muted/40 border border-border/60 rounded-xl p-3 mb-3.5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`h-11 w-11 rounded-xl flex items-center justify-center font-mono font-black text-lg ${
+                        className={`h-11 w-11 rounded-xl flex items-center justify-center font-mono font-black text-lg border shadow-xs ${
                           isCritical
-                            ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
+                            ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30'
                             : isEvaluate
-                            ? 'bg-orange-500/20 text-orange-800 dark:text-orange-300'
-                            : 'bg-yellow-500/20 text-yellow-800 dark:text-yellow-300'
+                            ? 'bg-orange-500/15 text-orange-800 dark:text-orange-300 border-orange-500/30'
+                            : 'bg-yellow-500/15 text-yellow-800 dark:text-yellow-300 border-yellow-500/30'
                         }`}
                       >
                         {patient.apsScore}
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                          <span>APS Deterioration Score</span>
+                          <span>APS Score</span>
                           {getTrendIcon(patient.trendDirection)}
                         </div>
                         <p className="text-[11px] text-muted-foreground font-mono">
@@ -407,7 +416,7 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
                     </div>
 
                     {patient.isAcknowledged && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg font-mono">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-lg font-mono">
                         <Check className="h-3 w-3" />
                         Ack'd
                       </span>
@@ -415,11 +424,11 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
                   </div>
 
                   {/* 4-Channel Live Vitals Telemetry Pills */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3.5">
                     {/* Heart Rate (Rose) */}
                     <div
-                      className={`neu-inset p-2 rounded-xl text-center ${
-                        isHrAbnormal ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 ring-1 ring-rose-500/30 font-bold' : ''
+                      className={`bg-muted/40 border border-border/50 p-2 rounded-xl text-center ${
+                        isHrAbnormal ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/40 font-bold' : ''
                       }`}
                     >
                       <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground font-mono">
@@ -434,8 +443,8 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
 
                     {/* Respiratory Rate (Emerald) */}
                     <div
-                      className={`neu-inset p-2 rounded-xl text-center ${
-                        isRrAbnormal ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 ring-1 ring-emerald-500/30 font-bold' : ''
+                      className={`bg-muted/40 border border-border/50 p-2 rounded-xl text-center ${
+                        isRrAbnormal ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 border-emerald-500/40 font-bold' : ''
                       }`}
                     >
                       <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground font-mono">
@@ -450,8 +459,8 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
 
                     {/* SpO2 (Sky) */}
                     <div
-                      className={`neu-inset p-2 rounded-xl text-center ${
-                        isSpo2Abnormal ? 'bg-sky-500/10 text-sky-800 dark:text-sky-200 ring-1 ring-sky-500/30 font-bold' : ''
+                      className={`bg-muted/40 border border-border/50 p-2 rounded-xl text-center ${
+                        isSpo2Abnormal ? 'bg-sky-500/10 text-sky-800 dark:text-sky-200 border-sky-500/40 font-bold' : ''
                       }`}
                     >
                       <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground font-mono">
@@ -466,8 +475,8 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
 
                     {/* Blood Pressure (Indigo) */}
                     <div
-                      className={`neu-inset p-2 rounded-xl text-center ${
-                        isBpAbnormal ? 'bg-indigo-500/10 text-indigo-800 dark:text-indigo-200 ring-1 ring-indigo-500/30 font-bold' : ''
+                      className={`bg-muted/40 border border-border/50 p-2 rounded-xl text-center ${
+                        isBpAbnormal ? 'bg-indigo-500/10 text-indigo-800 dark:text-indigo-200 border-indigo-500/40 font-bold' : ''
                       }`}
                     >
                       <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground font-mono">
@@ -481,7 +490,7 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
                   </div>
 
                   {/* Why Now Clinical Reason Preview */}
-                  <div className="text-xs text-muted-foreground line-clamp-2 mb-4 bg-black/5 dark:bg-white/5 p-2 rounded-lg font-sans">
+                  <div className="text-xs text-muted-foreground line-clamp-2 mb-3.5 bg-muted/40 border border-border/40 p-2.5 rounded-lg font-sans">
                     <span className="font-semibold text-foreground">Why Now: </span>
                     {patient.whyNowSummary}
                   </div>
@@ -495,7 +504,7 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
                         size="sm"
                         variant="default"
                         onClick={(e) => onAcknowledgePatient(patient.patientId, e)}
-                        className="bg-sky-600 hover:bg-sky-700 text-white font-bold h-8 text-xs gap-1.5"
+                        className="bg-sky-600 hover:bg-sky-700 text-white font-bold h-8 text-xs gap-1.5 shadow-xs"
                       >
                         <Check className="h-3.5 w-3.5" />
                         Acknowledge
@@ -514,7 +523,7 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
                       onSelectPatient(patient);
                       onNavigateToPatient(patient);
                     }}
-                    className="h-8 text-xs font-semibold gap-1 group-hover:bg-sky-600 group-hover:text-white transition-colors"
+                    className="h-8 text-xs font-semibold gap-1 hover:bg-primary hover:text-primary-foreground transition-colors"
                   >
                     <span>Review Patient</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -526,7 +535,7 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
         </div>
       ) : (
         /* High-Density List View */
-        <div className="neu-flat rounded-2xl overflow-hidden divide-y divide-border/40">
+        <Card className="divide-y divide-border/50 overflow-hidden border-border/70 shadow-xs">
           {filteredPatients.map((patient) => {
             const isCritical = patient.category === 'CRITICAL_REVIEW';
             const isEvaluate = patient.category === 'EVALUATE';
@@ -544,10 +553,10 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
             return (
               <div
                 key={patient.patientId}
-                className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                className="p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 hover:bg-accent/40 transition-colors"
               >
-                <div className="flex items-center gap-4">
-                  <div className="neu-button px-3 py-1.5 rounded-xl font-mono font-extrabold text-sm">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-secondary text-secondary-foreground border border-border/70 px-3 py-1.5 rounded-lg font-mono font-extrabold text-xs shadow-xs">
                     Bed {patient.bedNumber}
                   </div>
                   <div>
@@ -608,7 +617,7 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
               </div>
             );
           })}
-        </div>
+        </Card>
       )}
     </div>
   );

@@ -54,7 +54,7 @@ interface PatientDetailPanelProps {
   onEscalate: (patientId: string) => void;
   onSpotCheckComplete?: (
     patientId: string,
-    vitals: { heartRate: number; respiratoryRate: number; confidence: number }
+    vitals: { heartRate: number; respiratoryRate?: number | null; confidence: number }
   ) => void;
 }
 
@@ -89,7 +89,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
 
   if (!patient) {
     return (
-      <Card className="neu-flat h-full min-h-[440px] flex flex-col items-center justify-center p-8 text-center">
+      <Card className="min-h-[440px] flex flex-col items-center justify-center p-8 text-center bg-card border-border/80">
         <Activity className="h-12 w-12 text-muted-foreground mb-4 animate-pulse" />
         <h3 className="text-base font-bold text-foreground font-mono">No Bed Selected</h3>
         <p className="text-xs text-muted-foreground mt-1.5 max-w-xs leading-relaxed">
@@ -113,7 +113,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
           badgeVariant: 'critical' as const,
           label: 'CRITICAL REVIEW',
           icon: <AlertOctagon className="h-4 w-4 text-rose-500 animate-pulse" />,
-          cardGlow: 'neu-glow-critical border-rose-500/40',
+          cardGlow: 'border-rose-500/40 shadow-rose-500/5',
           textColor: 'text-rose-600 dark:text-rose-400',
         };
       case 'EVALUATE':
@@ -121,7 +121,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
           badgeVariant: 'evaluate' as const,
           label: 'EVALUATE',
           icon: <AlertTriangle className="h-4 w-4 text-orange-500" />,
-          cardGlow: 'neu-glow-evaluate border-orange-500/40',
+          cardGlow: 'border-orange-500/40 shadow-orange-500/5',
           textColor: 'text-orange-600 dark:text-orange-400',
         };
       case 'WATCH':
@@ -168,16 +168,16 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
     : 'relative w-full flex flex-col';
 
   const panelCardClass = isMaximized
-    ? 'neu-flat relative w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]'
-    : 'neu-flat w-full flex flex-col rounded-2xl';
+    ? 'relative w-full max-w-5xl rounded-2xl bg-card border border-border/80 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]'
+    : 'w-full flex flex-col rounded-xl bg-card border border-border/80 shadow-xs';
 
   return (
     <div className={containerClass}>
       <div className={panelCardClass}>
         {/* PANEL HEADER: Bed, Patient Profile & Controls */}
-        <div className="px-6 py-4 border-b border-border/40 flex items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-3.5">
-            <div className="neu-inset flex items-center justify-center h-11 w-16 rounded-xl text-center font-mono font-black text-foreground text-sm">
+        <div className="px-4 sm:px-6 py-3.5 border-b border-border/50 flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center h-10 w-14 sm:h-11 sm:w-16 rounded-xl bg-muted/70 border border-border/60 text-center font-mono font-black text-foreground text-sm shrink-0">
               {patient.bedNumber}
             </div>
             <div>
@@ -188,18 +188,18 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                 <span className="text-xs font-mono text-muted-foreground">
                   ({patient.gender === 'FEMALE' ? 'F' : 'M'}, {patient.age}y)
                 </span>
-                <span className="neu-inset-sm text-[10px] font-mono text-sky-600 dark:text-sky-400 font-bold px-2 py-0.5 rounded-lg">
+                <span className="text-[10px] font-mono text-primary font-bold px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20">
                   {patient.mrn}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-sm sm:max-w-md">
                 {patient.admissionDiagnosis}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Badge variant={config.badgeVariant} dot className="py-1 px-3 text-xs font-mono">
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge variant={config.badgeVariant} dot className="py-1 px-2.5 text-xs font-mono">
               {config.label}
             </Badge>
 
@@ -229,21 +229,21 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
 
         {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col overflow-hidden">
-          <div className="px-6 border-b border-border/40 py-2.5 shrink-0">
-            <TabsList className="bg-transparent border-0 h-auto p-0 gap-1 sm:gap-2 grid grid-cols-2 sm:grid-cols-4 w-full">
-              <TabsTrigger value="ALL_OVERVIEW" className="gap-1.5 py-2 px-2 sm:px-3 text-xs justify-center">
+          <div className="px-4 sm:px-6 border-b border-border/50 py-2 shrink-0">
+            <TabsList className="bg-muted/70 p-1 rounded-xl border border-border/50 h-auto gap-1 grid grid-cols-2 sm:grid-cols-4 w-full">
+              <TabsTrigger value="ALL_OVERVIEW" className="gap-1.5 py-1.5 px-2 sm:px-3 text-xs justify-center font-medium">
                 <Activity className="h-3.5 w-3.5 shrink-0" />
                 <span>Overview</span>
               </TabsTrigger>
-              <TabsTrigger value="TRAJECTORY" className="gap-1.5 py-2 px-2 sm:px-3 text-xs justify-center">
+              <TabsTrigger value="TRAJECTORY" className="gap-1.5 py-1.5 px-2 sm:px-3 text-xs justify-center font-medium">
                 <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                 <span>Trajectory (60m)</span>
               </TabsTrigger>
-              <TabsTrigger value="RULES_LABS" className="gap-1.5 py-2 px-2 sm:px-3 text-xs justify-center">
+              <TabsTrigger value="RULES_LABS" className="gap-1.5 py-1.5 px-2 sm:px-3 text-xs justify-center font-medium">
                 <Flame className="h-3.5 w-3.5 shrink-0" />
                 <span>MEWS & Labs</span>
               </TabsTrigger>
-              <TabsTrigger value="TIMELINE" className="gap-1.5 py-2 px-2 sm:px-3 text-xs justify-center">
+              <TabsTrigger value="TIMELINE" className="gap-1.5 py-1.5 px-2 sm:px-3 text-xs justify-center font-medium">
                 <Clock className="h-3.5 w-3.5 shrink-0" />
                 <span>Audit ({patient.timeline.length})</span>
               </TabsTrigger>
@@ -251,12 +251,12 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
           </div>
 
           {/* SCROLLABLE BODY */}
-          <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
+          <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
             {/* TAB 1: EXECUTIVE CLINICAL VIEW */}
-            <TabsContent value="ALL_OVERVIEW" className="mt-0 space-y-6">
+            <TabsContent value="ALL_OVERVIEW" className="mt-0 space-y-5">
               {/* TOP METRICS STRIP */}
-              <div className="neu-inset rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-4 grid grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() =>
@@ -271,7 +271,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                     className="group flex items-baseline gap-2 text-left focus:outline-none cursor-pointer"
                     title="Click to Trace APS Provenance"
                   >
-                    <span className="text-xs font-mono text-muted-foreground group-hover:text-sky-600 dark:group-hover:text-sky-400 flex items-center gap-0.5">
+                    <span className="text-xs font-mono text-muted-foreground group-hover:text-primary flex items-center gap-0.5">
                       APS <HelpCircle className="h-3.5 w-3.5 inline" />
                     </span>
                     <span
@@ -290,7 +290,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                     <span className="text-xs font-mono text-muted-foreground">/100</span>
                   </button>
 
-                  <div className="border-l border-border/60 pl-3.5">
+                  <div className="border-l border-border/60 pl-3">
                     <span className="text-[10px] font-mono uppercase text-muted-foreground block font-bold">
                       Triage Category
                     </span>
@@ -300,63 +300,61 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs font-mono flex-wrap">
-                  <div>
-                    <span className="text-[10px] text-muted-foreground uppercase block font-bold">
-                      Trajectory Velocity
-                    </span>
-                    <span
-                      className={`flex items-center gap-1 font-bold ${
-                        patient.trendDirection === 'RAPIDLY_RISING'
-                          ? 'text-rose-600 dark:text-rose-400 animate-pulse'
-                          : patient.trendDirection === 'RISING'
-                          ? 'text-amber-700 dark:text-amber-400'
-                          : patient.trendDirection === 'RECOVERING'
-                          ? 'text-emerald-700 dark:text-emerald-400'
-                          : 'text-foreground'
-                      }`}
-                    >
-                      <TrendingUp className="h-3.5 w-3.5" />
-                      {patient.trendDirection.replace('_', ' ')} ({patient.trendVelocityPointsPerHour > 0 ? '+' : ''}
-                      {patient.trendVelocityPointsPerHour} pts/hr)
-                    </span>
-                  </div>
+                <div className="border-l border-border/40 pl-3">
+                  <span className="text-[10px] text-muted-foreground uppercase block font-bold font-mono">
+                    Trajectory Velocity
+                  </span>
+                  <span
+                    className={`flex items-center gap-1 font-bold text-xs font-mono ${
+                      patient.trendDirection === 'RAPIDLY_RISING'
+                        ? 'text-rose-600 dark:text-rose-400 animate-pulse'
+                        : patient.trendDirection === 'RISING'
+                        ? 'text-amber-700 dark:text-amber-400'
+                        : patient.trendDirection === 'RECOVERING'
+                        ? 'text-emerald-700 dark:text-emerald-400'
+                        : 'text-foreground'
+                    }`}
+                  >
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    {patient.trendDirection.replace('_', ' ')} ({patient.trendVelocityPointsPerHour > 0 ? '+' : ''}
+                    {patient.trendVelocityPointsPerHour} pts/hr)
+                  </span>
+                </div>
 
-                  <div className="border-l border-border/60 pl-3.5">
-                    <span className="text-[10px] text-muted-foreground uppercase block font-bold">
-                      Optical Signal Quality
-                    </span>
-                    <span className="flex items-center gap-1 text-foreground font-semibold">
-                      <Radio className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-                      {patient.signalQuality.confidencePercent}% SNR ({patient.signalQuality.snrDb} dB)
-                    </span>
-                  </div>
+                <div className="border-l border-border/40 pl-3">
+                  <span className="text-[10px] text-muted-foreground uppercase block font-bold font-mono">
+                    Optical Signal Quality
+                  </span>
+                  <span className="flex items-center gap-1 text-foreground font-semibold text-xs font-mono">
+                    <Radio className="h-3.5 w-3.5 text-primary" />
+                    {patient.signalQuality.confidencePercent}% SNR ({patient.signalQuality.snrDb} dB)
+                  </span>
+                </div>
 
-                  <div className="border-l border-border/60 pl-3.5">
-                    <span className="text-[10px] text-muted-foreground uppercase block font-bold">
-                      Last Observation
-                    </span>
-                    <span
-                      className={`flex items-center gap-1 ${
-                        patient.isStale ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-foreground'
-                      }`}
-                    >
-                      <Clock className="h-3.5 w-3.5" />
-                      {patient.lastTrustedElapsedMinutes <= 1
-                        ? 'Live'
-                        : `${patient.lastTrustedElapsedMinutes}m ago`}
-                      {patient.isStale && ' [STALE]'}
-                    </span>
-                  </div>
+                <div className="border-l border-border/40 pl-3">
+                  <span className="text-[10px] text-muted-foreground uppercase block font-bold font-mono">
+                    Last Observation
+                  </span>
+                  <span
+                    className={`flex items-center gap-1 text-xs font-mono ${
+                      patient.isStale ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-foreground'
+                    }`}
+                  >
+                    <Clock className="h-3.5 w-3.5" />
+                    {patient.lastTrustedElapsedMinutes <= 1
+                      ? 'Live'
+                      : `${patient.lastTrustedElapsedMinutes}m ago`}
+                    {patient.isStale && ' [STALE]'}
+                  </span>
                 </div>
               </div>
 
               {/* "WHY NOW?" HERO SECTION */}
-              <div className={`p-5 rounded-2xl ${config.cardGlow} neu-flat`}>
+              <div className={`p-4 sm:p-5 rounded-xl border bg-card shadow-xs ${config.cardGlow}`}>
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-sky-500 animate-ping" />
-                    <h4 className="text-xs sm:text-sm font-mono font-bold tracking-wider text-sky-600 dark:text-sky-400 uppercase">
+                    <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                    <h4 className="text-xs sm:text-sm font-mono font-bold tracking-wider text-primary uppercase">
                       WHY NOW? — Operational Clinical Synthesis
                     </h4>
                   </div>
@@ -365,7 +363,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                   </Badge>
                 </div>
 
-                <p className="text-xs sm:text-sm text-foreground font-medium leading-relaxed neu-inset p-4 rounded-xl">
+                <p className="text-xs sm:text-sm text-foreground font-medium leading-relaxed bg-muted/40 border border-border/50 p-3.5 sm:p-4 rounded-xl">
                   {patient.whyNowSummary}
                 </p>
 
@@ -387,7 +385,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                       return (
                         <div
                           key={reason.id}
-                          className="neu-inset-sm rounded-xl p-3.5 flex flex-col justify-between"
+                          className="rounded-xl border border-border/60 bg-muted/20 p-3.5 flex flex-col justify-between"
                         >
                           <div>
                             <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -403,7 +401,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                               >
                                 {reason.title}
                               </Badge>
-                              <span className="text-xs font-mono font-bold text-sky-600 dark:text-sky-400">
+                              <span className="text-xs font-mono font-bold text-primary">
                                 {reason.contributionPercent}% impact
                               </span>
                             </div>
@@ -412,7 +410,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                               {reason.explanation}
                             </p>
 
-                            <div className="mt-2.5 text-[10px] font-mono text-muted-foreground neu-flat-sm rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+                            <div className="mt-2.5 text-[10px] font-mono text-muted-foreground rounded-lg border border-border/50 bg-background/80 px-2.5 py-1.5 flex items-center justify-between">
                               <span>
                                 <span>Evidence: </span>
                                 <span className="text-foreground font-bold">{reason.evidence.currentValue}</span>
@@ -425,7 +423,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                               <button
                                 type="button"
                                 onClick={() => setExpandedProvenanceId(isExpanded ? null : reason.id)}
-                                className="text-[10px] font-mono text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-0.5 ml-2 cursor-pointer font-bold"
+                                className="text-[10px] font-mono text-primary hover:underline flex items-center gap-0.5 ml-2 cursor-pointer font-bold"
                               >
                                 <span>Inspect</span>
                                 {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -435,12 +433,12 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
 
                           {/* Inline Provenance Expansion */}
                           {isExpanded && (
-                            <div className="mt-2.5 p-3 neu-inset rounded-xl text-[10px] font-mono text-foreground space-y-1.5 border border-sky-500/30">
-                              <div className="text-sky-600 dark:text-sky-400 font-bold flex items-center gap-1">
+                            <div className="mt-2.5 p-3 rounded-lg bg-muted/60 border border-primary/30 text-[10px] font-mono text-foreground space-y-1.5">
+                              <div className="text-primary font-bold flex items-center gap-1">
                                 <Search className="h-3 w-3" /> Provenance Audit Trace:
                               </div>
                               <div>Rule: <span className="text-foreground font-semibold">{reason.provenance.calculationRule}</span></div>
-                              <div>Observation IDs: <span className="text-sky-600 dark:text-sky-400 font-semibold">{reason.provenance.sourceObservationIds.join(', ')}</span></div>
+                              <div>Observation IDs: <span className="text-primary font-semibold">{reason.provenance.sourceObservationIds.join(', ')}</span></div>
                               <div>Normalized Weight: <span className="text-amber-600 dark:text-amber-400 font-bold">{reason.provenance.normalizedWeight}</span> (Raw: {reason.provenance.rawScore})</div>
                             </div>
                           )}
@@ -455,7 +453,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-xs font-mono uppercase font-bold text-foreground flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                    <Activity className="h-4 w-4 text-primary" />
                     Bedside Physiological State vs Established Baseline
                   </h4>
                   <span className="text-[10px] font-mono text-muted-foreground">
@@ -463,7 +461,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
                   {/* HR - Crimson Rose */}
                   <div
                     onClick={() =>
@@ -475,7 +473,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                         'Progressive increase exceeding 0.6 bpm/min slope over 40 minutes.'
                       )
                     }
-                    className="neu-inset-sm p-3.5 rounded-2xl cursor-pointer hover:scale-[1.02] transition-transform bg-rose-500/10 border border-rose-500/30"
+                    className="p-3.5 rounded-xl cursor-pointer hover:border-rose-500/60 transition-all bg-rose-500/10 border border-rose-500/30 shadow-xs"
                   >
                     <div className="flex items-center justify-between text-muted-foreground text-xs font-mono">
                       <span className="flex items-center gap-1 text-rose-700 dark:text-rose-300 font-bold">
@@ -484,7 +482,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                       <span className="text-[9px] font-mono font-semibold px-1 py-0.5 rounded bg-rose-500/10 text-rose-700 dark:text-rose-300">
                         {patient.lastTrustedElapsedMinutes < 2
                           ? 'CURRENT'
-                          : `LAST TRUSTED • ${patient.lastTrustedElapsedMinutes}m ago`}
+                          : `LAST • ${patient.lastTrustedElapsedMinutes}m`}
                       </span>
                     </div>
                     <div className="my-1.5 text-2xl font-black font-mono text-rose-700 dark:text-rose-300">
@@ -516,7 +514,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                         'qSOFA Tachypnea criterion met (RR ≥ 22 /min).'
                       )
                     }
-                    className="neu-inset-sm p-3.5 rounded-2xl cursor-pointer hover:scale-[1.02] transition-transform bg-emerald-500/10 border border-emerald-500/30"
+                    className="p-3.5 rounded-xl cursor-pointer hover:border-emerald-500/60 transition-all bg-emerald-500/10 border border-emerald-500/30 shadow-xs"
                   >
                     <div className="flex items-center justify-between text-muted-foreground text-xs font-mono">
                       <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-300 font-bold">
@@ -525,7 +523,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                       <span className="text-[9px] font-mono font-semibold px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-800 dark:text-emerald-300">
                         {patient.lastTrustedElapsedMinutes < 2
                           ? 'CURRENT'
-                          : `LAST TRUSTED • ${patient.lastTrustedElapsedMinutes}m ago`}
+                          : `LAST • ${patient.lastTrustedElapsedMinutes}m`}
                       </span>
                     </div>
                     <div className="my-1.5 text-2xl font-black font-mono text-emerald-800 dark:text-emerald-300">
@@ -557,7 +555,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                         'Delivery Mode: ' + patient.vitals.oxygenDelivery
                       )
                     }
-                    className="neu-inset-sm p-3.5 rounded-2xl cursor-pointer hover:scale-[1.02] transition-transform bg-sky-500/10 border border-sky-500/30"
+                    className="p-3.5 rounded-xl cursor-pointer hover:border-sky-500/60 transition-all bg-sky-500/10 border border-sky-500/30 shadow-xs"
                   >
                     <div className="flex items-center justify-between text-muted-foreground text-xs font-mono">
                       <span className="flex items-center gap-1 text-sky-800 dark:text-sky-300 font-bold">
@@ -584,7 +582,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                         'Narrow pulse pressure indicates reduced stroke volume or peripheral vasoconstriction.'
                       )
                     }
-                    className="neu-inset-sm p-3.5 rounded-2xl cursor-pointer hover:scale-[1.02] transition-transform bg-indigo-500/10 border border-indigo-500/30"
+                    className="p-3.5 rounded-xl cursor-pointer hover:border-indigo-500/60 transition-all bg-indigo-500/10 border border-indigo-500/30 shadow-xs"
                   >
                     <div className="flex items-center justify-between text-muted-foreground text-xs font-mono">
                       <span className="flex items-center gap-1 text-indigo-800 dark:text-indigo-300 font-bold">
@@ -611,7 +609,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                         'SI ≥ 1.0 indicates severe hemodynamic instability or occult shock.'
                       )
                     }
-                    className="neu-inset-sm p-3.5 rounded-2xl cursor-pointer hover:scale-[1.02] transition-transform bg-amber-500/10 border border-amber-500/30"
+                    className="p-3.5 rounded-xl cursor-pointer hover:border-amber-500/60 transition-all bg-amber-500/10 border border-amber-500/30 shadow-xs"
                   >
                     <div className="flex items-center justify-between text-muted-foreground text-xs font-mono">
                       <span className="flex items-center gap-1 text-amber-800 dark:text-amber-300 font-bold">
@@ -638,7 +636,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                   </div>
 
                   {/* Temp / AVPU - Ochre Amber */}
-                  <div className="neu-inset-sm p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 shadow-xs">
                     <div className="flex items-center justify-between text-muted-foreground text-xs font-mono">
                       <span className="flex items-center gap-1 text-amber-800 dark:text-amber-300 font-bold">
                         <Thermometer className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" /> Temp/AVPU
@@ -647,7 +645,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                     <div className="my-1.5 text-2xl font-black font-mono text-foreground">
                       {patient.vitals.bodyTemperature}°C
                     </div>
-                    <div className="text-[10px] font-mono text-sky-600 dark:text-sky-400 font-bold">
+                    <div className="text-[10px] font-mono text-primary font-bold">
                       AVPU: {patient.vitals.avpu}
                     </div>
                   </div>
@@ -655,13 +653,13 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
               </div>
 
               {/* RECOMMENDED HUMAN VERIFICATION CHECKLIST */}
-              <div className="neu-flat p-5 rounded-2xl">
+              <div className="p-4 sm:p-5 rounded-xl border border-border/80 bg-card shadow-xs">
                 <h5 className="text-xs font-mono uppercase font-bold text-foreground mb-3 flex items-center gap-2">
-                  <CheckSquare className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                  <CheckSquare className="h-4 w-4 text-primary" />
                   Recommended Bedside Verification Checklist
                 </h5>
 
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   {patient.recommendedVerifications.map((check) => {
                     const isChecked = completedCheckIds[check.id] ?? check.completed;
 
@@ -669,10 +667,10 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                       <div
                         key={check.id}
                         onClick={() => toggleCheck(check.id)}
-                        className={`p-3.5 rounded-xl flex items-start gap-3 cursor-pointer transition-all duration-150 ${
+                        className={`p-3 rounded-xl border border-border/50 flex items-start gap-3 cursor-pointer transition-all duration-150 ${
                           isChecked
-                            ? 'neu-inset opacity-80'
-                            : 'neu-flat-sm hover:scale-[1.01]'
+                            ? 'bg-muted/40 opacity-80'
+                            : 'bg-muted/10 hover:bg-muted/30'
                         }`}
                       >
                         <div className="mt-0.5">
@@ -697,9 +695,9 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
               </div>
 
               {/* NON-INVASIVE OPTICAL TELEMETRY PRIVACY SEAL & SPOT-CHECK TRIGGER */}
-              <div className="neu-inset-sm rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+              <div className="rounded-xl border border-border/60 bg-muted/30 p-3 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
                 <div className="flex items-center gap-2 text-foreground font-medium flex-wrap">
-                  <Radio className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                  <Radio className="h-4 w-4 text-primary" />
                   <span>rPPG Optical Pulse ({patient.signalQuality.cameraDeviceId})</span>
                   <span className="text-muted-foreground">|</span>
                   <span className="text-muted-foreground">{patient.signalQuality.illuminationLux} Lux</span>
@@ -714,7 +712,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={() => setIsBedsideQrModalOpen(true)}
-                    className="border-sky-500/40 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold font-mono text-xs gap-1.5 h-8 px-3 cursor-pointer"
+                    className="border-primary/40 hover:bg-primary/10 text-primary font-bold font-mono text-xs gap-1.5 h-8 px-3 cursor-pointer"
                   >
                     <QrCode className="h-3.5 w-3.5" />
                     <span>Mobile Bedside QR</span>
@@ -724,7 +722,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                     size="sm"
                     variant="default"
                     onClick={() => setIsSpotCheckModalOpen(true)}
-                    className="bg-sky-600 hover:bg-sky-700 text-white font-bold font-mono text-xs gap-1.5 h-8 px-3 shadow-sm cursor-pointer"
+                    className="font-bold font-mono text-xs gap-1.5 h-8 px-3 shadow-xs cursor-pointer"
                   >
                     <Camera className="h-3.5 w-3.5" />
                     <span>Launch 15s Optical Spot-Check</span>
@@ -735,10 +733,10 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
 
             {/* TAB 2: MULTIVARIATE TRAJECTORY PLOT */}
             <TabsContent value="TRAJECTORY" className="mt-0 space-y-4">
-              <div className="neu-flat p-5 rounded-2xl">
-                <div className="flex items-center justify-between mb-4">
+              <div className="p-4 sm:p-5 rounded-xl border border-border/80 bg-card shadow-xs">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <h4 className="text-xs font-bold text-foreground font-mono flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                    <TrendingUp className="h-4 w-4 text-primary" />
                     Multivariate Physiological Trajectory (Last 60 Minutes)
                   </h4>
                   <div className="flex items-center gap-4 text-xs font-mono">
@@ -754,7 +752,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                   </div>
                 </div>
 
-                <div className="neu-inset h-56 w-full rounded-xl p-4 relative flex items-end">
+                <div className="h-56 w-full rounded-xl p-4 bg-muted/30 border border-border/50 relative flex items-end">
                   <svg className="w-full h-full overflow-visible" viewBox="0 0 500 200" preserveAspectRatio="none">
                     <line x1="0" y1="50" x2="500" y2="50" stroke="currentColor" className="text-border/40" strokeDasharray="3 3" />
                     <line x1="0" y1="100" x2="500" y2="100" stroke="currentColor" className="text-border/40" strokeDasharray="3 3" />
@@ -830,10 +828,10 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
             </TabsContent>
 
             {/* TAB 3: RULES & LABS */}
-            <TabsContent value="RULES_LABS" className="mt-0 space-y-5">
+            <TabsContent value="RULES_LABS" className="mt-0 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* MEWS Card - Amber */}
-                <div className="neu-flat p-5 rounded-2xl">
+                <div className="p-4 sm:p-5 rounded-xl border border-border/80 bg-card shadow-xs">
                   <div className="flex items-center justify-between mb-3">
                     <h5 className="text-xs font-mono uppercase font-bold text-foreground flex items-center gap-1.5">
                       <Flame className="h-4 w-4 text-amber-500" />
@@ -851,7 +849,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                           'Deterministic standard scoring based on documented protocol thresholds.'
                         )
                       }
-                      className="h-7 px-2.5 text-[11px] font-mono text-sky-600 dark:text-sky-400"
+                      className="h-7 px-2 text-[11px] font-mono text-primary"
                     >
                       <Search className="h-3 w-3 mr-1" /> Trace Points
                     </Button>
@@ -859,7 +857,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
 
                   <div className="space-y-1.5 text-xs font-mono">
                     {patient.mews.breakdown.map((row, i) => (
-                      <div key={i} className="neu-inset-sm p-2 rounded-lg flex justify-between">
+                      <div key={i} className="p-2 rounded-lg bg-muted/40 border border-border/40 flex justify-between">
                         <span className="text-foreground">{row.parameter}: <span className="font-bold">{row.value}</span></span>
                         <span className="font-extrabold text-amber-600 dark:text-amber-400">+{row.points} pt</span>
                       </div>
@@ -869,7 +867,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
 
                 {/* qSOFA Card - Crimson */}
                 {patient.qsofa && (
-                  <div className="neu-flat p-5 rounded-2xl">
+                  <div className="p-4 sm:p-5 rounded-xl border border-border/80 bg-card shadow-xs">
                     <div className="flex items-center justify-between mb-3">
                       <h5 className="text-xs font-mono uppercase font-bold text-foreground flex items-center gap-1.5">
                         <AlertOctagon className="h-4 w-4 text-rose-500" />
@@ -884,8 +882,8 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                       {patient.qsofa.breakdown.map((q, i) => (
                         <div
                           key={i}
-                          className={`neu-inset-sm p-2 rounded-lg flex justify-between ${
-                            q.isMet ? 'text-rose-700 dark:text-rose-300 font-bold' : 'text-muted-foreground'
+                          className={`p-2 rounded-lg border border-border/40 flex justify-between ${
+                            q.isMet ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 font-bold border-rose-500/30' : 'bg-muted/40 text-muted-foreground'
                           }`}
                         >
                           <span>{q.criterion}</span>
@@ -898,7 +896,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
               </div>
 
               {/* Diagnostic Labs - Precision Indigo */}
-              <div className="neu-flat p-5 rounded-2xl">
+              <div className="p-4 sm:p-5 rounded-xl border border-border/80 bg-card shadow-xs">
                 <h5 className="text-xs font-mono uppercase font-bold text-foreground flex items-center gap-2 mb-3">
                   <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                   Diagnostic Laboratory Results
@@ -907,7 +905,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                 {patient.labs.length ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-mono">
                     {patient.labs.map((lab) => (
-                      <div key={lab.id} className="neu-inset-sm p-3 rounded-xl flex items-center justify-between">
+                      <div key={lab.id} className="p-3 rounded-xl bg-muted/30 border border-border/40 flex items-center justify-between">
                         <div>
                           <span className="text-foreground font-bold block">{lab.testName}</span>
                           <span className="text-[10px] text-muted-foreground">
@@ -934,19 +932,19 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
             {/* TAB 4: AUDIT TIMELINE */}
             <TabsContent value="TIMELINE" className="mt-0 space-y-3">
               <h4 className="text-xs font-bold text-foreground font-mono uppercase">Monotonic Audit Event Ledger</h4>
-              <div className="relative border-l-2 border-border/60 ml-3 space-y-3.5">
+              <div className="relative border-l-2 border-border/60 ml-3 space-y-3">
                 {patient.timeline.map((event) => (
                   <div key={event.id} className="relative pl-5">
                     <span
                       className={`absolute -left-[9px] top-2 h-4 w-4 rounded-full border-2 border-background ${
                         event.severity === 'CRITICAL'
-                          ? 'bg-rose-500 shadow-md shadow-rose-500/40'
+                          ? 'bg-rose-500 shadow-sm shadow-rose-500/40'
                           : event.severity === 'WARNING'
-                          ? 'bg-amber-500 shadow-md shadow-amber-500/40'
-                          : 'bg-sky-500 shadow-md shadow-sky-500/40'
+                          ? 'bg-amber-500 shadow-sm shadow-amber-500/40'
+                          : 'bg-primary shadow-sm shadow-primary/40'
                       }`}
                     />
-                    <div className="neu-flat p-3 rounded-xl text-xs">
+                    <div className="p-3 rounded-xl border border-border/70 bg-card shadow-xs text-xs">
                       <div className="flex items-center justify-between gap-1 mb-1 font-mono">
                         <span className="font-bold text-foreground">{event.title}</span>
                         <span className="text-[10px] text-muted-foreground">
@@ -962,7 +960,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
           </div>
 
           {/* PANEL FOOTER: Clinical Actions */}
-          <div className="px-6 py-4 border-t border-border/40 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="px-4 sm:px-6 py-3.5 border-t border-border/50 flex flex-wrap items-center justify-between gap-3 shrink-0">
             <div className="text-xs font-mono text-muted-foreground">
               <span>Nurse: <span className="text-foreground font-bold">{patient.primaryNurse}</span></span>
               <span className="mx-2">•</span>
@@ -971,12 +969,12 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsSpotCheckModalOpen(true)}
-                className="font-mono text-xs font-semibold gap-1.5 text-sky-600 dark:text-sky-400 hover:text-sky-700"
+                className="font-mono text-xs font-semibold gap-1.5 text-primary hover:text-primary"
               >
                 <Camera className="h-3.5 w-3.5" />
                 <span>Optical Spot-Check</span>
@@ -997,7 +995,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                 size="sm"
                 onClick={(e) => onAcknowledge(patient.patientId, e)}
                 className={`font-mono text-xs font-bold ${
-                  patient.isAcknowledged ? 'neu-button text-emerald-700 dark:text-emerald-400' : ''
+                  patient.isAcknowledged ? 'border-emerald-500/40 text-emerald-700 dark:text-emerald-400' : ''
                 }`}
               >
                 <UserCheck className="h-3.5 w-3.5 mr-1" />
@@ -1018,7 +1016,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                 variant="destructive"
                 size="sm"
                 onClick={() => onEscalate(patient.patientId)}
-                className="font-mono text-xs font-bold shadow-lg shadow-rose-600/30"
+                className="font-mono text-xs font-bold shadow-sm shadow-rose-600/30"
               >
                 <AlertOctagon className="h-3.5 w-3.5 mr-1" />
                 <span>Escalate (RRT)</span>
@@ -1034,7 +1032,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
           <DialogContent onClose={() => setProvenanceModal(null)} className="font-mono text-xs max-w-lg border-border/50">
             <DialogHeader>
               <div className="flex items-center gap-2">
-                <Search className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                <Search className="h-4 w-4 text-primary" />
                 <DialogTitle className="text-sm font-bold text-foreground">
                   Deterministic Provenance Trace
                 </DialogTitle>
@@ -1052,15 +1050,15 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
 
               <div>
                 <span className="text-muted-foreground block text-[10px]">Calculated Value:</span>
-                <span className="text-base font-bold text-sky-600 dark:text-sky-400">{provenanceModal.derivedValue}</span>
+                <span className="text-base font-bold text-primary">{provenanceModal.derivedValue}</span>
               </div>
 
-              <div className="neu-inset p-3 rounded-xl">
+              <div className="p-3 rounded-xl bg-muted/50 border border-border/50">
                 <span className="text-muted-foreground block text-[10px] mb-1">Calculation Formula:</span>
                 <span className="text-amber-600 dark:text-amber-400 font-semibold">{provenanceModal.calculationFormula}</span>
               </div>
 
-              <div className="neu-inset p-3 rounded-xl">
+              <div className="p-3 rounded-xl bg-muted/50 border border-border/50">
                 <span className="text-muted-foreground block text-[10px] mb-1">Source Observation Records:</span>
                 <span className="text-foreground">{provenanceModal.sourceObservations.join(', ')}</span>
               </div>
@@ -1131,9 +1129,10 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
           if (onSpotCheckComplete) {
             onSpotCheckComplete(pId, vitals);
           } else {
+            const rrStr = vitals.respiratoryRate ? `, RR ${vitals.respiratoryRate} /min` : '';
             onLogAssessment(
               pId,
-              `15-Second Optical Spot-Check: HR ${vitals.heartRate} bpm, RR ${vitals.respiratoryRate} /min (SQI ${vitals.confidence}%). Zero raw video stored.`
+              `15-Second Optical Spot-Check: HR ${vitals.heartRate} bpm${rrStr} (SQI ${vitals.confidence}%). Zero raw video stored.`
             );
           }
         }}
