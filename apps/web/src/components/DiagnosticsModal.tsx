@@ -90,8 +90,8 @@ export const DiagnosticsModal: React.FC<DiagnosticsModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border/40">
           <div className="flex items-center gap-3">
-            <div className="neu-button p-2.5 rounded-xl text-sky-600 dark:text-sky-400">
-              <Activity className="h-5 w-5" />
+            <div className="neu-button p-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 shadow-xs flex items-center justify-center">
+              <img src="/aegis-logo.png" alt="AegisPulse" className="h-7 w-7 object-contain" />
             </div>
             <div>
               <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
@@ -328,7 +328,8 @@ export const DiagnosticsModal: React.FC<DiagnosticsModalProps> = ({
 
         {/* Footer */}
         <div className="px-6 py-3.5 border-t border-border/40 flex items-center justify-between">
-          <span className="text-[10px] font-mono text-muted-foreground">
+          <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1.5">
+            <img src="/aegis-logo.png" alt="AegisPulse" className="h-4 w-4 object-contain inline-block" />
             AegisPulse v2.7.0 • Operational Command Diagnostics
           </span>
           <Button variant="secondary" size="sm" onClick={onClose} className="font-mono text-xs">

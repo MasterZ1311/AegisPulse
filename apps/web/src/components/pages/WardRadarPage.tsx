@@ -147,6 +147,7 @@ export const WardRadarPage: React.FC<WardRadarPageProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h2 className="text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+              <img src="/aegis-logo.png" alt="AegisPulse" className="h-6 w-6 object-contain inline-block" />
               Ward Deterioration Radar
               <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-lg neu-inset-sm text-sky-600 dark:text-sky-400">
                 LIVE TELEMETRY

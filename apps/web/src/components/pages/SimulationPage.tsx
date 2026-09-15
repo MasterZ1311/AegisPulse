@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Sparkles,
   Play,
   Pause,
   RotateCcw,
@@ -95,8 +94,8 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-amber-500" />
-              Clinical Simulation & Time-Travel Lab
+              <img src="/aegis-logo.png" alt="AegisPulse" className="h-6 w-6 object-contain inline-block" />
+              AegisPulse Simulation & Time-Travel Lab
             </h2>
             <p className="text-xs text-muted-foreground mt-1">
               Test deterministic deterioration scenarios, evaluate false-alarm suppression, and replay critical inpatient decompensations.

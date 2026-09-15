@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  BarChart3,
   TrendingUp,
   AlertOctagon,
   Activity,
@@ -46,8 +45,8 @@ export const WardAnalyticsPage: React.FC<WardAnalyticsPageProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-              Ward Acuity & Deterioration Analytics
+              <img src="/aegis-logo.png" alt="AegisPulse" className="h-6 w-6 object-contain inline-block" />
+              AegisPulse Ward Acuity & Deterioration Analytics
             </h2>
             <p className="text-xs text-muted-foreground mt-1">
               Surveillance summary of hemodynamic stability, risk distribution, and shock index across all monitored ward beds.

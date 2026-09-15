@@ -618,8 +618,8 @@ export const OpticalSpotCheckModal: React.FC<OpticalSpotCheckModalProps> = ({
         <DialogHeader className="border-b border-border/40 pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="neu-button p-2 rounded-xl text-sky-600 dark:text-sky-400">
-                <Camera className="h-5 w-5" />
+              <div className="neu-button p-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 shadow-xs flex items-center justify-center">
+                <img src="/aegis-logo.png" alt="AegisPulse" className="h-7 w-7 object-contain" />
               </div>
               <div>
                 <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
@@ -629,7 +629,7 @@ export const OpticalSpotCheckModal: React.FC<OpticalSpotCheckModalProps> = ({
                   </Badge>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                  Face-first optical rPPG with zero-tolerance no-face suppression.
+                  AegisPulse face-first optical rPPG with zero-tolerance no-face suppression.
                 </DialogDescription>
               </div>
             </div>

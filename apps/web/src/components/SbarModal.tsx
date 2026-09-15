@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  FileText,
   Copy,
   Check,
   Printer,
@@ -84,8 +83,8 @@ ${recommendation}
         <DialogHeader className="border-b border-border/40 pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="neu-button p-2 rounded-xl text-sky-600 dark:text-sky-400">
-                <FileText className="h-5 w-5" />
+              <div className="neu-button p-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 shadow-xs flex items-center justify-center">
+                <img src="/aegis-logo.png" alt="AegisPulse" className="h-7 w-7 object-contain" />
               </div>
               <div>
                 <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
@@ -95,7 +94,7 @@ ${recommendation}
                   </Badge>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                  Standardized Medical Emergency Team (MET) & Resident Briefing
+                  AegisPulse Medical Emergency Team (MET) & Resident Briefing
                 </DialogDescription>
               </div>
             </div>
@@ -159,8 +158,9 @@ ${recommendation}
 
         {/* FOOTER ACTIONS */}
         <div className="border-t border-border/40 pt-4 flex items-center justify-between gap-3 flex-wrap">
-          <div className="text-[11px] font-mono text-muted-foreground">
-            Lead Nurse: <strong className="text-foreground">{patient.primaryNurse}</strong>
+          <div className="text-[11px] font-mono text-muted-foreground flex items-center gap-1.5">
+            <img src="/aegis-logo.png" alt="AegisPulse" className="h-3.5 w-3.5 object-contain" />
+            <span>AegisPulse SBAR • Lead Nurse: <strong className="text-foreground">{patient.primaryNurse}</strong></span>
           </div>
 
           <div className="flex items-center gap-2">

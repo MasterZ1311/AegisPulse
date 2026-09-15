@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { AlertOctagon, RotateCcw, ShieldAlert, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { RotateCcw, ShieldAlert, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface ErrorBoundaryProps {
@@ -87,12 +87,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div className="max-w-xl w-full neu-flat rounded-2xl p-6 sm:p-8 border border-rose-500/30 shadow-2xl space-y-5">
             {/* Header / Brand Guard */}
             <div className="flex items-center gap-3">
-              <div className="neu-button h-12 w-12 rounded-2xl flex items-center justify-center text-rose-500 shrink-0">
-                <AlertOctagon className="h-6 w-6 stroke-[2.5]" />
+              <div className="neu-button h-12 w-12 rounded-2xl flex items-center justify-center p-1.5 bg-white/80 dark:bg-slate-900/80 shadow-xs shrink-0">
+                <img src="/aegis-logo.png" alt="AegisPulse" className="h-8 w-8 object-contain" />
               </div>
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-widest text-rose-500 font-bold">
-                  Defensive Fail-Safe Engaged
+                  AegisPulse Fail-Safe Engaged
                 </span>
                 <h2 className="text-lg sm:text-xl font-black text-foreground tracking-tight">
                   {title}

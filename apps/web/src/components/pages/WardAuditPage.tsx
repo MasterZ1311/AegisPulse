@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import {
-  ScrollText,
   Filter,
   ShieldCheck,
   Clock,
@@ -119,8 +118,8 @@ export const WardAuditPage: React.FC<WardAuditPageProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-              <ScrollText className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-              Ward Clinical Audit Ledger
+              <img src="/aegis-logo.png" alt="AegisPulse" className="h-6 w-6 object-contain inline-block" />
+              AegisPulse Clinical Audit Ledger
             </h2>
             <p className="text-xs text-muted-foreground mt-1">
               Monotonic, tamper-evident audit trail of physiological anomalies, bedside nurse acknowledgements, and clinical escalations.

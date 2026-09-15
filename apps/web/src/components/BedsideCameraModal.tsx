@@ -510,8 +510,8 @@ export const BedsideCameraModal: React.FC<BedsideCameraModalProps> = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/80">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-cyan-950/60 border border-cyan-500/40 text-cyan-400">
-              <Camera className="h-5 w-5" />
+            <div className="p-1 rounded-lg bg-white/10 border border-cyan-500/40 flex items-center justify-center">
+              <img src="/aegis-logo.png" alt="AegisPulse" className="h-7 w-7 object-contain" />
             </div>
             <div>
               <div className="flex items-center gap-2">

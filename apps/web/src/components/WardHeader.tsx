@@ -66,8 +66,8 @@ export const WardHeader: React.FC<WardHeaderProps> = ({
       <div className="max-w-[1780px] mx-auto flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         {/* Left: Brand Identity & Shift Information */}
         <div className="flex items-center gap-4">
-          <div className="neu-button relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sky-600 dark:text-sky-400">
-            <Activity className="h-6 w-6 stroke-[2.5]" />
+          <div className="neu-button relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl p-1.5 bg-white/80 dark:bg-slate-900/80 shadow-xs">
+            <img src="/aegis-logo.png" alt="AegisPulse" className="h-8 w-8 object-contain" />
             <span className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
           </div>
 

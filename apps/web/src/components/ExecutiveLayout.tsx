@@ -15,7 +15,6 @@ import {
   Bell,
   Settings,
   ChevronDown,
-  ShieldCheck,
   HeartPulse,
   Clock,
 } from 'lucide-react';
@@ -112,14 +111,14 @@ export const ExecutiveLayout: React.FC<ExecutiveLayoutProps> = ({
     <div className="min-h-screen bg-[#DCE6DC] p-2.5 sm:p-4 lg:p-6 flex flex-col md:flex-row gap-3 sm:gap-4 lg:gap-6 font-sans text-slate-900 antialiased selection:bg-emerald-500 selection:text-white">
       {/* 1. Left Vertical Charcoal/Black Pill Navigation Dock */}
       <aside className="w-full md:w-[74px] lg:w-[78px] bg-[#0E1311] rounded-[26px] md:rounded-[32px] p-2.5 sm:p-3 py-4 md:py-6 flex flex-row md:flex-col items-center justify-between shadow-2xl text-white shrink-0 z-30">
-        {/* Top: Shield Crest Logo */}
+        {/* Top: AegisPulse Shield Crest Logo */}
         <button
           type="button"
           onClick={() => onNavigate('RADAR')}
-          className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 hover:bg-white/15 transition-all text-emerald-400 group cursor-pointer"
+          className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 hover:bg-white/15 transition-all p-1 group cursor-pointer"
           title="AegisPulse Radar"
         >
-          <Activity className="h-6 w-6 stroke-[2.5]" />
+          <img src="/aegis-logo.png" alt="AegisPulse" className="h-8 w-8 object-contain filter drop-shadow" />
           <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-4 ring-[#0E1311] animate-pulse" />
         </button>
 
@@ -309,17 +308,22 @@ export const ExecutiveLayout: React.FC<ExecutiveLayoutProps> = ({
           {/* Left: Ward Emblem, Title, Subtitle Pills */}
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              {/* Circular Ward Shield Emblem */}
-              <div className="h-9 w-9 rounded-full bg-[#EAF7EC] border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-xs">
-                <ShieldCheck className="h-5 w-5 stroke-[2.2]" />
+              {/* Circular AegisPulse Shield Emblem */}
+              <div className="h-10 w-10 rounded-full bg-white border border-emerald-200/80 flex items-center justify-center p-1 shadow-xs overflow-hidden shrink-0">
+                <img src="/aegis-logo.png" alt="AegisPulse" className="h-8 w-8 object-contain" />
               </div>
 
               {/* Big Title with Chevron */}
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  St. Jude Acute Care - {wardName.split('—')[0]?.trim() || 'Ward 4B'}
-                </h1>
-                <ChevronDown className="h-5 w-5 text-slate-400 cursor-pointer hover:text-slate-700 transition-colors" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-700 font-bold">
+                    AegisPulse Deterioration Radar
+                  </span>
+                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    St. Jude Acute Care - {wardName.split('—')[0]?.trim() || 'Ward 4B'}
+                    <ChevronDown className="h-5 w-5 text-slate-400 cursor-pointer hover:text-slate-700 transition-colors" />
+                  </h1>
+                </div>
               </div>
             </div>
 

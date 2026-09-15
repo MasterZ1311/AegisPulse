@@ -362,11 +362,14 @@ export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
               {/* Top Mint Gradient Banner */}
               <div className="bg-gradient-to-b from-[#EAF7EC] to-white p-5 border-b border-emerald-100/70">
                 <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="text-sm font-black text-slate-900 tracking-tight">
-                      Live Telemetry Stream
-                    </h3>
-                    <p className="text-[11px] text-slate-500 font-medium">Physiological Vitals & rPPG</p>
+                  <div className="flex items-center gap-2.5">
+                    <img src="/aegis-logo.png" alt="AegisPulse" className="h-6 w-6 object-contain" />
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                        AegisPulse Live Telemetry Stream
+                      </h3>
+                      <p className="text-[11px] text-slate-500 font-medium">Physiological Vitals & rPPG</p>
+                    </div>
                   </div>
                   <span className="bg-white/90 text-emerald-700 font-mono text-xs font-bold px-3 py-1 rounded-full border border-emerald-200/60 shadow-2xs">
                     {selectedPatient.signalQuality?.confidencePercent ?? 98}% SQI • Valid
@@ -499,11 +502,14 @@ export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
               {/* Top Sky Gradient Banner */}
               <div className="bg-gradient-to-b from-[#EBF4FA] to-white p-5 border-b border-sky-100/70">
                 <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="text-sm font-black text-slate-900 tracking-tight">
-                      Clinical Trajectory & Actions
-                    </h3>
-                    <p className="text-[11px] text-slate-500 font-medium">Attention Allocation Protocol</p>
+                  <div className="flex items-center gap-2.5">
+                    <img src="/aegis-logo.png" alt="AegisPulse" className="h-6 w-6 object-contain" />
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                        AegisPulse Clinical Trajectory
+                      </h3>
+                      <p className="text-[11px] text-slate-500 font-medium">Attention Allocation Protocol</p>
+                    </div>
                   </div>
                   <span className="bg-white/90 text-rose-700 font-mono text-xs font-bold px-3 py-1 rounded-full border border-rose-200/60 shadow-2xs">
                     APS {selectedPatient.apsScore} • Immediate Action

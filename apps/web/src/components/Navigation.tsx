@@ -107,8 +107,8 @@ export const Navigation: React.FC<NavigationProps> = ({
             onClick={() => onNavigate('RADAR')}
             className="flex items-center gap-2.5 text-left cursor-pointer group shrink-0"
           >
-            <div className="neu-button relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sky-600 dark:text-sky-400 group-hover:scale-105 transition-transform">
-              <Activity className="h-5 w-5 stroke-[2.5]" />
+            <div className="neu-button relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl p-1 bg-white/80 dark:bg-slate-900/80 group-hover:scale-105 transition-transform shadow-xs">
+              <img src="/aegis-logo.png" alt="AegisPulse" className="h-7 w-7 object-contain" />
               <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             </div>
 
