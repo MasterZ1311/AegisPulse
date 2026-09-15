@@ -158,6 +158,16 @@ export class RppgSensorProvider implements SensorProvider {
       }
     }
 
+    // Strict Invariant: If ROI skinFraction is below viable threshold (< 0.30), face was lost or occluded
+    if (roi.skinFraction < 0.30) {
+      this.clearBuffer(patientId);
+      return this.invalidatePatient(
+        patientId,
+        bedId,
+        'Face ROI skinFraction below threshold (face lost or occluded)'
+      );
+    }
+
     let buffer = this.roiBuffers.get(patientId);
     if (!buffer) {
       buffer = [];
@@ -282,6 +292,64 @@ export class RppgSensorProvider implements SensorProvider {
         },
       };
     }
+
+    this.notifyReading(reading);
+    return reading;
+  }
+
+  /**
+   * Immediately clears the temporal ROI signal buffer for a given patient.
+   * Essential for eliminating the No-Face bug and cross-patient signal leakage.
+   */
+  public clearBuffer(patientId: string = this.defaultPatientId): void {
+    this.roiBuffers.delete(patientId);
+  }
+
+  /**
+   * Clears all buffered ROI histories across all patients.
+   */
+  public clearAllBuffers(): void {
+    this.roiBuffers.clear();
+  }
+
+  /**
+   * Hard Invalidation: Emits an explicit TARGET_LOST / NO_FACE event for a patient.
+   * Immediately purges active buffers and guarantees zero vitals fabrication.
+   */
+  public invalidatePatient(
+    patientId: string = this.defaultPatientId,
+    bedId: string = this.defaultBedId,
+    reason = 'Patient face not detected in sensing area'
+  ): SensorReading {
+    this.clearBuffer(patientId);
+    const timestamp = Date.now();
+
+    const reading: SensorReading = {
+      id: `sr-rppg-lost-${patientId}-${timestamp}`,
+      patientId,
+      bedId,
+      source: this.source,
+      timestamp,
+      confidence: 0,
+      signalQuality: {
+        sqiPercentage: 0,
+        snrDb: -20,
+        illuminationLux: 0,
+        motionArtifactIndex: 0,
+        state: 'LOST',
+        isUsable: false,
+        faceDetected: false,
+        reason,
+      },
+      measurementStatus: 'TARGET_LOST',
+      measurement_status: 'TARGET_LOST',
+      heartRate: undefined,
+      respiratoryRate: undefined,
+      metadata: {
+        algorithm: this.algorithm,
+        disclaimer: 'Face lost. Vitals immediately invalidated and withheld.',
+      },
+    };
 
     this.notifyReading(reading);
     return reading;

@@ -26,6 +26,7 @@ const ingestionRateLimiter = createRateLimiter({
 const IngestObservationSchema = z
   .object({
     id: z.string().optional(),
+    sessionId: z.string().optional(),
     timestamp: z.number().int().min(0).optional(),
     source: ObservationSourceEnum.default('BEDSIDE_DEVICE'),
     confidence: z.number().min(0).max(1).default(0.95),
@@ -39,7 +40,27 @@ const IngestObservationSchema = z
     shockIndex: z.number().min(0.1).max(5.0).optional(),
     notes: z.string().max(500).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((obs, ctx) => {
+    // Zero-Fabrication Invariant: No vitals allowed when optical quality is degraded or lost
+    if (
+      obs.source === 'OPTICAL_RPPG' &&
+      (obs.qualityState === 'LOST' || obs.qualityState === 'UNRELIABLE' || obs.confidence < 0.60)
+    ) {
+      if (obs.heartRate !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'ZERO-FABRICATION VIOLATION: heartRate cannot be accepted when optical quality is LOST or UNRELIABLE.',
+        });
+      }
+      if (obs.respiratoryRate !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'ZERO-FABRICATION VIOLATION: respiratoryRate cannot be accepted when optical quality is LOST or UNRELIABLE.',
+        });
+      }
+    }
+  });
 
 observationsRouter.get('/', requirePatientWardAccess(), (req: Request, res: Response) => {
   const patientId = String(req.params.patientId);

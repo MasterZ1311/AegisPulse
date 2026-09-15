@@ -26,6 +26,7 @@ import {
   Search,
   HelpCircle,
   Camera,
+  QrCode,
 } from 'lucide-react';
 import type { WardPatientRadarState } from '../types/radar';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +43,7 @@ import {
 } from '@/components/ui/dialog';
 import { OpticalSpotCheckModal } from './OpticalSpotCheckModal';
 import { SbarModal } from './SbarModal';
+import { BedsideQrModal } from './BedsideQrModal';
 
 interface PatientDetailPanelProps {
   patient: WardPatientRadarState | null;
@@ -81,6 +83,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
   const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState(false);
   const [isSpotCheckModalOpen, setIsSpotCheckModalOpen] = useState(false);
   const [isSbarModalOpen, setIsSbarModalOpen] = useState(false);
+  const [isBedsideQrModalOpen, setIsBedsideQrModalOpen] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [completedCheckIds, setCompletedCheckIds] = useState<Record<string, boolean>>({});
 
@@ -478,7 +481,11 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                       <span className="flex items-center gap-1 text-rose-700 dark:text-rose-300 font-bold">
                         <HeartPulse className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" /> HR
                       </span>
-                      <span className="text-[9px]">bpm</span>
+                      <span className="text-[9px] font-mono font-semibold px-1 py-0.5 rounded bg-rose-500/10 text-rose-700 dark:text-rose-300">
+                        {patient.lastTrustedElapsedMinutes < 2
+                          ? 'CURRENT'
+                          : `LAST TRUSTED • ${patient.lastTrustedElapsedMinutes}m ago`}
+                      </span>
                     </div>
                     <div className="my-1.5 text-2xl font-black font-mono text-rose-700 dark:text-rose-300">
                       {patient.vitals.heartRate}
@@ -515,7 +522,11 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                       <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-300 font-bold">
                         <Wind className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> RR
                       </span>
-                      <span className="text-[9px]">/min</span>
+                      <span className="text-[9px] font-mono font-semibold px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-800 dark:text-emerald-300">
+                        {patient.lastTrustedElapsedMinutes < 2
+                          ? 'CURRENT'
+                          : `LAST TRUSTED • ${patient.lastTrustedElapsedMinutes}m ago`}
+                      </span>
                     </div>
                     <div className="my-1.5 text-2xl font-black font-mono text-emerald-800 dark:text-emerald-300">
                       {patient.vitals.respiratoryRate}
@@ -698,15 +709,27 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
                     Zero Video Stored
                   </Badge>
                 </div>
-                <Button
-                  size="sm"
-                  variant="default"
-                  onClick={() => setIsSpotCheckModalOpen(true)}
-                  className="bg-sky-600 hover:bg-sky-700 text-white font-bold font-mono text-xs gap-1.5 h-8 px-3 shadow-sm cursor-pointer"
-                >
-                  <Camera className="h-3.5 w-3.5" />
-                  <span>Launch 15s Optical Spot-Check</span>
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsBedsideQrModalOpen(true)}
+                    className="border-sky-500/40 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold font-mono text-xs gap-1.5 h-8 px-3 cursor-pointer"
+                  >
+                    <QrCode className="h-3.5 w-3.5" />
+                    <span>Mobile Bedside QR</span>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => setIsSpotCheckModalOpen(true)}
+                    className="bg-sky-600 hover:bg-sky-700 text-white font-bold font-mono text-xs gap-1.5 h-8 px-3 shadow-sm cursor-pointer"
+                  >
+                    <Camera className="h-3.5 w-3.5" />
+                    <span>Launch 15s Optical Spot-Check</span>
+                  </Button>
+                </div>
               </div>
             </TabsContent>
 
@@ -1121,6 +1144,14 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
         isOpen={isSbarModalOpen}
         onClose={() => setIsSbarModalOpen(false)}
         patient={patient}
+      />
+
+      {/* BEDSIDE MOBILE QR MODAL */}
+      <BedsideQrModal
+        isOpen={isBedsideQrModalOpen}
+        onClose={() => setIsBedsideQrModalOpen(false)}
+        patientId={patient.patientId}
+        bedNumber={patient.bedNumber}
       />
     </div>
   );
