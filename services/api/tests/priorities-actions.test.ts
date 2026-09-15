@@ -4,16 +4,17 @@ import { createApp } from '../src/app';
 
 describe('Attention Priorities, Ward Radar, Acknowledgements & Actions API', () => {
   const app = createApp();
+  const authHeader = { Authorization: 'Bearer charge-token' };
   let patientId: string;
 
   beforeAll(async () => {
-    const patients = await request(app).get('/api/v1/patients');
+    const patients = await request(app).get('/api/v1/patients').set(authHeader);
     patientId = patients.body.data[0].id;
   });
 
   describe('Attention Priority & Radar', () => {
     it('GET /api/v1/patients/:patientId/attention-priority computes bounded APS and explainability reasons', async () => {
-      const res = await request(app).get(`/api/v1/patients/${patientId}/attention-priority`);
+      const res = await request(app).get(`/api/v1/patients/${patientId}/attention-priority`).set(authHeader);
       expect(res.status).toBe(200);
       expect(res.body.data.patientId).toBe(patientId);
       expect(res.body.data.apsScore).toBeGreaterThanOrEqual(0);
@@ -26,7 +27,7 @@ describe('Attention Priorities, Ward Radar, Acknowledgements & Actions API', () 
     });
 
     it('GET /api/v1/wards/WARD-A/radar returns ward patients ranked by APS descending', async () => {
-      const res = await request(app).get('/api/v1/wards/WARD-A/radar');
+      const res = await request(app).get('/api/v1/wards/WARD-A/radar').set(authHeader);
       expect(res.status).toBe(200);
       expect(res.body.data.wardId).toBe('WARD-A');
       expect(res.body.data.radar.length).toBe(6);
@@ -66,7 +67,7 @@ describe('Attention Priorities, Ward Radar, Acknowledgements & Actions API', () 
     let createdActionId: string;
 
     it('GET /api/v1/patients/:patientId/actions lists active actions', async () => {
-      const res = await request(app).get(`/api/v1/patients/${patientId}/actions`);
+      const res = await request(app).get(`/api/v1/patients/${patientId}/actions`).set(authHeader);
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
     });

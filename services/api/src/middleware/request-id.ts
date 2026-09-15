@@ -11,16 +11,20 @@ declare global {
 }
 
 export function requestIdMiddleware(req: Request, res: Response, next: NextFunction): void {
-  const incomingId =
+  const incoming =
     (req.headers['x-request-id'] as string) ||
-    (req.headers['x-correlation-id'] as string) ||
-    randomUUID();
+    (req.headers['x-correlation-id'] as string);
 
-  req.id = incomingId;
-  req.correlationId = incomingId;
+  // Validate incoming ID: strictly alphanumeric, hyphen, underscore; 8 to 64 chars
+  const isValid = typeof incoming === 'string' && /^[a-zA-Z0-9_-]{8,64}$/.test(incoming.trim());
+  const correlationId = isValid ? incoming.trim() : randomUUID();
 
-  res.setHeader('x-request-id', incomingId);
-  res.setHeader('x-correlation-id', incomingId);
+  req.id = correlationId;
+  req.correlationId = correlationId;
+
+  res.setHeader('x-request-id', correlationId);
+  res.setHeader('x-correlation-id', correlationId);
 
   next();
 }
+

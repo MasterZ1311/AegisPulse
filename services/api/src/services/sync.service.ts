@@ -63,11 +63,12 @@ export class SyncService {
     const sortedItems = [...batch.items].sort((a, b) => a.timestamp - b.timestamp);
 
     for (const item of sortedItems) {
-      // 1. Idempotency verification: Check if already processed
-      if (this.processedIdempotencyKeys.has(item.idempotencyKey)) {
+      // 1. Idempotency verification: Check memory map and persistent SQLite ledger
+      if (this.processedIdempotencyKeys.has(item.idempotencyKey) || wardStateService.getIdempotencyRepo().hasKey(item.idempotencyKey)) {
         duplicateCount++;
         continue;
       }
+
 
       // Check if patient exists safely
       let patient = null;
@@ -293,17 +294,28 @@ export class SyncService {
     return { processed: true, conflict };
   }
 
-  private recordIdempotencyKey(key: string, result: string): void {
+  private recordIdempotencyKey(key: string, result: string, itemType: string = 'SYNC_ITEM', patientId?: string): void {
     this.processedIdempotencyKeys.set(key, { timestamp: Date.now(), result });
     if (this.processedIdempotencyKeys.size > this.maxKeyHistory) {
       const first = this.processedIdempotencyKeys.keys().next().value;
       if (first) this.processedIdempotencyKeys.delete(first);
+    }
+    try {
+      wardStateService.getIdempotencyRepo().recordKey({
+        key,
+        itemType,
+        patientId,
+        status: result,
+      });
+    } catch {
+      // Ignore SQLite write error if DB is in transaction or closing
     }
   }
 
   public reset(): void {
     this.processedIdempotencyKeys.clear();
   }
+
 }
 
 export const syncService = new SyncService();

@@ -5,7 +5,8 @@ import { requirePatientWardAccess, requireWardAccess } from '../../middleware/rb
 
 export const patientsRouter = Router();
 
-patientsRouter.use(authenticate({ optional: true }));
+patientsRouter.use(authenticate());
+
 
 patientsRouter.get('/', requireWardAccess(), (req: Request, res: Response) => {
   const wardId = req.query.wardId ? String(req.query.wardId) : undefined;

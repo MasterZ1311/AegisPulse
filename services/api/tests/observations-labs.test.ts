@@ -4,17 +4,18 @@ import { createApp } from '../src/app';
 
 describe('Observations & Labs Ingestion and Query API', () => {
   const app = createApp();
+  const authHeader = { Authorization: 'Bearer nurse-token' };
 
   let patientId: string;
 
   beforeAll(async () => {
-    const patients = await request(app).get('/api/v1/patients');
+    const patients = await request(app).get('/api/v1/patients').set(authHeader);
     patientId = patients.body.data[0].id;
   });
 
   describe('Observations', () => {
     it('GET /api/v1/patients/:patientId/observations returns historical observations', async () => {
-      const res = await request(app).get(`/api/v1/patients/${patientId}/observations`);
+      const res = await request(app).get(`/api/v1/patients/${patientId}/observations`).set(authHeader);
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
     });
@@ -22,6 +23,7 @@ describe('Observations & Labs Ingestion and Query API', () => {
     it('POST /api/v1/patients/:patientId/observations accepts valid in-bounds observation', async () => {
       const res = await request(app)
         .post(`/api/v1/patients/${patientId}/observations`)
+        .set(authHeader)
         .send({
           heartRate: 84,
           respiratoryRate: 18,
@@ -43,6 +45,7 @@ describe('Observations & Labs Ingestion and Query API', () => {
       // HR 15 bpm < minimum 20 bpm
       const lowHR = await request(app)
         .post(`/api/v1/patients/${patientId}/observations`)
+        .set(authHeader)
         .send({ heartRate: 15 });
       expect(lowHR.status).toBe(400);
       expect(lowHR.body.code).toBe('BAD_REQUEST');
@@ -50,12 +53,14 @@ describe('Observations & Labs Ingestion and Query API', () => {
       // SBP 400 mmHg > maximum 300 mmHg
       const highBP = await request(app)
         .post(`/api/v1/patients/${patientId}/observations`)
+        .set(authHeader)
         .send({ systolicBP: 400 });
       expect(highBP.status).toBe(400);
 
       // RR 90 /min > maximum 80 /min
       const highRR = await request(app)
         .post(`/api/v1/patients/${patientId}/observations`)
+        .set(authHeader)
         .send({ respiratoryRate: 90 });
       expect(highRR.status).toBe(400);
     });
@@ -63,6 +68,7 @@ describe('Observations & Labs Ingestion and Query API', () => {
     it('strictly forbids arbitrary client writes by rejecting unknown fields with 400 Bad Request', async () => {
       const maliciousWrite = await request(app)
         .post(`/api/v1/patients/${patientId}/observations`)
+        .set(authHeader)
         .send({
           heartRate: 75,
           isAdminOverride: true,
@@ -77,7 +83,7 @@ describe('Observations & Labs Ingestion and Query API', () => {
 
   describe('Labs', () => {
     it('GET /api/v1/patients/:patientId/labs returns lab results', async () => {
-      const res = await request(app).get(`/api/v1/patients/${patientId}/labs`);
+      const res = await request(app).get(`/api/v1/patients/${patientId}/labs`).set(authHeader);
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
     });
@@ -85,6 +91,7 @@ describe('Observations & Labs Ingestion and Query API', () => {
     it('POST /api/v1/patients/:patientId/labs ingests validated lab result', async () => {
       const res = await request(app)
         .post(`/api/v1/patients/${patientId}/labs`)
+        .set(authHeader)
         .send({
           testCode: 'LACTATE',
           testName: 'Venous Blood Lactate',
@@ -103,6 +110,7 @@ describe('Observations & Labs Ingestion and Query API', () => {
     it('rejects invalid lab units with 400 Bad Request', async () => {
       const res = await request(app)
         .post(`/api/v1/patients/${patientId}/labs`)
+        .set(authHeader)
         .send({
           testCode: 'LACTATE',
           testName: 'Lactate',

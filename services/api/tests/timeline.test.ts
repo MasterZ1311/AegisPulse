@@ -4,15 +4,16 @@ import { createApp } from '../src/app';
 
 describe('Unified Patient Timeline API & Clinical Query Endpoints', () => {
   const app = createApp();
+  const authHeader = { Authorization: 'Bearer nurse-token' };
   let patientId: string;
 
   beforeAll(async () => {
-    const patients = await request(app).get('/api/v1/patients');
+    const patients = await request(app).get('/api/v1/patients').set(authHeader);
     patientId = patients.body.data[0].id;
   });
 
   it('GET /api/v1/patients/:patientId/timeline returns chronological events stream', async () => {
-    const res = await request(app).get(`/api/v1/patients/${patientId}/timeline`);
+    const res = await request(app).get(`/api/v1/patients/${patientId}/timeline`).set(authHeader);
     expect(res.status).toBe(200);
     expect(res.body.patientId).toBe(patientId);
     expect(Array.isArray(res.body.data)).toBe(true);
@@ -22,6 +23,7 @@ describe('Unified Patient Timeline API & Clinical Query Endpoints', () => {
   it('POST /api/v1/patients/:patientId/timeline/events ingests bedside nurse assessment', async () => {
     const res = await request(app)
       .post(`/api/v1/patients/${patientId}/timeline/events`)
+      .set(authHeader)
       .send({
         eventType: 'NURSE_VISIT',
         title: 'Emergency Bedside Re-evaluation',
@@ -37,7 +39,7 @@ describe('Unified Patient Timeline API & Clinical Query Endpoints', () => {
   });
 
   it('GET /api/v1/patients/:patientId/timeline/changes answers "What changed during the last 4 hours?"', async () => {
-    const res = await request(app).get(`/api/v1/patients/${patientId}/timeline/changes?hours=4`);
+    const res = await request(app).get(`/api/v1/patients/${patientId}/timeline/changes?hours=4`).set(authHeader);
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveProperty('windowHours', 4);
     expect(res.body.data).toHaveProperty('narrativeSummary');
@@ -47,7 +49,7 @@ describe('Unified Patient Timeline API & Clinical Query Endpoints', () => {
   });
 
   it('GET /api/v1/patients/:patientId/timeline/priority-rise answers "What caused the patient\'s priority to rise?"', async () => {
-    const res = await request(app).get(`/api/v1/patients/${patientId}/timeline/priority-rise?hours=4`);
+    const res = await request(app).get(`/api/v1/patients/${patientId}/timeline/priority-rise?hours=4`).set(authHeader);
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveProperty('scoreDelta');
     expect(res.body.data).toHaveProperty('primaryDriver');
@@ -56,7 +58,7 @@ describe('Unified Patient Timeline API & Clinical Query Endpoints', () => {
   });
 
   it('GET /api/v1/patients/:patientId/timeline/last-manual-assessment answers "When was the patient last manually assessed?"', async () => {
-    const res = await request(app).get(`/api/v1/patients/${patientId}/timeline/last-manual-assessment`);
+    const res = await request(app).get(`/api/v1/patients/${patientId}/timeline/last-manual-assessment`).set(authHeader);
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveProperty('elapsedHuman');
     expect(res.body.data).toHaveProperty('assessmentType');
@@ -65,7 +67,7 @@ describe('Unified Patient Timeline API & Clinical Query Endpoints', () => {
   });
 
   it('GET /api/v1/patients/:patientId/timeline/trusted-measurements answers "Which measurements were trusted?"', async () => {
-    const res = await request(app).get(`/api/v1/patients/${patientId}/timeline/trusted-measurements`);
+    const res = await request(app).get(`/api/v1/patients/${patientId}/timeline/trusted-measurements`).set(authHeader);
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveProperty('totalMeasurements');
     expect(res.body.data).toHaveProperty('trustPercentage');
@@ -75,7 +77,7 @@ describe('Unified Patient Timeline API & Clinical Query Endpoints', () => {
   });
 
   it('returns 404 for nonexistent patient on timeline query', async () => {
-    const res = await request(app).get('/api/v1/patients/nonexistent-p99/timeline');
+    const res = await request(app).get('/api/v1/patients/nonexistent-p99/timeline').set(authHeader);
     expect(res.status).toBe(404);
   });
 });

@@ -32,9 +32,9 @@ export function extractPulsePos(
 ): number[] {
   const {
     fps = 30,
-    windowDurationSeconds = 1.6,
     lowCutoffHz = 0.7,
     highCutoffHz = 3.5,
+    windowDurationSeconds = Math.max(2.5, 1.0 / lowCutoffHz),
   } = options;
 
   const n = Math.min(rChannel.length, gChannel.length, bChannel.length);

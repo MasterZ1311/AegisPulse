@@ -1,8 +1,8 @@
 {
   "experimentId": "EXP-RPPG-001",
   "name": "Resting Baseline rPPG Accuracy & Optical Convergence",
-  "timestamp": "2026-09-14T15:56:20.742Z",
-  "executionDurationMs": 126,
+  "timestamp": "2026-09-15T12:55:42.212Z",
+  "executionDurationMs": 88,
   "dataset": {
     "slug": "ubfc-rppg",
     "name": "UBFC-rPPG (University of Bourgogne Franche-Comté)",
@@ -24,8 +24,8 @@
   "primaryMetrics": {
     "sampleCount": 7,
     "validCount": 7,
-    "meanAbsoluteError": 1.4,
-    "rootMeanSquareError": 1.5,
+    "meanAbsoluteError": 1.46,
+    "rootMeanSquareError": 1.56,
     "pearsonCorrelation": 0.998,
     "spearmanCorrelation": 1,
     "failureRatePercent": 0,
@@ -93,7 +93,7 @@
         "sampleCount": 7,
         "meanConfidence": 1,
         "empiricalAccuracy": 1,
-        "meanAbsoluteError": 1.4,
+        "meanAbsoluteError": 1.46,
         "calibrationGap": 0
       }
     ],
@@ -179,7 +179,7 @@
         ],
         "diagnosis": "WELL_CALIBRATED"
       },
-      "throughputFps": 55371
+      "throughputFps": 110097
     },
     "CHROM": {
       "metrics": {
@@ -260,14 +260,14 @@
         ],
         "diagnosis": "WELL_CALIBRATED"
       },
-      "throughputFps": 136875
+      "throughputFps": 276577
     },
     "POS": {
       "metrics": {
         "sampleCount": 7,
         "validCount": 7,
-        "meanAbsoluteError": 1.4,
-        "rootMeanSquareError": 1.5,
+        "meanAbsoluteError": 1.46,
+        "rootMeanSquareError": 1.56,
         "pearsonCorrelation": 0.998,
         "spearmanCorrelation": 1,
         "failureRatePercent": 0,
@@ -335,13 +335,13 @@
             "sampleCount": 7,
             "meanConfidence": 1,
             "empiricalAccuracy": 1,
-            "meanAbsoluteError": 1.4,
+            "meanAbsoluteError": 1.46,
             "calibrationGap": 0
           }
         ],
         "diagnosis": "WELL_CALIBRATED"
       },
-      "throughputFps": 46583
+      "throughputFps": 49198
     }
   },
   "disclaimer": "Never make clinical claims from a dataset without documenting its population and limitations. Investigational algorithm research only."

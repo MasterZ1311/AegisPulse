@@ -31,5 +31,27 @@ export function createDatabaseConnection(options?: DatabaseConnectionOptions): D
     db.exec('PRAGMA synchronous = NORMAL;');
   }
 
+  // Performance tuning: 64MB page cache & in-memory temp store
+  db.exec('PRAGMA cache_size = -64000;');
+  db.exec('PRAGMA temp_store = MEMORY;');
+
   return db;
 }
+
+/**
+ * Gracefully closes an SQLite database connection, executing a clean WAL checkpoint
+ * to guarantee zero lost transactions or hanging lock files.
+ */
+export function closeDatabaseConnection(db: DatabaseSync): void {
+  try {
+    db.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+  } catch {
+    // Ignore checkpoint errors if DB is in-memory or already closing
+  }
+  try {
+    db.close();
+  } catch {
+    // Ignore if already closed
+  }
+}
+

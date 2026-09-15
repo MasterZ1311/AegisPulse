@@ -34,13 +34,22 @@ function computeVitalVelocity(
   const oldest = recent[0];
   const timeDeltaHours = (latest.timestamp - oldest.timestamp) / (3600 * 1000);
 
-  // Require at least 30 seconds separation to compute meaningful derivative
-  if (timeDeltaHours < 30 / 3600) {
+  // Require at least 30 seconds separation and valid finite time to compute meaningful derivative
+  if (!Number.isFinite(timeDeltaHours) || timeDeltaHours < 30 / 3600) {
     return null;
   }
 
   const valueDelta = latest.value - oldest.value;
-  const velocityPerHour = Number((valueDelta / timeDeltaHours).toFixed(2));
+  if (!Number.isFinite(valueDelta)) {
+    return null;
+  }
+
+  const rawVelocity = valueDelta / timeDeltaHours;
+  if (!Number.isFinite(rawVelocity)) {
+    return null;
+  }
+
+  const velocityPerHour = Number(rawVelocity.toFixed(2));
 
   let score = 0;
   if (velocityPerHour >= severeThresh) {

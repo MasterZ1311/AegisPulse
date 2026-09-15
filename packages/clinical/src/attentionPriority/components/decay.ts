@@ -49,14 +49,18 @@ export function evaluateInformationDecay(
   let elapsedMinutes = 0;
   let hasTrustedHistory = false;
 
-  if (lastTrustedTimestamp !== undefined) {
+  if (
+    lastTrustedTimestamp !== undefined &&
+    Number.isFinite(lastTrustedTimestamp) &&
+    Number.isFinite(evaluationTimestamp)
+  ) {
     elapsedMinutes = Math.min(
       maxDecayMinutes,
       Math.max(0, (evaluationTimestamp - lastTrustedTimestamp) / 60000)
     );
     hasTrustedHistory = true;
   } else {
-    // If patient has never received a trusted observation, treat as critically stale (4 hours default)
+    // If patient has never received a trusted observation or timestamp is non-finite, treat as critically stale (4 hours default)
     elapsedMinutes = criticalThresholdMinutes;
     hasTrustedHistory = false;
   }

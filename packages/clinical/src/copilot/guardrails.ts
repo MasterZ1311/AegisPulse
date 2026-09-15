@@ -50,7 +50,7 @@ const PROMPT_INJECTION_PATTERNS: Array<{ regex: RegExp; label: string }> = [
     label: 'Encoded / Base64 Payload Obfuscation',
   },
   {
-    regex: /!\[.*?\]\(https?:\/\/[^\s\)]+\?[^\s\)]*\)/i,
+    regex: /!\[.*?\]\(https?:\/\/[^\s)]+\?[^\s)]*\)/i,
     label: 'Markdown Out-of-Band Exfiltration',
   },
 ];

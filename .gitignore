@@ -39,6 +39,7 @@ team-docs/
 playwright-report/
 test-results/
 research/local/
+data/
 data/local/
 *.log
 *.db

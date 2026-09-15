@@ -9,6 +9,10 @@ import {
   ShieldCheck,
   X,
   Wifi,
+  WifiOff,
+  RotateCcw,
+  Zap,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface DiagnosticsModalProps {
@@ -30,9 +34,26 @@ export const DiagnosticsModal: React.FC<DiagnosticsModalProps> = ({
   const [readyCheck, setReadyCheck] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [lastRefreshed, setLastRefreshed] = useState<string>('');
+  const [simState, setSimState] = useState<{ isOffline: boolean; latencyMs: number; dropRate: number }>({
+    isOffline: false,
+    latencyMs: 0,
+    dropRate: 0,
+  });
+  const [suppressedCount, setSuppressedCount] = useState<number>(0);
+  const [bufferedCount, setBufferedCount] = useState<number>(0);
+
+  const refreshStreamMetrics = () => {
+    if (typeof window !== 'undefined' && (window as any).__aegisStreamClient) {
+      const client = (window as any).__aegisStreamClient;
+      setSuppressedCount(client.getSuppressedStaleCount?.() ?? 0);
+      setBufferedCount(client.getBufferedCount?.() ?? 0);
+      setSimState(client.getSimulatedState?.() ?? { isOffline: false, latencyMs: 0, dropRate: 0 });
+    }
+  };
 
   const fetchDiagnostics = async () => {
     setIsLoading(true);
+    refreshStreamMetrics();
     try {
       const [mRes, rRes] = await Promise.all([
         fetch('/api/v1/metrics').then((r) => (r.ok ? r.json() : null)),
@@ -51,7 +72,7 @@ export const DiagnosticsModal: React.FC<DiagnosticsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       fetchDiagnostics();
-      const interval = setInterval(fetchDiagnostics, 5000);
+      const interval = setInterval(fetchDiagnostics, 3000);
       return () => clearInterval(interval);
     }
   }, [isOpen]);
@@ -178,6 +199,123 @@ export const DiagnosticsModal: React.FC<DiagnosticsModalProps> = ({
                 <span className="text-slate-400">Active Patients:</span>
                 <span className="text-cyan-300 font-semibold">{readyCheck?.checks?.activePatients || 6} Beds</span>
               </div>
+            </div>
+          </div>
+
+          {/* Realtime Chaos & Network Fault Simulation */}
+          <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-amber-400" />
+                Realtime Chaos & Network Fault Simulation
+              </span>
+              <span className="text-[10px] font-mono text-cyan-400">Anti-Rollback Active</span>
+            </h3>
+
+            {/* Readout Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono mb-4">
+              <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                <span className="text-slate-500 text-[10px] block">Simulated Link</span>
+                <span
+                  className={`font-bold ${
+                    simState.isOffline
+                      ? 'text-rose-400'
+                      : simState.latencyMs > 0
+                      ? 'text-amber-400'
+                      : 'text-emerald-400'
+                  }`}
+                >
+                  {simState.isOffline
+                    ? 'OFFLINE'
+                    : simState.latencyMs > 0
+                    ? `SLOW 3G (+${simState.latencyMs}ms)`
+                    : 'NORMAL LIVE'}
+                </span>
+              </div>
+              <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                <span className="text-slate-500 text-[10px] block">Stale Suppressed</span>
+                <span className="text-purple-400 font-bold">{suppressedCount} packets</span>
+              </div>
+              <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                <span className="text-slate-500 text-[10px] block">Resequence Buffer</span>
+                <span className="text-cyan-400 font-bold">{bufferedCount} frames</span>
+              </div>
+              <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                <span className="text-slate-500 text-[10px] block">Dead-Man Watchdog</span>
+                <span className="text-emerald-400 font-bold">ARMED (37.5s)</span>
+              </div>
+            </div>
+
+            {/* Interactive Simulation Controls */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && (window as any).__aegisStreamClient) {
+                    (window as any).__aegisStreamClient.simulateOffline();
+                    refreshStreamMetrics();
+                  }
+                }}
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-mono font-medium transition-all ${
+                  simState.isOffline
+                    ? 'bg-rose-600 text-white shadow'
+                    : 'bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/50'
+                }`}
+              >
+                <WifiOff className="h-3.5 w-3.5" />
+                Simulate Offline
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && (window as any).__aegisStreamClient) {
+                    (window as any).__aegisStreamClient.simulateSlow3G(500, 0.15);
+                    refreshStreamMetrics();
+                  }
+                }}
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-mono font-medium transition-all ${
+                  !simState.isOffline && simState.latencyMs > 0
+                    ? 'bg-amber-600 text-white shadow'
+                    : 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border border-amber-800/50'
+                }`}
+              >
+                <Activity className="h-3.5 w-3.5" />
+                Simulate Slow 3G
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && (window as any).__aegisStreamClient) {
+                    (window as any).__aegisStreamClient.simulateReconnect();
+                    refreshStreamMetrics();
+                  }
+                }}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-mono font-medium bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/50 transition-all"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Restore Link
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && (window as any).__aegisStreamClient) {
+                    (window as any).__aegisStreamClient.injectTestEnvelope({
+                      seq: 1,
+                      timestamp: Date.now() - 60000,
+                      eventType: 'OBSERVATION_UPDATED',
+                      data: { patientId: 'P003', heartRate: 35 },
+                    });
+                    refreshStreamMetrics();
+                  }
+                }}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-mono font-medium bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border border-purple-800/50 transition-all"
+              >
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Inject Stale Packet
+              </button>
             </div>
           </div>
 

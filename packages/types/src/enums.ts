@@ -51,6 +51,11 @@ export type SensorSource = z.infer<typeof SensorSourceEnum>;
 export const MeasurementStatusEnum = z.enum([
   'VALID',
   'LOW_CONFIDENCE',
+  'CALIBRATING',
+  'MOTION_CONTAMINATED',
+  'INSUFFICIENT_LIGHT',
+  'NO_FACE',
+  'PHYSIOLOGICALLY_IMPLAUSIBLE',
   'DEGRADED',
   'UNRELIABLE',
   'TARGET_LOST',

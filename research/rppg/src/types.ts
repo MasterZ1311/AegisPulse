@@ -5,7 +5,26 @@
 
 export type RppgAlgorithmType = 'GREEN' | 'CHROM' | 'POS';
 
-export type SignalQualityStatus = 'VALID' | 'DEGRADED' | 'SUPPRESSED' | 'UNUSABLE';
+export type ContactlessSensingState =
+  | 'VALID'
+  | 'LOW_CONFIDENCE'
+  | 'CALIBRATING'
+  | 'MOTION_CONTAMINATED'
+  | 'INSUFFICIENT_LIGHT'
+  | 'NO_FACE'
+  | 'PHYSIOLOGICALLY_IMPLAUSIBLE';
+
+export type SignalQualityStatus =
+  | 'VALID'
+  | 'DEGRADED'
+  | 'SUPPRESSED'
+  | 'UNUSABLE'
+  | 'LOW_CONFIDENCE'
+  | 'CALIBRATING'
+  | 'MOTION_CONTAMINATED'
+  | 'INSUFFICIENT_LIGHT'
+  | 'NO_FACE'
+  | 'PHYSIOLOGICALLY_IMPLAUSIBLE';
 
 export interface SignalQualityMetrics {
   snrDb: number;                   // Signal-to-noise ratio in decibels
@@ -14,6 +33,13 @@ export interface SignalQualityMetrics {
   motionMagnitude: number;         // 0.0 (still) to 1.0 (violent motion)
   illuminationAdequate: boolean;   // Optical illumination adequate
   illuminationScore: number;       // Normalized lux adequacy (0.0 to 1.0)
+  illuminationLux?: number;
+  faceDetected?: boolean;
+  skinFraction?: number;
+  effectiveFps?: number;
+  frameDropRate?: number;
+  isPhysiologicallyPlausible?: boolean;
+  stateReason?: string;
 }
 
 /**
@@ -63,6 +89,9 @@ export interface VideoFrameRoi {
   meanB: number;
   pixelCount: number;
   skinFraction: number; // 0.0 to 1.0 percentage of ROI identified as viable skin
+  faceDetected?: boolean;
+  motionMagnitude?: number;
+  illuminationLux?: number;
 }
 
 export interface PipelineConfig {

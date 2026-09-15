@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { healthRouter } from './health';
+import { authRouter } from './auth';
 import { wardsRouter } from './wards';
 import { bedsRouter } from './beds';
 import { patientsRouter } from './patients';
@@ -19,6 +20,9 @@ export const v1Router = Router();
 
 // 1. Health & Readiness
 v1Router.use('/', healthRouter);
+
+// 1.0 Identity, Authentication & Session Lifecycle
+v1Router.use('/auth', authRouter);
 
 // 1.1 Real-Time SSE Stream
 v1Router.use('/', sseRouter);

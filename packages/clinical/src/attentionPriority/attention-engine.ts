@@ -45,7 +45,11 @@ export class AttentionPriorityEngine {
     overrideConfig?: Partial<AttentionPriorityConfig>
   ): AttentionPriorityResult {
     const config = overrideConfig ? mergeAttentionConfig(overrideConfig) : this.config;
-    const now = patientState.currentTimestamp ?? Date.now();
+    const now =
+      typeof patientState.currentTimestamp === 'number' &&
+      Number.isFinite(patientState.currentTimestamp)
+        ? patientState.currentTimestamp
+        : Date.now();
 
     // 1. Extract vitals and time series from observations and sensorReadings
     const {
@@ -65,11 +69,20 @@ export class AttentionPriorityEngine {
 
     // If caller explicitly specified timestamps, use them
     const effectiveLastTrusted =
-      patientState.lastTrustedObservationTimestamp ?? lastTrustedTimestamp;
+      typeof patientState.lastTrustedObservationTimestamp === 'number' &&
+      Number.isFinite(patientState.lastTrustedObservationTimestamp)
+        ? patientState.lastTrustedObservationTimestamp
+        : lastTrustedTimestamp;
     const effectiveLastManual =
-      patientState.lastManualObservationTimestamp ?? lastManualTimestamp;
+      typeof patientState.lastManualObservationTimestamp === 'number' &&
+      Number.isFinite(patientState.lastManualObservationTimestamp)
+        ? patientState.lastManualObservationTimestamp
+        : lastManualTimestamp;
     const effectiveLastCamera =
-      patientState.lastCameraObservationTimestamp ?? lastCameraTimestamp;
+      typeof patientState.lastCameraObservationTimestamp === 'number' &&
+      Number.isFinite(patientState.lastCameraObservationTimestamp)
+        ? patientState.lastCameraObservationTimestamp
+        : lastCameraTimestamp;
     const expectedInterval =
       patientState.expectedMonitoringIntervalMinutes ??
       config.decayThresholds.criticalThresholdMinutes;
@@ -364,7 +377,10 @@ export class AttentionPriorityEngine {
     }
 
     // 6. Strict Bounding: 0 to 100
-    const finalScore = Math.max(0, Math.min(100, Math.round(scoreWithFloors)));
+    const roundedScore = Math.round(scoreWithFloors);
+    const finalScore = Number.isFinite(roundedScore)
+      ? Math.max(0, Math.min(100, roundedScore))
+      : 0;
 
     // 7. Urgency Category Assignment
     const { categoryThresholds } = config;
@@ -435,9 +451,11 @@ export class AttentionPriorityEngine {
     });
 
     // 10. Compute Information Age
-    const informationAgeMinutes = effectiveLastTrusted
-      ? Math.max(0, (now - effectiveLastTrusted) / 60000)
-      : (decayScore.metadata?.elapsedMinutes as number) ?? 240;
+    const rawAge =
+      effectiveLastTrusted !== undefined && Number.isFinite(effectiveLastTrusted)
+        ? (now - effectiveLastTrusted) / 60000
+        : (decayScore.metadata?.elapsedMinutes as number) ?? 240;
+    const informationAgeMinutes = Number.isFinite(rawAge) ? Math.max(0, rawAge) : 240;
 
     // 11. Master Provenance
     const provenance: Provenance = {

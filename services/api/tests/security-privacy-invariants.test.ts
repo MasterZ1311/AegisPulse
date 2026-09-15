@@ -338,7 +338,9 @@ describe('AegisPulse Complete Security & Privacy Invariants Verification', () =>
       }
 
       // Verify SQLite tables remain fully intact and operational
-      const verifyRes = await request(app).get('/api/v1/patients/P001');
+      const verifyRes = await request(app)
+        .get('/api/v1/patients/P001')
+        .set('Authorization', 'Bearer admin-token');
       expect(verifyRes.status).toBe(200);
       expect(verifyRes.body.data.id).toBe('P001');
     });

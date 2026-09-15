@@ -6,10 +6,9 @@ import {
 } from '@aegispulse/clinical';
 import { wardStateService } from '../../services/ward-state.service';
 import { authenticate } from '../../middleware/auth';
+import { requirePatientWardAccess, requireWardAccess } from '../../middleware/rbac';
 
 export const attentionPriorityRouter = Router();
-
-attentionPriorityRouter.use(authenticate({ optional: true }));
 
 const apsEngine = new AttentionPriorityEngine();
 const explainEngine = new ExplainabilityEngine();
@@ -39,50 +38,60 @@ function expandObservations(rawObs: any[], patient: any): any[] {
 }
 
 // Patient Attention Priority Assessment
-attentionPriorityRouter.get('/patients/:patientId/attention-priority', (req: Request, res: Response) => {
-  const patientId = String(req.params.patientId);
-  const patient = wardStateService.getPatient(patientId);
-  const rawObs = wardStateService.getObservations(patient.id);
-  const labs = wardStateService.getLabs(patient.id);
-  const observations = expandObservations(rawObs, patient);
+attentionPriorityRouter.get(
+  '/patients/:patientId/attention-priority',
+  authenticate(),
+  requirePatientWardAccess(),
+  (req: Request, res: Response) => {
+    const patientId = String(req.params.patientId);
+    const patient = wardStateService.getPatient(patientId);
+    const rawObs = wardStateService.getObservations(patient.id);
+    const labs = wardStateService.getLabs(patient.id);
+    const observations = expandObservations(rawObs, patient);
 
-  const state: PatientStateInput = {
-    patientId: patient.id,
-    bedNumber: patient.bedNumber,
-    currentTimestamp: Date.now(),
-    observations,
-    labs,
-  };
-
-  const evaluationResult = apsEngine.evaluate(state);
-  const explanationResult = explainEngine.explainPatient(state, evaluationResult);
-
-  res.status(200).json({
-    data: {
+    const state: PatientStateInput = {
       patientId: patient.id,
       bedNumber: patient.bedNumber,
-      apsScore: evaluationResult.score,
-      category: evaluationResult.category,
-      confidence: evaluationResult.confidence,
-      rankInputs: evaluationResult.rankInputs,
-      components: {
-        velocityScore: evaluationResult.velocityScore,
-        decayScore: evaluationResult.decayScore,
-        mewsComponent: evaluationResult.mewsComponent,
-        biomarkerComponent: evaluationResult.biomarkerComponent,
+      currentTimestamp: Date.now(),
+      observations,
+      labs,
+    };
+
+    const evaluationResult = apsEngine.evaluate(state);
+    const explanationResult = explainEngine.explainPatient(state, evaluationResult);
+
+    res.status(200).json({
+      data: {
+        patientId: patient.id,
+        bedNumber: patient.bedNumber,
+        apsScore: evaluationResult.score,
+        category: evaluationResult.category,
+        confidence: evaluationResult.confidence,
+        rankInputs: evaluationResult.rankInputs,
+        components: {
+          velocityScore: evaluationResult.velocityScore,
+          decayScore: evaluationResult.decayScore,
+          mewsComponent: evaluationResult.mewsComponent,
+          biomarkerComponent: evaluationResult.biomarkerComponent,
+        },
+        reasons: explanationResult.reasons,
+        topReason: explanationResult.primaryExplanation,
+        recommendedActions: evaluationResult.recommendedActions.map((a) => a.title || a.actionType),
+        timestamp: evaluationResult.timestamp,
       },
-      reasons: explanationResult.reasons,
-      topReason: explanationResult.primaryExplanation,
-      recommendedActions: evaluationResult.recommendedActions.map((a) => a.title || a.actionType),
-      timestamp: evaluationResult.timestamp,
-    },
-  });
-});
+    });
+  }
+);
 
 // Ward Priority Radar
-attentionPriorityRouter.get('/wards/:wardId/radar', (req: Request, res: Response) => {
-  const wardId = String(req.params.wardId);
-  const ward = wardStateService.getWard(wardId);
+attentionPriorityRouter.get(
+  '/wards/:wardId/radar',
+  authenticate(),
+  requireWardAccess(),
+  (req: Request, res: Response) => {
+    const wardId = String(req.params.wardId);
+    const ward = wardStateService.getWard(wardId);
+
   const patients = wardStateService.getPatients(ward.id);
 
   const radarItems = patients.map((patient) => {

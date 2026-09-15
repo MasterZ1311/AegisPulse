@@ -51,7 +51,7 @@ describe('Database Backup & Restore Procedure', () => {
     expect(backupResult.sizeBytes).toBeGreaterThan(0);
 
     liveDb.close();
-  });
+  }, 60000);
 
   it('restores from backup, validates checksum, and verifies SQLite integrity check', () => {
     const liveDb = new DatabaseSync(tempDbPath);

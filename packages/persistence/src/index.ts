@@ -1,4 +1,5 @@
 export * from './db/connection';
+export * from './db/transaction';
 export * from './migrations/runner';
 export * from './repositories/ward.repository';
 export * from './repositories/patient.repository';
@@ -10,6 +11,8 @@ export * from './repositories/acknowledgement.repository';
 export * from './repositories/clinical-action.repository';
 export * from './repositories/user.repository';
 export * from './repositories/audit.repository';
+export * from './repositories/idempotency.repository';
 export * from './seeds/seed';
 export * from './backup/backup';
 export * from './backup/restore';
+

@@ -8,17 +8,20 @@ import {
 } from '@aegispulse/types';
 import { eventBroadcaster, EventBroadcaster } from './event-broadcaster';
 import { wardStateService } from '../services/ward-state.service';
+import { resolveUserFromToken, type AuthenticatedUser } from '../middleware/auth';
 
 export interface WebSocketServerOptions {
   path?: string;
   heartbeatIntervalMs?: number;
   maxBufferedAmount?: number;
+  maxClients?: number;
 }
 
 interface ClientSession {
   id: string;
   ws: WebSocket;
   isAlive: boolean;
+  user?: AuthenticatedUser;
   wardId?: string;
   patientId?: string;
   lastAcknowledgedSeq: number;
@@ -30,23 +33,35 @@ export class AegisPulseWebSocketServer {
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private readonly heartbeatIntervalMs: number;
   private readonly maxBufferedAmount: number;
+  private readonly maxClients: number;
   private readonly broadcaster: EventBroadcaster;
+  public readonly serverBootTimestamp: number = Date.now();
+  public readonly serverInstanceId: string = `srv-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
   constructor(server: HttpServer, options: WebSocketServerOptions = {}, broadcaster: EventBroadcaster = eventBroadcaster) {
     this.broadcaster = broadcaster;
     this.heartbeatIntervalMs = options.heartbeatIntervalMs ?? 15000;
     this.maxBufferedAmount = options.maxBufferedAmount ?? 65536; // 64 KB safety backpressure limit
+    this.maxClients = options.maxClients ?? 500; // Bound concurrent connections
 
     this.wss = new WebSocketServer({
       server,
       path: options.path ?? '/api/v1/stream/ws',
+      maxPayload: 65536, // Strict 64 KB max payload per frame to prevent DoS
     });
 
     this.initialize();
   }
 
+
   private initialize(): void {
     this.wss.on('connection', (ws: WebSocket, req) => {
+      // 1. Connection limit check to prevent resource exhaustion
+      if (this.clients.size >= this.maxClients) {
+        ws.close(1013, 'Server connection capacity reached');
+        return;
+      }
+
       const clientId = `client-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
       const session: ClientSession = {
         id: clientId,
@@ -54,6 +69,48 @@ export class AegisPulseWebSocketServer {
         isAlive: true,
         lastAcknowledgedSeq: 0,
       };
+
+      // 2. Parse token and query params from upgrade request
+      let token: string | undefined;
+      let wardIdFromUrl: string | undefined;
+      let lastSeqFromUrl: string | undefined;
+
+      if (req.url) {
+        try {
+          const urlObj = new URL(req.url, 'http://localhost');
+          token = urlObj.searchParams.get('token') || undefined;
+          wardIdFromUrl = urlObj.searchParams.get('wardId') || undefined;
+          lastSeqFromUrl = urlObj.searchParams.get('lastSeq') || undefined;
+        } catch {
+          // Ignore URL parse errors
+        }
+      }
+
+      if (!token && req.headers['authorization']?.startsWith('Bearer ')) {
+        token = req.headers['authorization'].substring(7).trim();
+      }
+
+      if (token) {
+        const resolved = resolveUserFromToken(token);
+        if (resolved) {
+          session.user = resolved;
+        } else if (process.env.NODE_ENV === 'production') {
+          ws.close(4401, 'Invalid authentication token');
+          return;
+        }
+      } else if (process.env.NODE_ENV === 'production') {
+        ws.close(4401, 'Authentication token required for streaming');
+        return;
+      }
+
+      if (wardIdFromUrl) {
+        // Enforce ward access if user is authenticated
+        if (session.user && !session.user.assignedWardIds.includes('*') && !session.user.assignedWardIds.includes(wardIdFromUrl)) {
+          ws.close(4403, 'Unauthorized ward access');
+          return;
+        }
+        session.wardId = wardIdFromUrl;
+      }
 
       this.clients.set(ws, session);
 
@@ -67,26 +124,17 @@ export class AegisPulseWebSocketServer {
         type: 'CONNECTED',
         clientId,
         serverTimestamp: Date.now(),
+        serverBootTimestamp: this.serverBootTimestamp,
+        serverInstanceId: this.serverInstanceId,
         currentSequenceNumber: this.broadcaster.getCurrentSequence(),
         heartbeatIntervalMs: this.heartbeatIntervalMs,
       };
       this.sendToSocket(ws, welcome);
 
-      // Parse optional query params from initial upgrade request (e.g. ?wardId=WARD-A&lastSeq=10)
-      if (req.url) {
-        try {
-          const urlObj = new URL(req.url, 'http://localhost');
-          const wardId = urlObj.searchParams.get('wardId');
-          const lastSeq = urlObj.searchParams.get('lastSeq');
-          if (wardId) session.wardId = wardId;
-          if (lastSeq) {
-            const parsedSeq = parseInt(lastSeq, 10);
-            if (!isNaN(parsedSeq)) {
-              this.handleClientRecovery(session, parsedSeq);
-            }
-          }
-        } catch {
-          // Ignore URL parse errors
+      if (lastSeqFromUrl) {
+        const parsedSeq = parseInt(lastSeqFromUrl, 10);
+        if (!isNaN(parsedSeq)) {
+          this.handleClientRecovery(session, parsedSeq);
         }
       }
 
@@ -113,6 +161,7 @@ export class AegisPulseWebSocketServer {
           });
         }
       });
+
 
       // Cleanup on socket close or error
       ws.on('close', () => {
@@ -164,6 +213,16 @@ export class AegisPulseWebSocketServer {
   private handleClientMessage(session: ClientSession, msg: ClientStreamMessage): void {
     switch (msg.type) {
       case 'SUBSCRIBE': {
+        // Enforce ward authorization check if user session is authenticated
+        if (msg.wardId && session.user && !session.user.assignedWardIds.includes('*') && !session.user.assignedWardIds.includes(msg.wardId)) {
+          this.sendToSocket(session.ws, {
+            type: 'ERROR',
+            code: 'FORBIDDEN',
+            message: `Unauthorized ward subscription: Clinician does not have jurisdiction over ward '${msg.wardId}'.`,
+          });
+          return;
+        }
+
         session.wardId = msg.wardId;
         session.patientId = msg.patientId;
 
@@ -194,23 +253,35 @@ export class AegisPulseWebSocketServer {
       }
 
       case 'REQUEST_SNAPSHOT': {
-        if (msg.wardId) session.wardId = msg.wardId;
+        if (msg.wardId) {
+          if (session.user && !session.user.assignedWardIds.includes('*') && !session.user.assignedWardIds.includes(msg.wardId)) {
+            this.sendToSocket(session.ws, {
+              type: 'ERROR',
+              code: 'FORBIDDEN',
+              message: `Unauthorized ward snapshot request for ward '${msg.wardId}'.`,
+            });
+            return;
+          }
+          session.wardId = msg.wardId;
+        }
         this.sendSnapshot(session);
         break;
       }
 
       case 'ACKNOWLEDGE_ALERT': {
+        const actingUserId = session.user?.userId || msg.userId || 'anonymous-ws-user';
         wardStateService.addAcknowledgement({
-          id: `ack-ws-${Date.now()}`,
+          id: `ack-ws-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           patientId: msg.patientId,
           alertId: msg.alertId,
-          acknowledgedByUserId: msg.userId,
+          acknowledgedByUserId: actingUserId,
           acknowledgedAt: Date.now(),
           reason: msg.reason,
         });
         break;
       }
     }
+
   }
 
   /**
@@ -243,30 +314,43 @@ export class AegisPulseWebSocketServer {
    * Generate and send a comprehensive Ward Snapshot
    */
   public sendSnapshot(session: ClientSession): void {
-    const wardId = session.wardId || 'WARD-A';
-    const patients = wardStateService.getPatients(wardId);
+    try {
+      const wardId = session.wardId || 'WARD-A';
+      const patients = wardStateService.getPatients(wardId);
 
-    const radar = patients.map((p) => {
-      const activeState = wardStateService.getAttentionRepo().getActiveAttentionState(p.id);
-      return {
-        patientId: p.id,
-        bedNumber: p.bedNumber,
-        apsScore: activeState?.score ?? 0,
-        category: activeState?.category ?? 'NORMAL',
-        topReason: activeState?.topReason ?? 'Stable vitals',
+      const radar = patients.map((p) => {
+        let activeState;
+        try {
+          activeState = wardStateService.getAttentionRepo().getActiveAttentionState(p.id);
+        } catch {
+          activeState = undefined;
+        }
+        return {
+          patientId: p.id,
+          bedNumber: p.bedNumber,
+          apsScore: activeState?.score ?? 0,
+          category: activeState?.category ?? 'NORMAL',
+          topReason: activeState?.topReason ?? 'Stable vitals',
+        };
+      });
+
+      const snapshot: ServerStreamMessage = {
+        type: 'SNAPSHOT',
+        wardId,
+        timestamp: Date.now(),
+        sequenceNumber: this.broadcaster.getCurrentSequence(),
+        radar,
+        patients,
       };
-    });
 
-    const snapshot: ServerStreamMessage = {
-      type: 'SNAPSHOT',
-      wardId,
-      timestamp: Date.now(),
-      sequenceNumber: this.broadcaster.getCurrentSequence(),
-      radar,
-      patients,
-    };
-
-    this.sendToSocket(session.ws, snapshot);
+      this.sendToSocket(session.ws, snapshot);
+    } catch (err: any) {
+      this.sendToSocket(session.ws, {
+        type: 'ERROR',
+        code: 'SNAPSHOT_FAILED',
+        message: err?.message || 'Failed to assemble ward snapshot',
+      });
+    }
   }
 
   /**

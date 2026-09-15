@@ -20,7 +20,26 @@ export interface SeedResult {
   usersCount: number;
 }
 
-export function seedDatabase(db: DatabaseSync): SeedResult {
+export function isProductionSeedBlocked(): boolean {
+  return process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true';
+}
+
+export function seedDatabase(db: DatabaseSync, options?: { force?: boolean }): SeedResult {
+  // CRITICAL PRODUCTION SAFETY GUARDRAIL:
+  // Strictly forbid injecting demo/synthetic patient records into a production clinical database.
+  if (isProductionSeedBlocked() && !options?.force) {
+    console.warn('[AegisPulse Persistence] Production mode active: Synthetic demo clinical seed data is strictly blocked.');
+    return {
+      wardsCount: 0,
+      bedsCount: 0,
+      patientsCount: 0,
+      labsCount: 0,
+      observationsCount: 0,
+      timelineEventsCount: 0,
+      usersCount: 0,
+    };
+  }
+
   const wardRepo = new WardRepository(db);
   const patientRepo = new PatientRepository(db);
   const obsRepo = new ObservationRepository(db);
@@ -29,6 +48,20 @@ export function seedDatabase(db: DatabaseSync): SeedResult {
   const attentionRepo = new AttentionRepository(db);
   const actionRepo = new ClinicalActionRepository(db);
   const userRepo = new UserRepository(db);
+
+  // If database already contains seed data (e.g. restart of persistent DB), skip to prevent duplicate insert errors
+  const countRow = db.prepare('SELECT COUNT(*) as cnt FROM wards;').get() as { cnt: number } | undefined;
+  if (countRow && countRow.cnt > 0) {
+    return {
+      wardsCount: countRow.cnt,
+      bedsCount: 0,
+      patientsCount: 0,
+      labsCount: 0,
+      observationsCount: 0,
+      timelineEventsCount: 0,
+      usersCount: 0,
+    };
+  }
 
   const now = Date.now();
 

@@ -19,6 +19,7 @@ export interface StreamClientOptions {
   maxReconnectAttempts?: number;
   initialReconnectDelayMs?: number;
   maxReconnectDelayMs?: number;
+  enableResequencing?: boolean;
 }
 
 type EventCallback<T = any> = (envelope: TelemetryStreamEnvelope<T>) => void;
@@ -30,12 +31,30 @@ export class AegisPulseStreamClient {
   private status: StreamConnectionStatus = 'DISCONNECTED';
   private lastSequenceNumber: number = 0;
   private readonly seenEventIds = new Set<string>();
-  private readonly maxSeenIds = 1000;
+  private readonly maxSeenIds = 2000;
 
+  // Anti-Rollback & Resequencing State
+  private readonly patientLastAppliedSeq = new Map<string, number>();
+  private readonly patientLastAppliedTimestamp = new Map<string, number>();
+  private readonly outOfOrderBuffer: TelemetryStreamEnvelope[] = [];
+  private gapRecoveryTimer: any = null;
+
+  // Server Instance / Reboot Detection
+  private lastServerInstanceId: string | null = null;
+  private lastServerBootTimestamp: number | null = null;
+
+  // Heartbeat & Dead-Man Watchdog
+  private lastMessageReceivedAt: number = Date.now();
   private reconnectAttempts = 0;
   private reconnectTimer: any = null;
   private pingTimer: any = null;
   private isManuallyClosed = false;
+
+  // Simulation Fault Injection (DevTools / Test Harness)
+  private simulatedLatencyMs: number = 0;
+  private simulatedPacketDropRate: number = 0;
+  private isSimulatedOffline: boolean = false;
+  private suppressedStaleCount: number = 0;
 
   private readonly options: Required<StreamClientOptions>;
   private readonly eventListeners = new Map<TelemetryStreamEventType, Set<EventCallback>>();
@@ -53,13 +72,19 @@ export class AegisPulseStreamClient {
       wardId: options.wardId ?? 'WARD-A',
       patientId: options.patientId ?? '',
       heartbeatIntervalMs: options.heartbeatIntervalMs ?? 15000,
-      maxReconnectAttempts: options.maxReconnectAttempts ?? 20,
-      initialReconnectDelayMs: options.initialReconnectDelayMs ?? 500,
-      maxReconnectDelayMs: options.maxReconnectDelayMs ?? 8000,
+      maxReconnectAttempts: options.maxReconnectAttempts ?? 25,
+      initialReconnectDelayMs: options.initialReconnectDelayMs ?? 400,
+      maxReconnectDelayMs: options.maxReconnectDelayMs ?? 6000,
+      enableResequencing: options.enableResequencing ?? true,
     };
   }
 
   public connect(): void {
+    if (this.isSimulatedOffline) {
+      this.setStatus('DISCONNECTED');
+      return;
+    }
+
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
       return;
     }
@@ -75,10 +100,12 @@ export class AegisPulseStreamClient {
       }
 
       this.ws = new WebSocket(urlWithParams.toString());
+      this.lastMessageReceivedAt = Date.now();
 
       this.ws.onopen = () => {
         this.setStatus('CONNECTED');
         this.reconnectAttempts = 0;
+        this.lastMessageReceivedAt = Date.now();
         this.startHeartbeat();
 
         // Subscribe with lastSequenceNumber for client recovery / replay
@@ -91,12 +118,30 @@ export class AegisPulseStreamClient {
       };
 
       this.ws.onmessage = (event) => {
-        try {
-          const raw = typeof event.data === 'string' ? event.data : event.data.toString();
-          const msg = JSON.parse(raw) as ServerStreamMessage;
-          this.handleServerMessage(msg);
-        } catch (err) {
-          console.error('[AegisPulseStreamClient] Error parsing message:', err);
+        if (this.isSimulatedOffline) return;
+
+        // Simulate packet loss if enabled
+        if (this.simulatedPacketDropRate > 0 && Math.random() < this.simulatedPacketDropRate) {
+          console.warn('[AegisPulseStreamClient] Simulated packet loss: Frame dropped.');
+          return;
+        }
+
+        const handleRaw = () => {
+          try {
+            const raw = typeof event.data === 'string' ? event.data : event.data.toString();
+            const msg = JSON.parse(raw) as ServerStreamMessage;
+            this.handleServerMessage(msg);
+          } catch (err) {
+            console.error('[AegisPulseStreamClient] Error parsing message:', err);
+          }
+        };
+
+        // Simulate Slow 3G latency/jitter if enabled
+        if (this.simulatedLatencyMs > 0) {
+          const jitter = this.simulatedLatencyMs * (0.8 + Math.random() * 0.4);
+          setTimeout(handleRaw, jitter);
+        } else {
+          handleRaw();
         }
       };
 
@@ -111,7 +156,7 @@ export class AegisPulseStreamClient {
       };
 
       this.ws.onerror = (err) => {
-        console.warn('[AegisPulseStreamClient] Socket error:', err);
+        console.warn('[AegisPulseStreamClient] Socket error encountered:', err);
         this.ws?.close();
       };
     } catch (err) {
@@ -121,20 +166,39 @@ export class AegisPulseStreamClient {
   }
 
   private handleServerMessage(msg: ServerStreamMessage): void {
+    this.lastMessageReceivedAt = Date.now();
+
     switch (msg.type) {
       case 'CONNECTED': {
-        // Handshake established
+        // Check for server restart / reboot detection
+        const serverRebooted =
+          (this.lastServerInstanceId && msg.serverInstanceId && this.lastServerInstanceId !== msg.serverInstanceId) ||
+          (this.lastServerBootTimestamp && msg.serverBootTimestamp && this.lastServerBootTimestamp !== msg.serverBootTimestamp) ||
+          (this.lastSequenceNumber > 0 && msg.currentSequenceNumber < this.lastSequenceNumber);
+
+        this.lastServerInstanceId = msg.serverInstanceId ?? null;
+        this.lastServerBootTimestamp = msg.serverBootTimestamp ?? null;
+
+        if (serverRebooted) {
+          console.info('[AegisPulseStreamClient] Server reboot detected! Resetting sequence counter and requesting fresh snapshot.');
+          this.lastSequenceNumber = 0;
+          this.patientLastAppliedSeq.clear();
+          this.patientLastAppliedTimestamp.clear();
+          this.outOfOrderBuffer.length = 0;
+          this.requestSnapshot();
+        }
         break;
       }
 
       case 'EVENT': {
-        this.processEnvelope(msg.envelope);
+        this.routeEnvelope(msg.envelope);
         break;
       }
 
       case 'REPLAY_BATCH': {
-        // Replayed missed events in strict sequence order
-        for (const env of msg.events) {
+        // Sort replayed batch by monotonic sequence order
+        const sorted = [...msg.events].sort((a, b) => a.seq - b.seq);
+        for (const env of sorted) {
           this.processEnvelope(env);
         }
         break;
@@ -144,14 +208,25 @@ export class AegisPulseStreamClient {
         if (msg.sequenceNumber > this.lastSequenceNumber) {
           this.lastSequenceNumber = msg.sequenceNumber;
         }
+        // Clear out-of-order buffer on full snapshot synchronization
+        this.outOfOrderBuffer.length = 0;
+        if (this.gapRecoveryTimer) {
+          clearTimeout(this.gapRecoveryTimer);
+          this.gapRecoveryTimer = null;
+        }
+
         for (const listener of this.snapshotListeners) {
-          listener(msg);
+          try {
+            listener(msg);
+          } catch (err) {
+            console.error('[AegisPulseStreamClient] Snapshot listener threw:', err);
+          }
         }
         break;
       }
 
       case 'PONG': {
-        // Heartbeat response
+        // Server responded to heartbeat; connection confirmed live
         break;
       }
 
@@ -163,21 +238,113 @@ export class AegisPulseStreamClient {
   }
 
   /**
-   * Deduplicates, validates ordering, and dispatches event envelopes
+   * Routes an incoming envelope with sequence gap detection and out-of-order resequencing.
+   */
+  private routeEnvelope(envelope: TelemetryStreamEnvelope): void {
+    // 1. Duplicate suppression
+    if (this.seenEventIds.has(envelope.eventId)) {
+      return;
+    }
+
+    if (!this.options.enableResequencing) {
+      this.processEnvelope(envelope);
+      return;
+    }
+
+    // 2. Exact next expected sequence
+    if (this.lastSequenceNumber === 0 || envelope.seq === this.lastSequenceNumber + 1) {
+      this.processEnvelope(envelope);
+      this.drainResequencingBuffer();
+      return;
+    }
+
+    // 3. Past or stale sequence: process through anti-rollback guard
+    if (envelope.seq <= this.lastSequenceNumber) {
+      this.processEnvelope(envelope);
+      return;
+    }
+
+    // 4. Sequence gap detected (envelope.seq > lastSequenceNumber + 1)
+    // Buffer out-of-order event and wait briefly for missing gap to arrive
+    this.outOfOrderBuffer.push(envelope);
+    this.outOfOrderBuffer.sort((a, b) => a.seq - b.seq);
+
+    if (!this.gapRecoveryTimer) {
+      // Allow up to 250ms for delayed in-between packets to arrive before forcing flush or snapshot
+      this.gapRecoveryTimer = setTimeout(() => {
+        this.gapRecoveryTimer = null;
+        if (this.outOfOrderBuffer.length > 0) {
+          console.warn(
+            `[AegisPulseStreamClient] Gap timeout: Flashing ${this.outOfOrderBuffer.length} buffered out-of-order packets.`
+          );
+          this.drainResequencingBuffer(true);
+        }
+      }, 250);
+    }
+  }
+
+  private drainResequencingBuffer(force = false): void {
+    while (this.outOfOrderBuffer.length > 0) {
+      const next = this.outOfOrderBuffer[0];
+      if (force || next.seq <= this.lastSequenceNumber + 1) {
+        this.outOfOrderBuffer.shift();
+        this.processEnvelope(next);
+      } else {
+        break;
+      }
+    }
+
+    if (this.outOfOrderBuffer.length === 0 && this.gapRecoveryTimer) {
+      clearTimeout(this.gapRecoveryTimer);
+      this.gapRecoveryTimer = null;
+    }
+  }
+
+  /**
+   * Processes a single envelope with Anti-Rollback validation and dispatch.
    */
   private processEnvelope(envelope: TelemetryStreamEnvelope): void {
-    // 1. Duplicate suppression
+    // 1. Deduplication check
     if (this.seenEventIds.has(envelope.eventId)) {
       return;
     }
     this.recordSeenEventId(envelope.eventId);
 
-    // 2. Track highest sequence number
+    // 2. Anti-Rollback Protection:
+    // Verify that delayed out-of-order packets cannot roll a patient's vitals or APS backwards
+    const patientId = envelope.patientId || (envelope.data && envelope.data.patientId);
+    if (patientId) {
+      const lastAppliedSeq = this.patientLastAppliedSeq.get(patientId) ?? 0;
+      const lastAppliedTs = this.patientLastAppliedTimestamp.get(patientId) ?? 0;
+
+      const isStatefulUpdate =
+        envelope.eventType === 'OBSERVATION_UPDATED' ||
+        envelope.eventType === 'APS_UPDATED' ||
+        envelope.eventType === 'PRIORITY_CHANGED';
+
+      if (isStatefulUpdate) {
+        // If this envelope has an older sequence number than what was already applied for this patient
+        // AND an older or equal timestamp, it represents a delayed/stale delivery.
+        // Suppressing it guarantees the client NEVER rolls backwards to an obsolete physiological state!
+        if (envelope.seq < lastAppliedSeq && envelope.timestamp <= lastAppliedTs) {
+          this.suppressedStaleCount++;
+          console.warn(
+            `[AegisPulseStreamClient] Anti-Rollback Guard: Suppressed stale envelope (seq: ${envelope.seq} < applied: ${lastAppliedSeq}, ts: ${envelope.timestamp} <= applied: ${lastAppliedTs}) for patient ${patientId}.`
+          );
+          return;
+        }
+
+        this.patientLastAppliedSeq.set(patientId, Math.max(lastAppliedSeq, envelope.seq));
+        this.patientLastAppliedTimestamp.set(patientId, Math.max(lastAppliedTs, envelope.timestamp));
+      }
+    }
+
+    // 3. Update highest observed sequence number
     if (envelope.seq > this.lastSequenceNumber) {
       this.lastSequenceNumber = envelope.seq;
     }
 
-    // 3. Dispatch to type-specific listeners
+    // 4. Dispatch to event listeners
     const callbacks = this.eventListeners.get(envelope.eventType);
     if (callbacks) {
       for (const cb of callbacks) {
@@ -242,18 +409,37 @@ export class AegisPulseStreamClient {
   }
 
   private sendMessage(msg: ClientStreamMessage): void {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN && !this.isSimulatedOffline) {
       this.ws.send(JSON.stringify(msg));
     }
   }
 
+  // ==========================================================================
+  // Heartbeat & Dead-Man Watchdog Engine
+  // ==========================================================================
   private startHeartbeat(): void {
     this.stopHeartbeat();
+    this.lastMessageReceivedAt = Date.now();
+
     this.pingTimer = setInterval(() => {
+      // 1. Send application heartbeat ping
       this.sendMessage({
         type: 'PING',
         timestamp: Date.now(),
       });
+
+      // 2. Dead-Man Watchdog Check:
+      // If no messages or pongs have arrived for > 2.5x heartbeat interval,
+      // the TCP connection is dead / half-open. Force-terminate socket to prevent silent UI freeze!
+      const silenceDuration = Date.now() - this.lastMessageReceivedAt;
+      if (silenceDuration > this.options.heartbeatIntervalMs * 2.5) {
+        console.warn(
+          `[AegisPulseStreamClient] Dead-Man Watchdog: No response received for ${silenceDuration}ms (limit: ${
+            this.options.heartbeatIntervalMs * 2.5
+          }ms). Terminating dead socket.`
+        );
+        this.ws?.close();
+      }
     }, this.options.heartbeatIntervalMs);
   }
 
@@ -265,7 +451,7 @@ export class AegisPulseStreamClient {
   }
 
   private scheduleReconnect(): void {
-    if (this.isManuallyClosed || this.reconnectTimer) return;
+    if (this.isManuallyClosed || this.reconnectTimer || this.isSimulatedOffline) return;
     if (this.reconnectAttempts >= this.options.maxReconnectAttempts) {
       this.setStatus('DISCONNECTED');
       return;
@@ -287,6 +473,10 @@ export class AegisPulseStreamClient {
 
   private cleanupSocket(): void {
     this.stopHeartbeat();
+    if (this.gapRecoveryTimer) {
+      clearTimeout(this.gapRecoveryTimer);
+      this.gapRecoveryTimer = null;
+    }
     if (this.ws) {
       this.ws.onopen = null;
       this.ws.onmessage = null;
@@ -313,6 +503,22 @@ export class AegisPulseStreamClient {
     return this.lastSequenceNumber;
   }
 
+  public getBufferedCount(): number {
+    return this.outOfOrderBuffer.length;
+  }
+
+  public getSuppressedStaleCount(): number {
+    return this.suppressedStaleCount;
+  }
+
+  public getSimulatedState(): { isOffline: boolean; latencyMs: number; dropRate: number } {
+    return {
+      isOffline: this.isSimulatedOffline,
+      latencyMs: this.simulatedLatencyMs,
+      dropRate: this.simulatedPacketDropRate,
+    };
+  }
+
   public disconnect(): void {
     this.isManuallyClosed = true;
     if (this.reconnectTimer) {
@@ -321,5 +527,33 @@ export class AegisPulseStreamClient {
     }
     this.cleanupSocket();
     this.setStatus('DISCONNECTED');
+  }
+
+  // ==========================================================================
+  // Simulated Fault Injection Hooks (DevTools / Test Harness)
+  // ==========================================================================
+  public simulateOffline(): void {
+    this.isSimulatedOffline = true;
+    this.disconnect();
+    this.setStatus('DISCONNECTED');
+    console.warn('[AegisPulseStreamClient] Simulated network offline mode active.');
+  }
+
+  public simulateSlow3G(latencyMs = 450, dropRate = 0.05): void {
+    this.simulatedLatencyMs = latencyMs;
+    this.simulatedPacketDropRate = dropRate;
+    console.warn(`[AegisPulseStreamClient] Simulated Slow 3G active: Latency=${latencyMs}ms, DropRate=${dropRate * 100}%.`);
+  }
+
+  public simulateReconnect(): void {
+    this.isSimulatedOffline = false;
+    this.simulatedLatencyMs = 0;
+    this.simulatedPacketDropRate = 0;
+    console.info('[AegisPulseStreamClient] Simulated network reconnect triggered.');
+    this.connect();
+  }
+
+  public injectTestEnvelope(envelope: TelemetryStreamEnvelope): void {
+    this.routeEnvelope(envelope);
   }
 }

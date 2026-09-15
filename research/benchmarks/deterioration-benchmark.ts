@@ -39,9 +39,9 @@ export class DeteriorationBenchmarkRunner {
     const apsEngine = new AttentionPriorityEngine();
     let casesWithDet = 0;
 
-    let apsLeadTimes: number[] = [];
-    let mewsLeadTimes: number[] = [];
-    let qsofaLeadTimes: number[] = [];
+    const apsLeadTimes: number[] = [];
+    const mewsLeadTimes: number[] = [];
+    const qsofaLeadTimes: number[] = [];
 
     let apsTruePositives = 0;
     let apsFalsePositives = 0;

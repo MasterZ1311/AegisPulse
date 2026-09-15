@@ -9,12 +9,12 @@ describe('AegisPulse API Persistence Integration Tests', () => {
 
   it('verifies seeded wards, beds, and patients are persisted in SQLite and queried via REST', async () => {
     // Check via REST
-    const wardsRes = await request(app).get('/api/v1/wards');
+    const wardsRes = await request(app).get('/api/v1/wards').set('Authorization', 'Bearer admin-token');
     expect(wardsRes.status).toBe(200);
     expect(wardsRes.body.data.length).toBeGreaterThanOrEqual(2);
     expect(wardsRes.body.data[0].id).toBe('WARD-A');
 
-    const patientsRes = await request(app).get('/api/v1/patients');
+    const patientsRes = await request(app).get('/api/v1/patients').set('Authorization', 'Bearer admin-token');
     expect(patientsRes.status).toBe(200);
     expect(patientsRes.body.data.length).toBe(6);
 
@@ -47,6 +47,7 @@ describe('AegisPulse API Persistence Integration Tests', () => {
 
     const res = await request(app)
       .post('/api/v1/patients/P001/observations')
+      .set('Authorization', 'Bearer nurse-token')
       .send(newObs);
 
     expect(res.status).toBe(201);
@@ -83,6 +84,7 @@ describe('AegisPulse API Persistence Integration Tests', () => {
 
     const res = await request(app)
       .post('/api/v1/patients/P002/labs')
+      .set('Authorization', 'Bearer nurse-token')
       .send(newLab);
 
     expect(res.status).toBe(201);

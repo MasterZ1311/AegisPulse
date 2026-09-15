@@ -40,7 +40,7 @@ export class AttentionRepository {
 
       // 2. Insert new active attention state
       const ins = this.db.prepare(`
-        INSERT INTO attention_states (
+        INSERT OR REPLACE INTO attention_states (
           id, patient_id, timestamp, score, category, top_reason,
           reasons, rank_inputs, recommended_actions, confidence, is_active, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?);

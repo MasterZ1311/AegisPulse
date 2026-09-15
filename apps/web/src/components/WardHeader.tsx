@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Activity,
   Wifi,
@@ -7,6 +6,7 @@ import {
   AlertOctagon,
   Clock,
   Sparkles,
+  Camera,
 } from 'lucide-react';
 import type { StreamConnectionStatus } from '../services/stream-client';
 
@@ -26,6 +26,7 @@ interface WardHeaderProps {
   activeScenario: string;
   onScenarioChange: (scenario: string) => void;
   onOpenDiagnostics?: () => void;
+  onOpenCamera?: () => void;
 }
 
 export const WardHeader: React.FC<WardHeaderProps> = ({
@@ -44,18 +45,19 @@ export const WardHeader: React.FC<WardHeaderProps> = ({
   activeScenario,
   onScenarioChange,
   onOpenDiagnostics,
+  onOpenCamera,
 }) => {
   return (
-    <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md px-6 py-4 sticky top-0 z-40">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        {/* Left: Ward Title & Clinical Shift */}
-        <div className="flex items-start gap-4">
-          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-400/30">
-            <Activity className="h-6 w-6 text-white" />
+    <header className="bg-slate-950 border-b border-slate-800 px-4 sm:px-6 py-3 shrink-0 shadow-lg sticky top-0 z-30 font-sans">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        {/* Left: Ward Identity & Lead Info */}
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-cyan-950 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-black text-lg shadow-inner">
+            AP
           </div>
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
                 AegisPulse
                 <span className="text-xs uppercase tracking-wider font-semibold px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800/50">
                   Ward Attention Radar
@@ -74,10 +76,23 @@ export const WardHeader: React.FC<WardHeaderProps> = ({
               <span className="text-slate-700">•</span>
               <span>Lead: {shiftLead}</span>
               <span className="text-slate-700">•</span>
-              <span className="text-emerald-400 flex items-center gap-1">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Optical rPPG (Zero Video Stored)
-              </span>
+              {onOpenCamera ? (
+                <button
+                  type="button"
+                  id="header-camera-badge"
+                  onClick={onOpenCamera}
+                  className="text-emerald-400 flex items-center gap-1 hover:text-emerald-300 transition-colors cursor-pointer"
+                  title="Open Optical rPPG Bedside Sensor"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Optical rPPG (Zero Video Stored)
+                </button>
+              ) : (
+                <span className="text-emerald-400 flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Optical rPPG (Zero Video Stored)
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -153,6 +168,20 @@ export const WardHeader: React.FC<WardHeaderProps> = ({
               </option>
             </select>
           </div>
+
+          {/* Optical Bedside Camera Trigger Button */}
+          {onOpenCamera && (
+            <button
+              type="button"
+              id="header-open-camera-btn"
+              onClick={onOpenCamera}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-800/40 text-emerald-300 hover:text-white transition-colors text-xs font-mono cursor-pointer"
+              title="Open Bedside Optical Camera & Privacy Inspector"
+            >
+              <Camera className="h-3.5 w-3.5 text-emerald-400" />
+              <span className="hidden xl:inline">Bedside rPPG</span>
+            </button>
+          )}
 
           {/* Developer Diagnostics Trigger Button */}
           {onOpenDiagnostics && (

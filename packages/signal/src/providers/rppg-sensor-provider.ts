@@ -6,6 +6,7 @@ import type {
   Unsubscribe,
   SignalQuality,
   QualityStatus,
+  MeasurementStatus,
 } from '@aegispulse/types';
 import {
   RppgPipeline,
@@ -13,6 +14,7 @@ import {
   type VideoFrameRoi,
   type RppgAlgorithmType,
   type PipelineConfig,
+  type ProcessRgbOptions,
 } from '@aegispulse/rppg';
 
 export interface RppgSensorProviderOptions {
@@ -147,7 +149,7 @@ export class RppgSensorProvider implements SensorProvider {
     patientId: string = this.defaultPatientId,
     bedId: string = this.defaultBedId,
     fps = 30
-  ): SensorReading | null {
+  ): SensorReading {
     // 1. Guard against accidental raw video or frame buffers
     const roiKeys = Object.keys(roi);
     for (const key of roiKeys) {
@@ -156,6 +158,62 @@ export class RppgSensorProvider implements SensorProvider {
           `PRIVACY VIOLATION: Raw image data key '${key}' detected in ROI. Only spatial mean RGB values are permitted.`
         );
       }
+    }
+
+    // Check if face was lost in ROI
+    if (roi.faceDetected === false || roi.skinFraction === 0) {
+      const reading: SensorReading = {
+        id: `sr-rppg-${patientId}-${roi.timestampMs}`,
+        patientId,
+        bedId,
+        source: this.source,
+        timestamp: roi.timestampMs,
+        confidence: 0,
+        signalQuality: {
+          sqiPercentage: 0,
+          snrDb: -20,
+          illuminationLux: roi.illuminationLux ?? 240,
+          motionArtifactIndex: roi.motionMagnitude ?? 0,
+          state: 'LOST',
+          isUsable: false,
+          faceDetected: false,
+          reason: 'No face detected in camera field of view',
+        },
+        measurementStatus: 'NO_FACE',
+        measurement_status: 'NO_FACE',
+        heartRate: undefined,
+        respiratoryRate: undefined,
+      };
+      this.notifyReading(reading);
+      return reading;
+    }
+
+    // Check for insufficient light in frame
+    if (roi.illuminationLux !== undefined && roi.illuminationLux < 30) {
+      const reading: SensorReading = {
+        id: `sr-rppg-${patientId}-${roi.timestampMs}`,
+        patientId,
+        bedId,
+        source: this.source,
+        timestamp: roi.timestampMs,
+        confidence: 0,
+        signalQuality: {
+          sqiPercentage: 0,
+          snrDb: -20,
+          illuminationLux: roi.illuminationLux,
+          motionArtifactIndex: roi.motionMagnitude ?? 0,
+          state: 'DEGRADED',
+          isUsable: false,
+          faceDetected: true,
+          reason: `Ambient illuminance (${roi.illuminationLux} lux) below 30 lux threshold`,
+        },
+        measurementStatus: 'INSUFFICIENT_LIGHT',
+        measurement_status: 'INSUFFICIENT_LIGHT',
+        heartRate: undefined,
+        respiratoryRate: undefined,
+      };
+      this.notifyReading(reading);
+      return reading;
     }
 
     let buffer = this.roiBuffers.get(patientId);
@@ -170,13 +228,43 @@ export class RppgSensorProvider implements SensorProvider {
       buffer.shift();
     }
 
-    // Evaluate once we have at least 3 seconds of continuous signal
-    if (buffer.length >= fps * 3) {
-      const rgbSeries = this.pipeline.aggregateFrameRois(buffer, fps);
-      return this.processRgbSeries(rgbSeries, patientId, bedId);
+    // If buffer is still accumulating (< 3 seconds of continuous signal), emit CALIBRATING state
+    if (buffer.length < fps * 3) {
+      const reading: SensorReading = {
+        id: `sr-rppg-${patientId}-${roi.timestampMs}`,
+        patientId,
+        bedId,
+        source: this.source,
+        timestamp: roi.timestampMs,
+        confidence: 0.10,
+        signalQuality: {
+          sqiPercentage: Math.round((buffer.length / (fps * 3)) * 40),
+          snrDb: 0,
+          illuminationLux: roi.illuminationLux ?? 240,
+          motionArtifactIndex: roi.motionMagnitude ?? 0,
+          state: 'DEGRADED',
+          isUsable: false,
+          faceDetected: true,
+          reason: 'Accumulating optical window frames for frequency calibration',
+        },
+        measurementStatus: 'CALIBRATING',
+        measurement_status: 'CALIBRATING',
+        heartRate: undefined,
+        respiratoryRate: undefined,
+      };
+      this.notifyReading(reading);
+      return reading;
     }
 
-    return null;
+    // Evaluate once we have at least 3 seconds of continuous signal
+    const rgbSeries = this.pipeline.aggregateFrameRois(buffer, fps);
+    return this.processRgbSeries(
+      rgbSeries,
+      patientId,
+      bedId,
+      roi.motionMagnitude ?? 0.05,
+      roi.illuminationLux ? Math.min(1.0, roi.illuminationLux / 400) : 0.95
+    );
   }
 
   /**
@@ -187,79 +275,111 @@ export class RppgSensorProvider implements SensorProvider {
     patientId: string = this.defaultPatientId,
     bedId: string = this.defaultBedId,
     motionMagnitude = 0.05,
-    illuminationScore = 0.95
+    illuminationScore = 0.95,
+    options?: ProcessRgbOptions
   ): SensorReading {
+    const effectiveMotion = options?.motionMagnitude ?? motionMagnitude;
+    const effectiveIllumScore = options?.illuminationScore ?? illuminationScore;
+    const effectiveLux = options?.illuminationLux ?? Math.round(effectiveIllumScore * 400);
+
+    const mergedOptions: ProcessRgbOptions = {
+      ...options,
+      algorithm: options?.algorithm ?? this.algorithm,
+      motionMagnitude: effectiveMotion,
+      illuminationScore: effectiveIllumScore,
+      illuminationLux: effectiveLux,
+    };
+
     const rawMeasurement = this.pipeline.processRgbSeries(
       series,
-      this.algorithm,
-      motionMagnitude,
-      illuminationScore
+      mergedOptions,
+      effectiveMotion,
+      effectiveIllumScore
     );
 
     const timestamp = rawMeasurement.timestamp;
     const confidence = rawMeasurement.confidence;
     const snrDb = rawMeasurement.signalQuality.snrDb;
     const sqiScore = rawMeasurement.signalQuality.sqiScore;
-    const motionDetected = rawMeasurement.signalQuality.motionDetected;
+    const motionDetected = rawMeasurement.signalQuality.motionDetected || effectiveMotion > 0.25;
+    const lux = effectiveLux;
 
-    // Quality state mapping
+    // Map quality state
     let qualityState: QualityStatus;
     if (rawMeasurement.status === 'VALID' && confidence >= this.minConfidenceThreshold) {
       qualityState = 'TRUSTED';
-    } else if (rawMeasurement.status === 'DEGRADED') {
+    } else if (rawMeasurement.status === 'DEGRADED' || rawMeasurement.status === 'CALIBRATING') {
       qualityState = 'DEGRADED';
     } else {
       qualityState = 'UNRELIABLE';
     }
 
+    // Map exact contactless measurement status
+    let measurementStatus: MeasurementStatus = 'VALID';
+    if (rawMeasurement.status === 'NO_FACE') {
+      measurementStatus = 'NO_FACE';
+    } else if (rawMeasurement.status === 'INSUFFICIENT_LIGHT') {
+      measurementStatus = 'INSUFFICIENT_LIGHT';
+    } else if (rawMeasurement.status === 'MOTION_CONTAMINATED') {
+      measurementStatus = 'MOTION_CONTAMINATED';
+    } else if (rawMeasurement.status === 'CALIBRATING') {
+      measurementStatus = 'CALIBRATING';
+    } else if (rawMeasurement.status === 'PHYSIOLOGICALLY_IMPLAUSIBLE') {
+      measurementStatus = 'PHYSIOLOGICALLY_IMPLAUSIBLE';
+    } else if (
+      rawMeasurement.status === 'UNUSABLE' ||
+      rawMeasurement.status === 'LOW_CONFIDENCE' ||
+      confidence < this.minConfidenceThreshold ||
+      motionDetected ||
+      snrDb < 1.0
+    ) {
+      measurementStatus = 'LOW_CONFIDENCE';
+    } else {
+      measurementStatus = 'VALID';
+    }
+
     const signalQuality: SignalQuality = {
       sqiPercentage: sqiScore,
       snrDb,
-      illuminationLux: Math.round(illuminationScore * 400),
-      motionArtifactIndex: rawMeasurement.signalQuality.motionMagnitude,
+      illuminationLux: lux,
+      motionArtifactIndex: effectiveMotion,
+      motionDetected,
       state: qualityState,
-      isUsable: rawMeasurement.status === 'VALID' && confidence >= this.minConfidenceThreshold,
-      faceDetected: true,
-      reason: motionDetected
+      isUsable: measurementStatus === 'VALID' && confidence >= this.minConfidenceThreshold,
+      faceDetected: rawMeasurement.signalQuality.faceDetected ?? true,
+      reason: rawMeasurement.signalQuality.stateReason ?? (motionDetected
         ? 'Subject motion artifact detected'
         : snrDb < 1.0
           ? 'Optical signal-to-noise ratio below viable threshold'
-          : undefined,
+          : undefined),
     };
-
-    // Strict Invariant: If confidence is insufficient, emit LOW_CONFIDENCE with zero fabrication
-    const isConfidenceInsufficient =
-      confidence < this.minConfidenceThreshold ||
-      rawMeasurement.status === 'UNUSABLE' ||
-      rawMeasurement.status === 'SUPPRESSED' ||
-      motionDetected ||
-      snrDb < 1.0;
 
     let reading: SensorReading;
 
-    if (isConfidenceInsufficient) {
+    // STRICT INVARIANT: If status is not VALID, emit ZERO fabricated vitals
+    if (measurementStatus !== 'VALID') {
       reading = {
         id: `sr-rppg-${patientId}-${timestamp}`,
         patientId,
         bedId,
         source: this.source,
         timestamp,
-        confidence,
+        confidence: Math.min(0.25, confidence),
         signalQuality: {
           ...signalQuality,
           state: qualityState === 'TRUSTED' ? 'DEGRADED' : qualityState,
           isUsable: false,
-          reason: signalQuality.reason ?? 'Insufficient optical confidence for cardiac extraction',
+          reason: signalQuality.reason ?? `Optical signal gating active [${measurementStatus}]`,
         },
-        measurementStatus: 'LOW_CONFIDENCE',
-        measurement_status: 'LOW_CONFIDENCE',
-        // DO NOT FABRICATE PHYSIOLOGICAL MEASUREMENTS
+        measurementStatus,
+        measurement_status: measurementStatus,
+        // STRICT ZERO-FABRICATION GUARANTEE:
         heartRate: undefined,
         respiratoryRate: undefined,
         metadata: {
           algorithm: this.algorithm,
           rawSnrDb: snrDb,
-          disclaimer: 'Confidence below clinical threshold. Vitals withheld.',
+          disclaimer: `Optical signal gated [${measurementStatus}]. Vitals withheld to protect patient safety.`,
         },
       };
     } else {
@@ -283,6 +403,230 @@ export class RppgSensorProvider implements SensorProvider {
       };
     }
 
+    this.notifyReading(reading);
+    return reading;
+  }
+
+  /**
+   * Hardware & Environmental Lifecycle Recovery Handlers
+   */
+  public handleCameraDisconnect(
+    patientId: string = this.defaultPatientId,
+    bedId: string = this.defaultBedId
+  ): SensorReading {
+    this.roiBuffers.delete(patientId);
+    const reading: SensorReading = {
+      id: `sr-rppg-${patientId}-${Date.now()}`,
+      patientId,
+      bedId,
+      source: this.source,
+      timestamp: Date.now(),
+      confidence: 0,
+      signalQuality: {
+        sqiPercentage: 0,
+        snrDb: -20,
+        illuminationLux: 0,
+        motionArtifactIndex: 0,
+        state: 'LOST',
+        isUsable: false,
+        faceDetected: false,
+        reason: 'Camera hardware disconnected or video track closed',
+      },
+      measurementStatus: 'LOW_CONFIDENCE',
+      measurement_status: 'LOW_CONFIDENCE',
+      heartRate: undefined,
+      respiratoryRate: undefined,
+    };
+    this.notifyStatus('Camera hardware disconnected');
+    this.notifyReading(reading);
+    return reading;
+  }
+
+  public handleCameraPermissionDenied(
+    patientId: string = this.defaultPatientId,
+    bedId: string = this.defaultBedId
+  ): SensorReading {
+    this.roiBuffers.delete(patientId);
+    const reading: SensorReading = {
+      id: `sr-rppg-${patientId}-${Date.now()}`,
+      patientId,
+      bedId,
+      source: this.source,
+      timestamp: Date.now(),
+      confidence: 0,
+      signalQuality: {
+        sqiPercentage: 0,
+        snrDb: -20,
+        illuminationLux: 0,
+        motionArtifactIndex: 0,
+        state: 'LOST',
+        isUsable: false,
+        faceDetected: false,
+        reason: 'Camera access permission denied by user or OS security policy',
+      },
+      measurementStatus: 'LOW_CONFIDENCE',
+      measurement_status: 'LOW_CONFIDENCE',
+      heartRate: undefined,
+      respiratoryRate: undefined,
+    };
+    this.notifyStatus('Camera permission denied');
+    this.notifyReading(reading);
+    return reading;
+  }
+
+  public handleCameraReconnect(
+    patientId: string = this.defaultPatientId,
+    bedId: string = this.defaultBedId
+  ): SensorReading {
+    this.roiBuffers.delete(patientId);
+    this.start();
+    const reading: SensorReading = {
+      id: `sr-rppg-${patientId}-${Date.now()}`,
+      patientId,
+      bedId,
+      source: this.source,
+      timestamp: Date.now(),
+      confidence: 0.10,
+      signalQuality: {
+        sqiPercentage: 10,
+        snrDb: 0,
+        illuminationLux: 240,
+        motionArtifactIndex: 0,
+        state: 'DEGRADED',
+        isUsable: false,
+        faceDetected: true,
+        reason: 'Camera reconnected. Re-initializing optical calibration buffer.',
+      },
+      measurementStatus: 'CALIBRATING',
+      measurement_status: 'CALIBRATING',
+      heartRate: undefined,
+      respiratoryRate: undefined,
+    };
+    this.notifyStatus('Camera reconnected. Calibrating...');
+    this.notifyReading(reading);
+    return reading;
+  }
+
+  public handleFaceLost(
+    patientId: string = this.defaultPatientId,
+    bedId: string = this.defaultBedId
+  ): SensorReading {
+    this.roiBuffers.delete(patientId);
+    const reading: SensorReading = {
+      id: `sr-rppg-${patientId}-${Date.now()}`,
+      patientId,
+      bedId,
+      source: this.source,
+      timestamp: Date.now(),
+      confidence: 0,
+      signalQuality: {
+        sqiPercentage: 0,
+        snrDb: -20,
+        illuminationLux: 240,
+        motionArtifactIndex: 0,
+        state: 'LOST',
+        isUsable: false,
+        faceDetected: false,
+        reason: 'Face lost or subject moved out of camera field of view',
+      },
+      measurementStatus: 'NO_FACE',
+      measurement_status: 'NO_FACE',
+      heartRate: undefined,
+      respiratoryRate: undefined,
+    };
+    this.notifyReading(reading);
+    return reading;
+  }
+
+  public handleFaceReacquired(
+    patientId: string = this.defaultPatientId,
+    bedId: string = this.defaultBedId
+  ): SensorReading {
+    this.roiBuffers.delete(patientId);
+    const reading: SensorReading = {
+      id: `sr-rppg-${patientId}-${Date.now()}`,
+      patientId,
+      bedId,
+      source: this.source,
+      timestamp: Date.now(),
+      confidence: 0.10,
+      signalQuality: {
+        sqiPercentage: 10,
+        snrDb: 0,
+        illuminationLux: 240,
+        motionArtifactIndex: 0,
+        state: 'DEGRADED',
+        isUsable: false,
+        faceDetected: true,
+        reason: 'Face reacquired. Stabilizing optical tracking buffer.',
+      },
+      measurementStatus: 'CALIBRATING',
+      measurement_status: 'CALIBRATING',
+      heartRate: undefined,
+      respiratoryRate: undefined,
+    };
+    this.notifyReading(reading);
+    return reading;
+  }
+
+  public handleLightingRestored(
+    patientId: string = this.defaultPatientId,
+    bedId: string = this.defaultBedId
+  ): SensorReading {
+    this.roiBuffers.delete(patientId);
+    const reading: SensorReading = {
+      id: `sr-rppg-${patientId}-${Date.now()}`,
+      patientId,
+      bedId,
+      source: this.source,
+      timestamp: Date.now(),
+      confidence: 0.10,
+      signalQuality: {
+        sqiPercentage: 10,
+        snrDb: 0,
+        illuminationLux: 240,
+        motionArtifactIndex: 0,
+        state: 'DEGRADED',
+        isUsable: false,
+        faceDetected: true,
+        reason: 'Adequate lighting restored. Calibrating optical reflectance.',
+      },
+      measurementStatus: 'CALIBRATING',
+      measurement_status: 'CALIBRATING',
+      heartRate: undefined,
+      respiratoryRate: undefined,
+    };
+    this.notifyReading(reading);
+    return reading;
+  }
+
+  public handleMotionCeased(
+    patientId: string = this.defaultPatientId,
+    bedId: string = this.defaultBedId
+  ): SensorReading {
+    this.roiBuffers.delete(patientId);
+    const reading: SensorReading = {
+      id: `sr-rppg-${patientId}-${Date.now()}`,
+      patientId,
+      bedId,
+      source: this.source,
+      timestamp: Date.now(),
+      confidence: 0.10,
+      signalQuality: {
+        sqiPercentage: 15,
+        snrDb: 1.0,
+        illuminationLux: 240,
+        motionArtifactIndex: 0.05,
+        state: 'DEGRADED',
+        isUsable: false,
+        faceDetected: true,
+        reason: 'Subject motion ceased. Re-stabilizing cardiac spectral peak.',
+      },
+      measurementStatus: 'CALIBRATING',
+      measurement_status: 'CALIBRATING',
+      heartRate: undefined,
+      respiratoryRate: undefined,
+    };
     this.notifyReading(reading);
     return reading;
   }

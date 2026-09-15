@@ -81,3 +81,21 @@ simulationRouter.get('/status', (_req: Request, res: Response) => {
     data: wardStateService.getSimulationStatus(),
   });
 });
+
+// 5. Chaos Simulation: Toggle Database Availability
+simulationRouter.post(
+  '/chaos/database',
+  authenticate(),
+  requireRole(['ADMIN', 'SYSTEM']),
+  (req: Request, res: Response) => {
+    const disrupted = Boolean(req.body?.disrupted);
+    wardStateService.simulateDatabaseDisruption(disrupted);
+    res.status(200).json({
+      message: disrupted
+        ? 'Database disruption simulation ACTIVATED.'
+        : 'Database disruption simulation DEACTIVATED.',
+      disrupted,
+      isDatabaseHealthy: wardStateService.isDatabaseHealthy(),
+    });
+  }
+);

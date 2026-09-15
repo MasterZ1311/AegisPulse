@@ -5,12 +5,19 @@ import { requireWardAccess } from '../../middleware/rbac';
 
 export const wardsRouter = Router();
 
-wardsRouter.use(authenticate({ optional: true }));
+wardsRouter.use(authenticate());
 
-wardsRouter.get('/', (_req: Request, res: Response) => {
-  const wards = wardStateService.getWards();
+wardsRouter.get('/', (req: Request, res: Response) => {
+  let wards = wardStateService.getWards();
+
+  // If user is authenticated without wildcard jurisdiction, filter to assigned wards
+  if (req.user && !req.user.assignedWardIds.includes('*')) {
+    wards = wards.filter((w) => req.user!.assignedWardIds.includes(w.id));
+  }
+
   res.status(200).json({ data: wards, total: wards.length });
 });
+
 
 wardsRouter.get('/:wardId', requireWardAccess(), (req: Request, res: Response) => {
   const wardId = String(req.params.wardId);

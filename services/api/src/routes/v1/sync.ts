@@ -8,7 +8,8 @@ import { createRateLimiter } from '../../middleware/rate-limiter';
 
 export const syncRouter = Router();
 
-syncRouter.use(authenticate({ optional: true }));
+syncRouter.use(authenticate());
+
 
 const syncRateLimiter = createRateLimiter({
   windowMs: 60 * 1000,

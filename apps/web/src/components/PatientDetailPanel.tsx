@@ -35,6 +35,7 @@ interface PatientDetailPanelProps {
   onAcknowledge: (patientId: string, event?: React.MouseEvent) => void;
   onLogAssessment: (patientId: string, note: string) => void;
   onEscalate: (patientId: string) => void;
+  onOpenCamera?: () => void;
 }
 
 interface ProvenanceModalData {
@@ -53,6 +54,7 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
   onAcknowledge,
   onLogAssessment,
   onEscalate,
+  onOpenCamera,
 }) => {
   const [activeTab, setActiveTab] = useState<'ALL_OVERVIEW' | 'TRAJECTORY' | 'RULES_LABS' | 'TIMELINE'>('ALL_OVERVIEW');
   const [expandedProvenanceId, setExpandedProvenanceId] = useState<string | null>(null);
@@ -924,17 +926,29 @@ export const PatientDetailPanel: React.FC<PatientDetailPanelProps> = ({
               </div>
 
               {/* 8. NON-INVASIVE OPTICAL TELEMETRY PRIVACY SEAL */}
-              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex items-center justify-between text-xs font-mono">
+              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-mono">
                 <div className="flex items-center gap-2 text-slate-300">
                   <Radio className="h-4 w-4 text-cyan-400" />
                   <span>rPPG Optical Pulse Sensor ({patient.signalQuality.cameraDeviceId})</span>
                   <span className="text-slate-600">|</span>
                   <span className="text-slate-400">{patient.signalQuality.illuminationLux} Lux</span>
                 </div>
-                <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Zero Raw Video Transmitted or Stored
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Zero Raw Video Stored
+                  </span>
+                  {onOpenCamera && (
+                    <button
+                      type="button"
+                      id="panel-camera-btn"
+                      onClick={onOpenCamera}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-800/50 text-emerald-300 text-[11px] font-bold transition-colors cursor-pointer"
+                    >
+                      Turn the camera on
+                    </button>
+                  )}
+                </div>
               </div>
             </>
           )}

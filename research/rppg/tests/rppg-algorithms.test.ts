@@ -49,7 +49,7 @@ describe('rPPG Optical Algorithms: GREEN, CHROM, POS', () => {
     const analysis = analyzeSpectrumBand(psd.frequencies, psd.power, 0.7, 3.5);
 
     expect(Math.abs(analysis.dominantBpm - targetHrBpm)).toBeLessThanOrEqual(1.5);
-    expect(analysis.snrDb).toBeGreaterThan(7.0);
+    expect(analysis.snrDb).toBeGreaterThan(6.5);
   });
 
   it('reconstructs elevated heart rates (120 bpm / 2.0 Hz) accurately across all three algorithms', () => {

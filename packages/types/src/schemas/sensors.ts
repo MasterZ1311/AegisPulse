@@ -60,23 +60,35 @@ export const SensorReadingSchema = z
     metadata: z.record(z.string(), z.unknown()).optional(),
   })
   .superRefine((reading, ctx) => {
-    // 1. Zero-fabrication enforcement: when status is LOW_CONFIDENCE, no vitals can be fabricated
-    if (
-      reading.measurementStatus === 'LOW_CONFIDENCE' ||
-      reading.measurement_status === 'LOW_CONFIDENCE'
-    ) {
+    // 1. Zero-fabrication enforcement: when status is unreliable/non-valid, no vitals can be fabricated
+    const UNRELIABLE_STATES = [
+      'LOW_CONFIDENCE',
+      'CALIBRATING',
+      'MOTION_CONTAMINATED',
+      'INSUFFICIENT_LIGHT',
+      'NO_FACE',
+      'PHYSIOLOGICALLY_IMPLAUSIBLE',
+      'UNRELIABLE',
+      'TARGET_LOST',
+      'DEVICE_DISCONNECTED',
+    ];
+    const isUnreliable =
+      UNRELIABLE_STATES.includes(reading.measurementStatus) ||
+      (reading.measurement_status !== undefined && UNRELIABLE_STATES.includes(reading.measurement_status));
+
+    if (isUnreliable) {
       if (reading.heartRate !== undefined) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message:
-            'ZERO-FABRICATION VIOLATION: heartRate must not be fabricated when measurement_status is LOW_CONFIDENCE.',
+            `ZERO-FABRICATION VIOLATION: heartRate must not be fabricated when measurement_status is '${reading.measurementStatus}'.`,
         });
       }
       if (reading.respiratoryRate !== undefined) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message:
-            'ZERO-FABRICATION VIOLATION: respiratoryRate must not be fabricated when measurement_status is LOW_CONFIDENCE.',
+            `ZERO-FABRICATION VIOLATION: respiratoryRate must not be fabricated when measurement_status is '${reading.measurementStatus}'.`,
         });
       }
     }

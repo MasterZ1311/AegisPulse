@@ -214,14 +214,16 @@ export class TelemetryPipelineService {
         }
       : undefined;
 
+    const now = Date.now();
     const state: PatientStateInput = {
       patientId: patient.id,
       bedNumber: patient.bedNumber,
-      currentTimestamp: eventTimestamp ?? Date.now(),
+      currentTimestamp: Math.max(now, eventTimestamp ?? 0),
       observations,
       labs,
       latestSignalQuality,
     };
+
 
     const t0 = performance.now();
     const evaluationResult = this.apsEngine.evaluate(state);
@@ -230,7 +232,6 @@ export class TelemetryPipelineService {
 
     const explanationResult = this.explainEngine.explainPatient(state, evaluationResult);
 
-    const now = Date.now();
     const topReason = explanationResult.primaryExplanation;
     const reasons = explanationResult.reasons.map((r) => ({
       id: r.id,

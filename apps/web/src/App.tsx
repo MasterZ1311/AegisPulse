@@ -12,9 +12,11 @@ import { WardHeader } from './components/WardHeader';
 import { AttentionQueue } from './components/AttentionQueue';
 import { PatientDetailPanel } from './components/PatientDetailPanel';
 import { DiagnosticsModal } from './components/DiagnosticsModal';
+import { BedsideCameraModal } from './components/BedsideCameraModal';
 import { DemoScrubber } from './components/DemoScrubber';
 import { INITIAL_WARD_PATIENTS } from './data/ward-simulated-data';
 import type { WardPatientRadarState } from './types/radar';
+import { AlertTriangle } from 'lucide-react';
 
 export default function App() {
   const [patients, setPatients] = useState<WardPatientRadarState[]>(INITIAL_WARD_PATIENTS);
@@ -27,6 +29,7 @@ export default function App() {
   const [connectivityState, setConnectivityState] = useState<WardConnectivityState>('ONLINE');
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState<boolean>(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState<boolean>(false);
   const [_recentEvents, setRecentEvents] = useState<TelemetryStreamEnvelope[]>([]);
   const [_health, setHealth] = useState<HealthCheckResponse | null>(null);
   const [mobileView, setMobileView] = useState<'QUEUE' | 'DETAIL'>('QUEUE');
@@ -65,6 +68,10 @@ export default function App() {
       wardId: 'WARD-4B',
       heartbeatIntervalMs: 15000,
     });
+
+    if (typeof window !== 'undefined') {
+      (window as any).__aegisStreamClient = client;
+    }
 
     // Offline Sync Queue Subscription
     const unsubOffline = offlineSyncQueue.onStateChange((state, count) => {
@@ -218,30 +225,35 @@ export default function App() {
     );
 
     setPatients((prev) =>
-      prev.map((p) =>
-        p.patientId === patientId
-          ? {
-              ...p,
-              isAcknowledged: true,
-              lastAcknowledgedAt: new Date().toISOString(),
-              lastAcknowledgedBy: 'RN Rachel Hayes',
-              timeline: [
-                {
-                  id: `TL-ACK-${Date.now()}`,
-                  patientId,
-                  timestamp: Date.now(),
-                  eventType: 'ACKNOWLEDGEMENT',
-                  title: 'Priority Alert Acknowledged by Primary Nurse',
-                  description: 'Nurse Rachel Hayes, RN reviewed radar alert at bedside station.',
-                  severity: 'INFO',
-                  source: 'NURSE_MANUAL',
-                  isTrusted: true,
-                },
-                ...p.timeline,
-              ],
-            }
-          : p
-      )
+      prev.map((p) => {
+        if (p.patientId !== patientId) return p;
+        // Suppress duplicate acknowledgement timeline events within 3 seconds
+        const hasRecentAck = p.timeline.some(
+          (t) => t.eventType === 'ACKNOWLEDGEMENT' && Date.now() - t.timestamp < 3000
+        );
+        const newAckEvent = {
+          id: `TL-ACK-${Date.now()}`,
+          patientId,
+          timestamp: Date.now(),
+          eventType: 'ACKNOWLEDGEMENT' as const,
+          title: 'Priority Alert Acknowledged by Primary Nurse',
+          description: 'Nurse Rachel Hayes, RN reviewed radar alert at bedside station.',
+          severity: 'INFO' as const,
+          source: 'NURSE_MANUAL' as const,
+          isTrusted: true,
+        };
+        const updatedTimeline = hasRecentAck
+          ? p.timeline
+          : [newAckEvent, ...p.timeline.filter((t) => t.id !== newAckEvent.id)];
+
+        return {
+          ...p,
+          isAcknowledged: true,
+          lastAcknowledgedAt: new Date().toISOString(),
+          lastAcknowledgedBy: 'RN Rachel Hayes',
+          timeline: updatedTimeline,
+        };
+      })
     );
   }, []);
 
@@ -254,6 +266,18 @@ export default function App() {
       'INFO'
     );
 
+    const newAssessEvent = {
+      id: `TL-ASSESS-${Date.now()}`,
+      patientId,
+      timestamp: Date.now(),
+      eventType: 'MANUAL_OBSERVATION' as const,
+      title: 'Bedside Physical Assessment Logged',
+      description: note,
+      severity: 'INFO' as const,
+      source: 'NURSE_MANUAL' as const,
+      isTrusted: true,
+    };
+
     setPatients((prev) =>
       prev.map((p) =>
         p.patientId === patientId
@@ -261,20 +285,7 @@ export default function App() {
               ...p,
               lastTrustedElapsedMinutes: 0,
               lastTrustedObservationIso: new Date().toISOString(),
-              timeline: [
-                {
-                  id: `TL-ASSESS-${Date.now()}`,
-                  patientId,
-                  timestamp: Date.now(),
-                  eventType: 'MANUAL_OBSERVATION',
-                  title: 'Bedside Physical Assessment Logged',
-                  description: note,
-                  severity: 'INFO',
-                  source: 'NURSE_MANUAL',
-                  isTrusted: true,
-                },
-                ...p.timeline,
-              ],
+              timeline: [newAssessEvent, ...p.timeline.filter((t) => t.id !== newAssessEvent.id)],
             }
           : p
       )
@@ -290,26 +301,25 @@ export default function App() {
       'CRITICAL'
     );
 
+    const newRrtEvent = {
+      id: `TL-RRT-${Date.now()}`,
+      patientId,
+      timestamp: Date.now(),
+      eventType: 'RECOMMENDED_ACTION' as const,
+      title: 'Rapid Response Team (RRT) Activated',
+      description:
+        'Medical Emergency Team paged for immediate bedside critical care consultation.',
+      severity: 'CRITICAL' as const,
+      source: 'NURSE_MANUAL' as const,
+      isTrusted: true,
+    };
+
     setPatients((prev) =>
       prev.map((p) =>
         p.patientId === patientId
           ? {
               ...p,
-              timeline: [
-                {
-                  id: `TL-RRT-${Date.now()}`,
-                  patientId,
-                  timestamp: Date.now(),
-                  eventType: 'RECOMMENDED_ACTION',
-                  title: 'Rapid Response Team (RRT) Activated',
-                  description:
-                    'Medical Emergency Team paged for immediate bedside critical care consultation.',
-                  severity: 'CRITICAL',
-                  source: 'NURSE_MANUAL',
-                  isTrusted: true,
-                },
-                ...p.timeline,
-              ],
+              timeline: [newRrtEvent, ...p.timeline.filter((t) => t.id !== newRrtEvent.id)],
             }
           : p
       )
@@ -420,7 +430,36 @@ export default function App() {
         activeScenario={activeScenario}
         onScenarioChange={handleScenarioChange}
         onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
+        onOpenCamera={() => setIsCameraModalOpen(true)}
       />
+
+      {/* Realtime Telemetry Interruption / Reconnecting Clinical Banner */}
+      {streamStatus === 'RECONNECTING' && (
+        <div className="bg-amber-950/90 border-b border-amber-600/50 px-6 py-2.5 text-amber-200 text-xs font-mono flex items-center justify-between animate-pulse">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>REALTIME TELEMETRY INTERRUPTED:</strong> Reconnecting to Ward 4B telemetry broker... Bedside vitals frozen at sequence #{streamSeq}. Dead-man watchdog active.
+            </span>
+          </div>
+          <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-amber-900/60 text-amber-300 border border-amber-700/50 text-[10px] uppercase tracking-wider font-bold">
+            Anti-Rollback Engaged
+          </span>
+        </div>
+      )}
+      {streamStatus === 'DISCONNECTED' && (
+        <div className="bg-rose-950/90 border-b border-rose-600/50 px-6 py-2.5 text-rose-200 text-xs font-mono flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0" />
+            <span>
+              <strong>TELEMETRY OFFLINE:</strong> Realtime stream connection lost. Clinical actions will queue locally in edge storage.
+            </span>
+          </div>
+          <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-rose-900/60 text-rose-300 border border-rose-700/50 text-[10px] uppercase tracking-wider font-bold">
+            Edge Queue Buffered
+          </span>
+        </div>
+      )}
 
       {/* Diagnostics Modal */}
       <DiagnosticsModal
@@ -429,6 +468,35 @@ export default function App() {
         streamStatus={streamStatus}
         streamSeq={streamSeq}
         pendingSyncCount={pendingSyncCount}
+      />
+
+      {/* Bedside Optical rPPG Camera Modal & DevTools Privacy Inspector */}
+      <BedsideCameraModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        patientId={selectedPatient?.patientId}
+        bedNumber={selectedPatient?.bedNumber}
+        onVitalsDetected={(vitals) => {
+          if (selectedPatient) {
+            setPatients((prev) =>
+              prev.map((p) =>
+                p.patientId === selectedPatient.patientId
+                  ? {
+                      ...p,
+                      vitals: {
+                        ...p.vitals,
+                        heartRate: vitals.heartRate ?? p.vitals.heartRate,
+                      },
+                      signalQuality: {
+                        ...p.signalQuality,
+                        sqiScore: Math.round(vitals.signalQuality * 100),
+                      },
+                    }
+                  : p
+              )
+            );
+          }
+        }}
       />
 
       {/* Flagship Deterministic Demo Scrubber */}
@@ -504,6 +572,7 @@ export default function App() {
               onAcknowledge={handleAcknowledge}
               onLogAssessment={handleLogAssessment}
               onEscalate={handleEscalate}
+              onOpenCamera={() => setIsCameraModalOpen(true)}
             />
           </div>
         </div>

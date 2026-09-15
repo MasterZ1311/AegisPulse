@@ -83,6 +83,8 @@ export const ServerStreamMessageSchema = z.discriminatedUnion('type', [
     type: z.literal('CONNECTED'),
     clientId: z.string(),
     serverTimestamp: z.number().int(),
+    serverBootTimestamp: z.number().int().optional(),
+    serverInstanceId: z.string().optional(),
     currentSequenceNumber: z.number().int(),
     heartbeatIntervalMs: z.number().int(),
   }),

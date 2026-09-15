@@ -225,6 +225,7 @@ export const SignalQualitySchema = z.object({
     .number()
     .min(0.0, 'Motion artifact index must be >= 0.0')
     .max(1.0, 'Motion artifact index must be <= 1.0'),
+  motionDetected: z.boolean().optional(),
   state: QualityStatusEnum,
   isUsable: z.boolean(),
   faceDetected: z.boolean(),

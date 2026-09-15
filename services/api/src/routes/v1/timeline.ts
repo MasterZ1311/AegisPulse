@@ -13,7 +13,7 @@ import { requirePatientWardAccess } from '../../middleware/rbac';
 
 export const timelineRouter = Router({ mergeParams: true });
 
-timelineRouter.use(authenticate({ optional: true }));
+timelineRouter.use(authenticate());
 timelineRouter.use(requirePatientWardAccess());
 
 const TimelineEventCreateSchema = z
@@ -25,9 +25,7 @@ const TimelineEventCreateSchema = z
     description: z.string().min(1).max(1000),
     severity: AlertSeverityEnum.default('INFO'),
     source: z.union([ObservationSourceEnum, z.literal('CLINICAL_ENGINE'), z.literal('MANUAL_ENTRY'), z.literal('LAB_LIS'), z.literal('SYSTEM')]).default('MANUAL_ENTRY'),
-    isTrusted: z.boolean().default(true),
-    actorUserId: z.string().optional(),
-    actorRole: z.string().optional(),
+    isTrusted: z.boolean().optional(),
     data: z.record(z.string(), z.any()).optional(),
   })
   .strict();
@@ -38,7 +36,7 @@ timelineRouter.get('/', (req: Request, res: Response) => {
   const since = req.query.since ? Number(req.query.since) : undefined;
   const until = req.query.until ? Number(req.query.until) : undefined;
   const trustedOnly = req.query.trustedOnly === 'true';
-  const limit = req.query.limit ? Number(req.query.limit) : 100;
+  const limit = req.query.limit ? Math.min(Number(req.query.limit), 500) : 100;
   const order = req.query.order === 'desc' ? 'desc' : 'asc';
 
   let eventTypes: any = undefined;
@@ -69,8 +67,21 @@ timelineRouter.post(
   (req: Request, res: Response) => {
     const patientId = String(req.params.patientId);
     const body = req.body as z.infer<typeof TimelineEventCreateSchema>;
-    const timestamp = body.timestamp ?? Date.now();
+    const now = Date.now();
+    const timestamp = body.timestamp ?? now;
+
+    if (timestamp > now + 300000) {
+      res.status(400).json({
+        statusCode: 400,
+        error: 'Invalid Timestamp',
+        message: 'Timeline event timestamp cannot be in the future (max allowable clock skew is 5 minutes).',
+      });
+      return;
+    }
+
     const id = body.id ?? `ev-user-${patientId}-${timestamp}-${Math.random().toString(36).substring(2, 6)}`;
+    const actorUserId = req.user!.userId;
+    const actorRole = req.user!.role;
 
     const event: UnifiedTimelineEvent = {
       id,
@@ -81,9 +92,9 @@ timelineRouter.post(
       description: body.description,
       severity: body.severity,
       source: body.source,
-      isTrusted: body.isTrusted,
-      actorUserId: body.actorUserId ?? req.user?.userId,
-      actorRole: body.actorRole ?? req.user?.role,
+      isTrusted: true, // Authoritative: Authenticated clinical user actions are trusted
+      actorUserId,
+      actorRole,
       data: body.data,
     };
 
@@ -95,6 +106,7 @@ timelineRouter.post(
     });
   }
 );
+
 
 // 3. Question 1: "What changed during the last 4 hours?"
 timelineRouter.get('/changes', (req: Request, res: Response) => {

@@ -14,22 +14,22 @@ import { requirePatientWardAccess } from '../../middleware/rbac';
 
 export const labsRouter = Router({ mergeParams: true });
 
-labsRouter.use(authenticate({ optional: true }));
+labsRouter.use(authenticate());
 labsRouter.use(requirePatientWardAccess());
 
 const IngestLabSchema = z
   .object({
     id: z.string().optional(),
     testCode: LabTestCodeEnum,
-    testName: z.string().min(1),
-    value: z.number(),
+    testName: z.string().min(1).max(200),
+    value: z.number().min(0).max(100000),
     unit: LabUnitEnum,
     referenceRange: z.object({
-      low: z.number(),
-      high: z.number(),
+      low: z.number().min(0),
+      high: z.number().min(0),
     }),
-    isCritical: z.boolean().default(false),
-    sourceLab: z.string().default('CENTRAL_HOSPITAL_LAB'),
+    isCritical: z.boolean().optional(),
+    sourceLab: z.string().max(200).default('CENTRAL_HOSPITAL_LAB'),
     timestamp: z.number().int().min(0).optional(),
   })
   .strict();
@@ -48,7 +48,22 @@ labsRouter.post(
     const patient = wardStateService.getPatient(patientId);
 
     const body = req.body as z.infer<typeof IngestLabSchema>;
-    const timestamp = body.timestamp ?? Date.now();
+    const now = Date.now();
+    const timestamp = body.timestamp ?? now;
+
+    // Clock skew / timestamp attack protection
+    if (timestamp > now + 300000) {
+      res.status(400).json({
+        statusCode: 400,
+        error: 'Invalid Timestamp',
+        message: 'Lab result timestamp cannot be in the future (max allowable clock skew is 5 minutes).',
+      });
+      return;
+    }
+
+    // Authoritative criticality derivation: Server determines critical status based on reference range
+    const isCritical = body.value < body.referenceRange.low || body.value > body.referenceRange.high;
+
     const id = body.id ?? `lab-${patientId}-${timestamp}-${Math.random().toString(36).substring(2, 6)}`;
 
     const labResult: LaboratoryResult = {
@@ -60,7 +75,7 @@ labsRouter.post(
       value: body.value,
       unit: body.unit,
       referenceRange: body.referenceRange,
-      isCritical: body.isCritical,
+      isCritical,
       sourceLab: body.sourceLab,
     };
 
@@ -76,3 +91,4 @@ labsRouter.post(
     });
   }
 );
+

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import type { UserRole } from '@aegispulse/types';
 import { UnauthorizedError } from './errors';
+import { tokenService } from '../services/token.service';
 
 export interface AuthenticatedUser {
   userId: string;
@@ -22,10 +23,38 @@ declare global {
 const TOKEN_USER_MAP: Record<string, AuthenticatedUser> = {
   'nurse-token': {
     userId: 'usr-nurse-101',
-    username: 'sjenkins',
+    username: 'nurse',
     fullName: 'Sarah Jenkins, RN',
     role: 'WARD_NURSE',
-    assignedWardIds: ['WARD-A', 'WARD-B'],
+    assignedWardIds: ['WARD-A'],
+  },
+  'doctor-token': {
+    userId: 'usr-phys-303',
+    username: 'doctor',
+    fullName: 'Dr. Elena Rostova, MD',
+    role: 'ATTENDING_PHYSICIAN',
+    assignedWardIds: ['WARD-A', 'WARD-4B'],
+  },
+  'admin-token': {
+    userId: 'usr-admin-001',
+    username: 'admin',
+    fullName: 'Aegis System Administrator',
+    role: 'ADMIN',
+    assignedWardIds: ['*'],
+  },
+  'unauthorized-token': {
+    userId: 'usr-guest-999',
+    username: 'guest',
+    fullName: 'Unauthorized Guest Account',
+    role: 'WARD_NURSE',
+    assignedWardIds: [],
+  },
+  'guest-token': {
+    userId: 'usr-guest-999',
+    username: 'guest',
+    fullName: 'Unauthorized Guest Account',
+    role: 'WARD_NURSE',
+    assignedWardIds: [],
   },
   'charge-token': {
     userId: 'usr-charge-202',
@@ -43,7 +72,7 @@ const TOKEN_USER_MAP: Record<string, AuthenticatedUser> = {
   },
   'physician-token': {
     userId: 'usr-phys-303',
-    username: 'erostova',
+    username: 'doctor',
     fullName: 'Dr. Elena Rostova, MD',
     role: 'ATTENDING_PHYSICIAN',
     assignedWardIds: ['WARD-A', 'WARD-B', 'WARD-ICU'],
@@ -55,13 +84,6 @@ const TOKEN_USER_MAP: Record<string, AuthenticatedUser> = {
     role: 'WARD_NURSE',
     assignedWardIds: ['WARD-B'],
   },
-  'admin-token': {
-    userId: 'usr-admin-001',
-    username: 'admin',
-    fullName: 'Aegis System Administrator',
-    role: 'ADMIN',
-    assignedWardIds: ['*'],
-  },
   'system-token': {
     userId: 'usr-sys-000',
     username: 'system',
@@ -70,6 +92,35 @@ const TOKEN_USER_MAP: Record<string, AuthenticatedUser> = {
     assignedWardIds: ['*'],
   },
 };
+
+/**
+ * Resolves an authenticated user from a bearer token or API key.
+ * Dynamic test tokens (role:<ROLE>) are strictly blocked in production.
+ */
+export function resolveUserFromToken(token: string, testWards?: string[]): AuthenticatedUser | null {
+  if (!token) return null;
+  const user = TOKEN_USER_MAP[token];
+  if (user) {
+    return testWards ? { ...user, assignedWardIds: testWards } : user;
+  }
+
+  // Dynamic test token generation strictly locked down to non-production dev test environments
+  if (token.startsWith('role:')) {
+    if (process.env.NODE_ENV !== 'production' && (process.env.ALLOW_DEV_TEST_TOKENS === 'true' || process.env.ALLOW_HEADER_AUTH === 'true')) {
+      const role = token.split(':')[1] as UserRole;
+      return {
+        userId: `usr-${role.toLowerCase()}`,
+        username: role.toLowerCase(),
+        fullName: `Staff ${role}`,
+        role,
+        assignedWardIds: testWards || ['*'],
+      };
+    }
+    return null;
+  }
+
+  return null;
+}
 
 export function authenticate(options?: { optional?: boolean }) {
   return (req: Request, _res: Response, next: NextFunction): void => {
@@ -86,11 +137,11 @@ export function authenticate(options?: { optional?: boolean }) {
       token = apiKey.trim();
     }
 
-    // Direct header override for testing - Strictly forbidden in production and requires explicit opt-in
+    // Direct header override for testing - Strictly forbidden in production and staging
     const testRole = req.headers['x-user-role'] as UserRole | undefined;
     const testUserId = req.headers['x-user-id'] as string | undefined;
 
-    if (testRole && process.env.NODE_ENV !== 'production' && process.env.ALLOW_HEADER_AUTH === 'true') {
+    if (testRole && process.env.NODE_ENV === 'test' && process.env.ALLOW_HEADER_AUTH === 'true') {
       req.user = {
         userId: testUserId || `test-${testRole.toLowerCase()}`,
         username: testUserId || `test-${testRole.toLowerCase()}`,
@@ -102,22 +153,27 @@ export function authenticate(options?: { optional?: boolean }) {
     }
 
     if (token) {
-      const user = TOKEN_USER_MAP[token];
-      if (user) {
-        req.user = testWards ? { ...user, assignedWardIds: testWards } : user;
-        return next();
+      // 1. Cryptographic JWT Verification (if token has 3 dot-separated segments)
+      if (token.includes('.')) {
+        try {
+          const payload = tokenService.verifyToken(token, 'access');
+          req.user = {
+            userId: payload.sub,
+            username: payload.username,
+            fullName: payload.fullName,
+            role: payload.role,
+            assignedWardIds: testWards || payload.assignedWardIds,
+          };
+          return next();
+        } catch (err: any) {
+          return next(new UnauthorizedError(err.message || 'Invalid or expired authentication token.'));
+        }
       }
 
-      // If token format is "role:<ROLE>" for dynamic test generation
-      if (token.startsWith('role:')) {
-        const role = token.split(':')[1] as UserRole;
-        req.user = {
-          userId: `usr-${role.toLowerCase()}`,
-          username: role.toLowerCase(),
-          fullName: `Staff ${role}`,
-          role,
-          assignedWardIds: ['*'],
-        };
+      // 2. Built-in staff & test tokens (for dev & testing)
+      const user = resolveUserFromToken(token, testWards);
+      if (user) {
+        req.user = user;
         return next();
       }
 
@@ -131,3 +187,4 @@ export function authenticate(options?: { optional?: boolean }) {
     return next(new UnauthorizedError('Authorization header (Bearer <token>) or x-api-key is required.'));
   };
 }
+

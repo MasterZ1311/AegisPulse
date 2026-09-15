@@ -55,15 +55,22 @@ export function extractVitalsFromObservations(
 
   // 1. Process Observations (if present)
   if (hasObs) {
-    const sorted = [...observations].sort((a, b) => a.timestamp - b.timestamp);
+    const sorted = [...observations]
+      .filter((o) => o && Number.isFinite(o.timestamp))
+      .sort((a, b) => a.timestamp - b.timestamp);
 
     for (const obs of sorted) {
       observationIds.push(obs.id);
 
+      // Defensively skip observations with non-finite values (NaN / Infinity)
+      if (typeof obs.value !== 'number' || !Number.isFinite(obs.value)) {
+        continue;
+      }
+
       const reading: VitalReading = {
         value: obs.value,
         timestamp: obs.timestamp,
-        confidence: obs.confidence,
+        confidence: Number.isFinite(obs.confidence) ? Math.max(0, Math.min(1, obs.confidence)) : 0.5,
         qualityStatus: obs.qualityStatus,
         sourceObservationId: obs.id,
       };
@@ -79,30 +86,33 @@ export function extractVitalsFromObservations(
 
       // Track trusted observations
       if (obs.qualityStatus === 'TRUSTED') {
-        if (!lastTrustedTimestamp || obs.timestamp > lastTrustedTimestamp) {
+        if (lastTrustedTimestamp === undefined || obs.timestamp > lastTrustedTimestamp) {
           lastTrustedTimestamp = obs.timestamp;
         }
       }
 
       // Track manual bedside observations
       if (obs.source === 'NURSE_MANUAL') {
-        if (!lastManualTimestamp || obs.timestamp > lastManualTimestamp) {
+        if (lastManualTimestamp === undefined || obs.timestamp > lastManualTimestamp) {
           lastManualTimestamp = obs.timestamp;
         }
       }
 
       // Track optical camera observations
       if (obs.source === 'OPTICAL_RPPG') {
-        if (!lastCameraTimestamp || obs.timestamp > lastCameraTimestamp) {
+        if (lastCameraTimestamp === undefined || obs.timestamp > lastCameraTimestamp) {
           lastCameraTimestamp = obs.timestamp;
         }
       }
 
-      latestConfidence = obs.confidence;
+      latestConfidence = reading.confidence;
 
       // Accumulate confidence for recent observations (within last 30 minutes of evaluation)
-      if (evaluationTimestamp - obs.timestamp <= 30 * 60 * 1000) {
-        confidenceSum += obs.confidence;
+      if (
+        Number.isFinite(evaluationTimestamp) &&
+        evaluationTimestamp - obs.timestamp <= 30 * 60 * 1000
+      ) {
+        confidenceSum += reading.confidence;
         confidenceCount++;
       }
     }
@@ -110,26 +120,30 @@ export function extractVitalsFromObservations(
 
   // 2. Process SensorReadings (if present)
   if (hasSensors) {
-    const sortedSensors = [...sensorReadings].sort((a, b) => a.timestamp - b.timestamp);
+    const sortedSensors = [...sensorReadings]
+      .filter((sr) => sr && Number.isFinite(sr.timestamp))
+      .sort((a, b) => a.timestamp - b.timestamp);
 
     for (const sr of sortedSensors) {
       observationIds.push(sr.id);
 
       // Track optical camera readings
       if (sr.source === 'OPTICAL_RPPG' || sr.source === 'WEBCAM') {
-        if (!lastCameraTimestamp || sr.timestamp > lastCameraTimestamp) {
+        if (lastCameraTimestamp === undefined || sr.timestamp > lastCameraTimestamp) {
           lastCameraTimestamp = sr.timestamp;
         }
       }
 
-      latestConfidence = sr.confidence;
+      latestConfidence = Number.isFinite(sr.confidence) ? Math.max(0, Math.min(1, sr.confidence)) : 0.5;
 
       // Accumulate confidence for recent readings
-      if (evaluationTimestamp - sr.timestamp <= 30 * 60 * 1000) {
-        confidenceSum += sr.confidence;
+      if (
+        Number.isFinite(evaluationTimestamp) &&
+        evaluationTimestamp - sr.timestamp <= 30 * 60 * 1000
+      ) {
+        confidenceSum += latestConfidence;
         confidenceCount++;
       }
-
 
       const isLowConfidence =
         sr.measurementStatus === 'LOW_CONFIDENCE' ||
@@ -145,17 +159,17 @@ export function extractVitalsFromObservations(
       const isTrusted = qualityStatus === 'TRUSTED';
 
       if (isTrusted) {
-        if (!lastTrustedTimestamp || sr.timestamp > lastTrustedTimestamp) {
+        if (lastTrustedTimestamp === undefined || sr.timestamp > lastTrustedTimestamp) {
           lastTrustedTimestamp = sr.timestamp;
         }
       }
 
-      // Extract valid vitals
-      if (sr.heartRate !== undefined) {
+      // Extract valid vitals with strict finiteness validation
+      if (sr.heartRate !== undefined && Number.isFinite(sr.heartRate)) {
         const r: VitalReading = {
           value: sr.heartRate,
           timestamp: sr.timestamp,
-          confidence: sr.confidence,
+          confidence: latestConfidence,
           qualityStatus,
           sourceObservationId: sr.id,
         };
@@ -164,11 +178,11 @@ export function extractVitalsFromObservations(
         latest.HEART_RATE = r;
       }
 
-      if (sr.respiratoryRate !== undefined) {
+      if (sr.respiratoryRate !== undefined && Number.isFinite(sr.respiratoryRate)) {
         const r: VitalReading = {
           value: sr.respiratoryRate,
           timestamp: sr.timestamp,
-          confidence: sr.confidence,
+          confidence: latestConfidence,
           qualityStatus,
           sourceObservationId: sr.id,
         };
@@ -177,11 +191,11 @@ export function extractVitalsFromObservations(
         latest.RESPIRATORY_RATE = r;
       }
 
-      if (sr.systolicBP !== undefined) {
+      if (sr.systolicBP !== undefined && Number.isFinite(sr.systolicBP)) {
         const r: VitalReading = {
           value: sr.systolicBP,
           timestamp: sr.timestamp,
-          confidence: sr.confidence,
+          confidence: latestConfidence,
           qualityStatus,
           sourceObservationId: sr.id,
         };
@@ -190,11 +204,11 @@ export function extractVitalsFromObservations(
         latest.SYSTOLIC_BP = r;
       }
 
-      if (sr.diastolicBP !== undefined) {
+      if (sr.diastolicBP !== undefined && Number.isFinite(sr.diastolicBP)) {
         const r: VitalReading = {
           value: sr.diastolicBP,
           timestamp: sr.timestamp,
-          confidence: sr.confidence,
+          confidence: latestConfidence,
           qualityStatus,
           sourceObservationId: sr.id,
         };
@@ -203,11 +217,11 @@ export function extractVitalsFromObservations(
         latest.DIASTOLIC_BP = r;
       }
 
-      if (sr.temperature !== undefined) {
+      if (sr.temperature !== undefined && Number.isFinite(sr.temperature)) {
         const r: VitalReading = {
           value: sr.temperature,
           timestamp: sr.timestamp,
-          confidence: sr.confidence,
+          confidence: latestConfidence,
           qualityStatus,
           sourceObservationId: sr.id,
         };
@@ -216,11 +230,11 @@ export function extractVitalsFromObservations(
         latest.BODY_TEMPERATURE = r;
       }
 
-      if (sr.spo2 !== undefined) {
+      if (sr.spo2 !== undefined && Number.isFinite(sr.spo2)) {
         const r: VitalReading = {
           value: sr.spo2,
           timestamp: sr.timestamp,
-          confidence: sr.confidence,
+          confidence: latestConfidence,
           qualityStatus,
           sourceObservationId: sr.id,
         };
@@ -232,24 +246,32 @@ export function extractVitalsFromObservations(
   }
 
   // 3. Calculate or derive Shock Index (HR / SBP) if not explicitly present
-  if (!latest.SHOCK_INDEX && latest.HEART_RATE && latest.SYSTOLIC_BP && latest.SYSTOLIC_BP.value > 0) {
-    const siValue = Number(
-      (latest.HEART_RATE.value / latest.SYSTOLIC_BP.value).toFixed(2)
-    );
-    const siTimestamp = Math.max(latest.HEART_RATE.timestamp, latest.SYSTOLIC_BP.timestamp);
-    const siConfidence = Math.min(latest.HEART_RATE.confidence, latest.SYSTOLIC_BP.confidence);
-    const siQuality =
-      latest.HEART_RATE.qualityStatus === 'TRUSTED' && latest.SYSTOLIC_BP.qualityStatus === 'TRUSTED'
-        ? 'TRUSTED'
-        : 'DEGRADED';
+  if (
+    !latest.SHOCK_INDEX &&
+    latest.HEART_RATE &&
+    latest.SYSTOLIC_BP &&
+    Number.isFinite(latest.HEART_RATE.value) &&
+    Number.isFinite(latest.SYSTOLIC_BP.value) &&
+    latest.SYSTOLIC_BP.value > 0
+  ) {
+    const rawSi = latest.HEART_RATE.value / latest.SYSTOLIC_BP.value;
+    if (Number.isFinite(rawSi)) {
+      const siValue = Number(rawSi.toFixed(2));
+      const siTimestamp = Math.max(latest.HEART_RATE.timestamp, latest.SYSTOLIC_BP.timestamp);
+      const siConfidence = Math.min(latest.HEART_RATE.confidence, latest.SYSTOLIC_BP.confidence);
+      const siQuality =
+        latest.HEART_RATE.qualityStatus === 'TRUSTED' && latest.SYSTOLIC_BP.qualityStatus === 'TRUSTED'
+          ? 'TRUSTED'
+          : 'DEGRADED';
 
-    latest.SHOCK_INDEX = {
-      value: siValue,
-      timestamp: siTimestamp,
-      confidence: siConfidence,
-      qualityStatus: siQuality,
-      sourceObservationId: `${latest.HEART_RATE.sourceObservationId}_${latest.SYSTOLIC_BP.sourceObservationId}`,
-    };
+      latest.SHOCK_INDEX = {
+        value: siValue,
+        timestamp: siTimestamp,
+        confidence: siConfidence,
+        qualityStatus: siQuality,
+        sourceObservationId: `${latest.HEART_RATE.sourceObservationId}_${latest.SYSTOLIC_BP.sourceObservationId}`,
+      };
+    }
   }
 
   // Overall confidence percentage (0 to 100)

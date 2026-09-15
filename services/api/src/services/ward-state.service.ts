@@ -24,6 +24,8 @@ import {
   ClinicalActionRepository,
   AcknowledgementRepository,
   AttentionRepository,
+  IdempotencyRepository,
+  closeDatabaseConnection,
 } from '@aegispulse/persistence';
 import { NotFoundError } from '../middleware/errors';
 
@@ -45,6 +47,7 @@ export class WardStateService {
   private actionRepo: ClinicalActionRepository;
   private ackRepo: AcknowledgementRepository;
   private attentionRepo: AttentionRepository;
+  private idempotencyRepo: IdempotencyRepository;
   private simulator: WardSimulator;
 
   constructor(dbPath?: string) {
@@ -60,6 +63,18 @@ export class WardStateService {
     this.actionRepo = new ClinicalActionRepository(this.db);
     this.ackRepo = new AcknowledgementRepository(this.db);
     this.attentionRepo = new AttentionRepository(this.db);
+    this.idempotencyRepo = new IdempotencyRepository(this.db);
+  }
+
+  public getDb(): DatabaseSync {
+    return this.db;
+  }
+
+
+  private isDisrupted: boolean = false;
+
+  public simulateDatabaseDisruption(disrupted: boolean): void {
+    this.isDisrupted = disrupted;
   }
 
   public getDatabase(): DatabaseSync {
@@ -67,6 +82,9 @@ export class WardStateService {
   }
 
   public isDatabaseHealthy(): boolean {
+    if (this.isDisrupted) {
+      return false;
+    }
     try {
       const row = this.db.prepare('PRAGMA integrity_check;').get() as { integrity_check?: string } | undefined;
       const msg = (row && (row as any).integrity_check) || 'ok';
@@ -76,12 +94,20 @@ export class WardStateService {
     }
   }
 
+  private checkDbActive(): void {
+    if (this.isDisrupted) {
+      throw new Error('database is closed or unavailable');
+    }
+  }
+
   // Wards
   public getWards(): Ward[] {
+    this.checkDbActive();
     return this.wardRepo.getWards();
   }
 
   public getWard(wardId: string): Ward {
+    this.checkDbActive();
     const targetId = (wardId === 'WARD-4B' || wardId === 'WARD-A') ? 'WARD-A' : wardId;
     const ward = this.wardRepo.getWard(targetId) || this.wardRepo.getWard(wardId);
     if (!ward) throw new NotFoundError(`Ward with ID '${wardId}' not found.`);
@@ -90,10 +116,12 @@ export class WardStateService {
 
   // Beds
   public getBeds(wardId?: string, status?: string): Bed[] {
+    this.checkDbActive();
     return this.wardRepo.getBeds(wardId, status);
   }
 
   public getBed(bedId: string): Bed {
+    this.checkDbActive();
     const bed = this.wardRepo.getBed(bedId);
     if (!bed) throw new NotFoundError(`Bed with ID '${bedId}' not found.`);
     return bed;
@@ -101,10 +129,12 @@ export class WardStateService {
 
   // Patients
   public getPatients(wardId?: string, _category?: string): Patient[] {
+    this.checkDbActive();
     return this.patientRepo.getPatients(wardId);
   }
 
   public getPatient(patientId: string): Patient {
+    this.checkDbActive();
     const patient = this.patientRepo.getPatient(patientId);
     if (!patient) throw new NotFoundError(`Patient with ID '${patientId}' not found.`);
     return patient;
@@ -198,6 +228,17 @@ export class WardStateService {
   public getAttentionRepo(): AttentionRepository {
     return this.attentionRepo;
   }
+
+  // Idempotency
+  public getIdempotencyRepo(): IdempotencyRepository {
+    return this.idempotencyRepo;
+  }
+
+  // Graceful connection cleanup
+  public close(): void {
+    closeDatabaseConnection(this.db);
+  }
+
 
   // Simulation Controls
   public getSimulator(): WardSimulator {

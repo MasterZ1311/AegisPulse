@@ -16,8 +16,9 @@ import { requireRole, requirePatientWardAccess } from '../../middleware/rbac';
 
 export const clinicalActionsRouter = Router({ mergeParams: true });
 
-clinicalActionsRouter.use(authenticate({ optional: true }));
+clinicalActionsRouter.use(authenticate());
 clinicalActionsRouter.use(requirePatientWardAccess());
+
 
 const CreateActionSchema = z
   .object({

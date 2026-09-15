@@ -15,10 +15,10 @@ COPY packages/clinical/package.json packages/clinical/
 COPY packages/signal/package.json packages/signal/
 COPY packages/simulation/package.json packages/simulation/
 COPY packages/persistence/package.json packages/persistence/
-COPY packages/rppg/package.json packages/rppg/
+COPY packages/config/package.json packages/config/
+COPY research/rppg/package.json research/rppg/
 COPY services/api/package.json services/api/
 COPY apps/web/package.json apps/web/
-COPY research/package.json research/
 
 RUN npm ci
 

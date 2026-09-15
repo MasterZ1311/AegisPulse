@@ -36,9 +36,8 @@ export function requireRole(allowedRoles: UserRole[]) {
  */
 export function requireWardAccess(wardIdExtractor?: (req: Request) => string | undefined) {
   return (req: Request, _res: Response, next: NextFunction): void => {
-    // If user is not authenticated (optional auth mode), skip scoping
     if (!req.user) {
-      return next();
+      return next(new UnauthorizedError('Authentication required to verify ward clinical jurisdiction.'));
     }
 
     // Admins and System services have full hospital-wide jurisdiction
@@ -76,9 +75,8 @@ export function requireWardAccess(wardIdExtractor?: (req: Request) => string | u
  */
 export function requirePatientWardAccess() {
   return (req: Request, _res: Response, next: NextFunction): void => {
-    // If user is not authenticated (optional auth mode), skip scoping
     if (!req.user) {
-      return next();
+      return next(new UnauthorizedError('Authentication required to verify patient clinical jurisdiction.'));
     }
 
     // Admins and System services have full jurisdiction
@@ -111,3 +109,4 @@ export function requirePatientWardAccess() {
     }
   };
 }
+

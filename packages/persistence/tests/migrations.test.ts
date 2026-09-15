@@ -17,10 +17,11 @@ describe('Database Migration Engine', () => {
     expect(newlyApplied.length).toBe(MIGRATIONS.length);
     expect(newlyApplied[0].name).toBe('001_initial_schema');
     expect(newlyApplied[1].name).toBe('002_indexes');
+    expect(newlyApplied[2].name).toBe('003_constraints_and_hardening');
 
     const applied = getAppliedMigrations(db);
     expect(applied.length).toBe(MIGRATIONS.length);
-    expect(applied.map((m) => m.version)).toEqual([1, 2]);
+    expect(applied.map((m) => m.version)).toEqual([1, 2, 3]);
 
     // Verify tables exist
     const expectedTables = [
@@ -37,6 +38,7 @@ describe('Database Migration Engine', () => {
       'clinical_actions',
       'users',
       'audit_events',
+      'idempotency_keys',
     ];
 
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table';").all() as any[];

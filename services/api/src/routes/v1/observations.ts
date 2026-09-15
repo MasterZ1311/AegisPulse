@@ -16,7 +16,7 @@ import { createRateLimiter } from '../../middleware/rate-limiter';
 
 export const observationsRouter = Router({ mergeParams: true });
 
-observationsRouter.use(authenticate({ optional: true }));
+observationsRouter.use(authenticate());
 
 const ingestionRateLimiter = createRateLimiter({
   windowMs: 60 * 1000,
@@ -55,62 +55,104 @@ observationsRouter.post(
   requirePatientWardAccess(),
   ingestionRateLimiter,
   validateRequest({ body: IngestObservationSchema }),
-  (req: Request, res: Response) => {
-    const patientId = String(req.params.patientId);
-    const patient = wardStateService.getPatient(patientId);
+  (req: Request, res: Response, next: import('express').NextFunction) => {
+    try {
+      const patientId = String(req.params.patientId);
+      const patient = wardStateService.getPatient(patientId);
 
-    const body = req.body as z.infer<typeof IngestObservationSchema>;
-    const now = Date.now();
-    const timestamp = body.timestamp ?? now;
+      const idempotencyKey = (req.headers['idempotency-key'] as string) || (req.headers['x-idempotency-key'] as string);
+      if (idempotencyKey && wardStateService.getIdempotencyRepo().hasKey(idempotencyKey)) {
+        res.status(409).json({
+          type: 'https://aegispulse.internal/errors/DUPLICATE_ENTITY',
+          title: 'Duplicate Event',
+          status: 409,
+          detail: `Event with idempotency key '${idempotencyKey}' has already been processed and ingested.`,
+          code: 'DUPLICATE_ENTITY',
+        });
+        return;
+      }
 
-    // Clock skew / timestamp attack protection: reject timestamps > 5 min in future
-    if (timestamp > now + 300000) {
-      res.status(400).json({
-        statusCode: 400,
-        error: 'Invalid Timestamp',
-        message: 'Observation timestamp cannot be in the future (max allowable clock skew is 5 minutes).',
+      const body = req.body as z.infer<typeof IngestObservationSchema>;
+      const now = Date.now();
+      const timestamp = body.timestamp ?? now;
+
+      // Clock skew / timestamp attack protection: reject timestamps > 5 min in future
+      if (timestamp > now + 300000) {
+        res.status(400).json({
+          statusCode: 400,
+          error: 'Invalid Timestamp',
+          message: 'Observation timestamp cannot be in the future (max allowable clock skew is 5 minutes).',
+        });
+        return;
+      }
+
+      // Historical timestamp bounds: reject timestamps older than 7 days
+      if (timestamp < now - 7 * 86400000) {
+        res.status(400).json({
+          statusCode: 400,
+          error: 'Invalid Timestamp',
+          message: 'Observation timestamp is too far in the past (maximum allowable data age is 7 days).',
+        });
+        return;
+      }
+
+      // Authoritative Shock Index: Server recomputes authoritative value and NEVER trusts client-provided derived score
+      let shockIndex: number | undefined = undefined;
+      if (body.heartRate !== undefined && body.systolicBP !== undefined && body.systolicBP > 0) {
+        shockIndex = Number((body.heartRate / body.systolicBP).toFixed(2));
+      }
+
+      // Stale telemetry handling: If data is older than 24h, mark quality as degraded
+      const isStale = now - timestamp > 24 * 3600000;
+      const qualityState = isStale ? 'DEGRADED' : body.qualityState;
+      const confidence = isStale ? Math.min(body.confidence, 0.5) : body.confidence;
+
+      const id = body.id ?? `obs-${patientId}-${timestamp}-${Math.random().toString(36).substring(2, 6)}`;
+
+      const observation: PhysiologicalObservation = {
+        id,
+        patientId,
+        timestamp,
+        source: body.source,
+        confidence,
+        qualityState,
+        heartRate: body.heartRate,
+        respiratoryRate: body.respiratoryRate,
+        systolicBP: body.systolicBP,
+        diastolicBP: body.diastolicBP,
+        temperature: body.temperature,
+        spo2: body.spo2,
+        shockIndex,
+      };
+
+      // Ingest into telemetry pipeline (persists, calculates APS, and broadcasts to event stream)
+      telemetryPipelineService.processObservation(observation);
+
+      // Record idempotency key if provided
+      if (idempotencyKey) {
+        wardStateService.getIdempotencyRepo().recordKey({
+          key: idempotencyKey,
+          itemType: 'OBSERVATION',
+          patientId,
+          status: 'SUCCESS',
+        });
+      }
+
+      // Sync to unified patient timeline
+      const timelineEvent = createVitalTimelineEvent(observation, {
+        bedNumber: patient.bedNumber,
+        notes: body.notes,
       });
-      return;
+      timelineService.addEvent(timelineEvent);
+      telemetryPipelineService.processTimelineEvent(timelineEvent, patient.wardId);
+
+      res.status(201).json({
+        message: 'Physiological observation successfully ingested and indexed into timeline.',
+        data: observation,
+      });
+    } catch (err) {
+      next(err);
     }
-
-    const id = body.id ?? `obs-${patientId}-${timestamp}-${Math.random().toString(36).substring(2, 6)}`;
-
-    // Derive shock index if HR and SBP present and not explicitly provided
-    let shockIndex = body.shockIndex;
-    if (shockIndex === undefined && body.heartRate && body.systolicBP) {
-      shockIndex = Number((body.heartRate / body.systolicBP).toFixed(2));
-    }
-
-    const observation: PhysiologicalObservation = {
-      id,
-      patientId,
-      timestamp,
-      source: body.source,
-      confidence: body.confidence,
-      qualityState: body.qualityState,
-      heartRate: body.heartRate,
-      respiratoryRate: body.respiratoryRate,
-      systolicBP: body.systolicBP,
-      diastolicBP: body.diastolicBP,
-      temperature: body.temperature,
-      spo2: body.spo2,
-      shockIndex,
-    };
-
-    // Ingest into telemetry pipeline (persists, calculates APS, and broadcasts to event stream)
-    telemetryPipelineService.processObservation(observation);
-
-    // Sync to unified patient timeline
-    const timelineEvent = createVitalTimelineEvent(observation, {
-      bedNumber: patient.bedNumber,
-      notes: body.notes,
-    });
-    timelineService.addEvent(timelineEvent);
-    telemetryPipelineService.processTimelineEvent(timelineEvent, patient.wardId);
-
-    res.status(201).json({
-      message: 'Physiological observation successfully ingested and indexed into timeline.',
-      data: observation,
-    });
   }
 );
+
