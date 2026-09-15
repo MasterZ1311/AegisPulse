@@ -9,14 +9,16 @@ import {
   ChevronUp,
   ChevronDown,
   ArrowRight,
-  ShieldAlert,
 } from 'lucide-react';
 import {
   demoScenarioController,
   type DemoStepMetadata,
   ORDERED_DEMO_STEPS,
+  DEMO_STEPS_METADATA,
 } from '../services/demo-scenario-controller';
 import type { WardPatientRadarState } from '../types/radar';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 interface DemoScrubberProps {
   onApplyStep: (patients: WardPatientRadarState[], targetPatientId?: string) => void;
@@ -27,7 +29,7 @@ export const DemoScrubber: React.FC<DemoScrubberProps> = ({ onApplyStep }) => {
     demoScenarioController.getCurrentStep()
   );
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [isExpanded, setIsExpanded] = useState<boolean>(true);
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
   // Auto-play timer
   useEffect(() => {
@@ -76,188 +78,134 @@ export const DemoScrubber: React.FC<DemoScrubberProps> = ({ onApplyStep }) => {
   };
 
   return (
-    <div className="w-full max-w-[1720px] mx-auto px-3 sm:px-4 lg:px-6 mb-4">
-      <div className="rounded-2xl border border-cyan-900/60 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 shadow-xl shadow-cyan-950/20 overflow-hidden font-sans">
-        {/* Top Control Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b border-slate-800 bg-slate-950/70">
+    <div className="w-full max-w-[1780px] mx-auto px-4 sm:px-8 mb-4">
+      <Card className="neu-flat p-3 sm:p-4 transition-all duration-200">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Step indicator and title */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-950 text-cyan-400 border border-cyan-800/50 text-xs font-mono font-bold tracking-wide">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl neu-inset-sm text-sky-600 dark:text-sky-400 font-mono text-xs font-bold tracking-wide">
               <Sparkles className="h-3.5 w-3.5" />
-              FLAGSHIP DEMO CONTROLLER
+              DEMO SCRUBBER
             </div>
-            <span className="text-xs font-bold text-white hidden sm:inline">
-              Step {currentStep.index} of {ORDERED_DEMO_STEPS.length - 1}:
-            </span>
-            <span className="text-xs text-cyan-300 font-semibold">{currentStep.title}</span>
+
+            <div className="flex items-baseline gap-2">
+              <span className="text-xs font-mono font-bold text-foreground">
+                Step {currentStep.index}/{ORDERED_DEMO_STEPS.length - 1}:
+              </span>
+              <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold font-mono">
+                {currentStep.title}
+              </span>
+            </div>
           </div>
 
-          {/* Controls: Reset, Prev, Play, Next */}
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
+          {/* Stepper Timeline Pills */}
+          <div className="hidden lg:flex items-center gap-1.5 neu-inset rounded-xl p-1 overflow-x-auto">
+            {ORDERED_DEMO_STEPS.map((stepKey, idx) => {
+              const meta = DEMO_STEPS_METADATA[stepKey];
+              const isActive = meta.index === currentStep.index;
+
+              return (
+                <button
+                  key={meta.stepId}
+                  type="button"
+                  onClick={() => handleJump(idx)}
+                  className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-sky-600 text-white font-bold scale-105 shadow-md shadow-sky-600/30'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-foreground'
+                  }`}
+                  title={meta.title}
+                >
+                  #{meta.index} {meta.targetBed}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Controls: Reset, Prev, Play, Next, Info Toggle */}
+          <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleReset}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono transition-colors"
+              className="h-8 text-xs font-mono gap-1"
               title="Reset Demo to Baseline"
             >
               <RotateCcw className="h-3 w-3" />
-              <span>Reset</span>
-            </button>
+              <span className="hidden sm:inline">Reset</span>
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handlePrev}
               disabled={currentStep.index === 0}
-              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-300 hover:text-white text-xs transition-colors"
+              className="h-8 w-8 p-0"
               title="Previous Event"
             >
               <ChevronLeft className="h-4 w-4" />
-            </button>
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              variant={isPlaying ? 'amber' : 'default'}
+              size="sm"
               onClick={() => setIsPlaying(!isPlaying)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold transition-colors ${
-                isPlaying
-                  ? 'bg-amber-600 hover:bg-amber-500 text-white'
-                  : 'bg-cyan-600 hover:bg-cyan-500 text-white'
-              }`}
-              title={isPlaying ? 'Pause Auto-Play' : 'Auto-Play Flagship Scenario'}
+              className="h-8 px-3 text-xs font-mono gap-1 font-bold"
             >
-              {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-              <span>{isPlaying ? 'Pause' : 'Auto-Play'}</span>
-            </button>
+              {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+              <span>{isPlaying ? 'Pause' : 'Auto'}</span>
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleNext}
               disabled={currentStep.index === ORDERED_DEMO_STEPS.length - 1}
-              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-300 hover:text-white text-xs transition-colors"
+              className="h-8 w-8 p-0"
               title="Next Event"
             >
               <ChevronRight className="h-4 w-4" />
-            </button>
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1 ml-1 rounded-lg text-slate-400 hover:text-white transition-colors"
-              title={isExpanded ? 'Collapse Scenario Cards' : 'Expand Scenario Cards'}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              title={isExpanded ? 'Hide Narrative' : 'Show Narrative'}
             >
               {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </button>
+            </Button>
           </div>
         </div>
 
-        {/* Step Jump Pills */}
-        <div className="flex items-center gap-1.5 px-4 py-2 bg-slate-950/40 overflow-x-auto border-b border-slate-800/60 text-xs font-mono">
-          {ORDERED_DEMO_STEPS.map((stepKey, idx) => {
-            const isActive = currentStep.index === idx;
-            return (
-              <button
-                key={stepKey}
-                type="button"
-                onClick={() => handleJump(idx)}
-                className={`px-2.5 py-1 rounded-md transition-all whitespace-nowrap ${
-                  isActive
-                    ? 'bg-cyan-500 text-black font-bold shadow-md shadow-cyan-500/20'
-                    : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
-                }`}
-              >
-                {idx === 0 ? '0. Baseline' : `Event ${idx}`}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Expandable BEFORE / CHANGE / WHY / PRIORITY / ACTION / OUTCOME Cards */}
+        {/* Collapsible Clinical Narrative Section */}
         {isExpanded && (
-          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 text-xs animate-fadeIn">
-            {/* 1. BEFORE */}
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
-                  1. Before
+          <div className="mt-3 pt-3 border-t border-border/40 grid grid-cols-1 md:grid-cols-12 gap-3 text-xs animate-in fade-in duration-200">
+            <div className="md:col-span-8 flex flex-col justify-center space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono uppercase font-bold text-sky-600 dark:text-sky-400">
+                  Event Narrative:
                 </span>
-                <p className="text-slate-300 mt-1 font-medium leading-relaxed">
-                  {currentStep.beforeState}
-                </p>
+                <span className="text-foreground font-semibold">{currentStep.changeDescription}</span>
               </div>
-              <div className="mt-2 text-[10px] font-mono text-slate-500 flex items-center gap-1">
-                Target: <span className="text-cyan-400 font-semibold">{currentStep.targetBed}</span>
-              </div>
+              <p className="text-muted-foreground text-[11px] leading-relaxed">
+                <span className="font-mono text-muted-foreground/80">Mechanism:</span> {currentStep.whyExplanation}
+              </p>
             </div>
 
-            {/* 2. CHANGE */}
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
-                  2. Change
+            <div className="md:col-span-4 flex items-center justify-end gap-2 neu-inset-sm p-2 rounded-xl">
+              <div className="text-right">
+                <span className="text-[10px] font-mono text-muted-foreground uppercase block">Focal Patient</span>
+                <span className="text-xs font-bold font-mono text-sky-600 dark:text-sky-400">
+                  {currentStep.targetPatientId === 'ALL' ? 'Entire Ward (6 Beds)' : 'Bed 403 (Eleanor Vance)'}
                 </span>
-                <p className="text-slate-200 mt-1 font-medium leading-relaxed">
-                  {currentStep.changeDescription}
-                </p>
               </div>
-              <div className="mt-2 text-[10px] font-mono text-amber-400/80 flex items-center gap-1">
-                <ArrowRight className="h-3 w-3" /> Dynamic Input
-              </div>
-            </div>
-
-            {/* 3. WHY */}
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400">
-                  3. Why (Engine Logic)
-                </span>
-                <p className="text-slate-300 mt-1 font-medium leading-relaxed">
-                  {currentStep.whyExplanation}
-                </p>
-              </div>
-              <div className="mt-2 text-[10px] font-mono text-cyan-400/80">Deterministic Rules</div>
-            </div>
-
-            {/* 4. PRIORITY */}
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-rose-400">
-                  4. Priority Outcome
-                </span>
-                <p className="text-white mt-1 font-semibold leading-relaxed">
-                  {currentStep.priorityOutcome}
-                </p>
-              </div>
-              <div className="mt-2 text-[10px] font-mono text-rose-400 flex items-center gap-1">
-                <ShieldAlert className="h-3 w-3" /> Queue Dynamic
-              </div>
-            </div>
-
-            {/* 5. ACTION */}
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
-                  5. Clinician Action
-                </span>
-                <p className="text-emerald-300 mt-1 font-medium leading-relaxed">
-                  {currentStep.recommendedAction}
-                </p>
-              </div>
-              <div className="mt-2 text-[10px] font-mono text-emerald-500">Human-In-The-Loop</div>
-            </div>
-
-            {/* 6. OUTCOME */}
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400">
-                  6. Clinical Value
-                </span>
-                <p className="text-slate-300 mt-1 font-medium leading-relaxed">
-                  {currentStep.subtitle}
-                </p>
-              </div>
-              <div className="mt-2 text-[10px] font-mono text-purple-400">Zero Randomness</div>
+              <ArrowRight className="h-4 w-4 text-sky-600 dark:text-sky-400" />
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };

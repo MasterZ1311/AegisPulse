@@ -8,11 +8,13 @@ import {
   offlineSyncQueue,
   type WardConnectivityState,
 } from './services/offline-sync-queue';
-import { WardHeader } from './components/WardHeader';
-import { AttentionQueue } from './components/AttentionQueue';
-import { PatientDetailPanel } from './components/PatientDetailPanel';
+import { Navigation, type AppPage } from './components/Navigation';
+import { WardRadarPage } from './components/pages/WardRadarPage';
+import { PatientWorkstationPage } from './components/pages/PatientWorkstationPage';
+import { WardAnalyticsPage } from './components/pages/WardAnalyticsPage';
+import { WardAuditPage } from './components/pages/WardAuditPage';
+import { SimulationPage } from './components/pages/SimulationPage';
 import { DiagnosticsModal } from './components/DiagnosticsModal';
-import { DemoScrubber } from './components/DemoScrubber';
 import { INITIAL_WARD_PATIENTS } from './data/ward-simulated-data';
 import type { WardPatientRadarState } from './types/radar';
 
@@ -29,9 +31,88 @@ export default function App() {
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState<boolean>(false);
   const [_recentEvents, setRecentEvents] = useState<TelemetryStreamEnvelope[]>([]);
   const [_health, setHealth] = useState<HealthCheckResponse | null>(null);
-  const [mobileView, setMobileView] = useState<'QUEUE' | 'DETAIL'>('QUEUE');
 
-  // Derive counts for ward header
+  // Active Multi-Page state with URL hash synchronization
+  const [activePage, setActivePage] = useState<AppPage>(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash.toLowerCase().replace('#', '');
+      if (hash.startsWith('patient')) return 'PATIENT';
+      if (hash === 'analytics') return 'ANALYTICS';
+      if (hash === 'audit') return 'AUDIT';
+      if (hash === 'simulation') return 'SIMULATION';
+    }
+    return 'RADAR';
+  });
+
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('aegispulse-theme') as 'dark' | 'light' | null;
+      if (saved) return saved;
+    }
+    return 'dark';
+  });
+
+  // Synchronize URL hash with activePage and browser history
+  const navigateTo = useCallback((page: AppPage, patientId?: string) => {
+    setActivePage(page);
+    if (page === 'PATIENT') {
+      const pId = patientId || selectedPatientId;
+      window.location.hash = `#patient/${pId}`;
+    } else if (page === 'RADAR') {
+      window.location.hash = '#radar';
+    } else if (page === 'ANALYTICS') {
+      window.location.hash = '#analytics';
+    } else if (page === 'AUDIT') {
+      window.location.hash = '#audit';
+    } else if (page === 'SIMULATION') {
+      window.location.hash = '#simulation';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [selectedPatientId]);
+
+  // Listen to browser Back/Forward hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.toLowerCase().replace('#', '');
+      if (hash.startsWith('patient')) {
+        setActivePage('PATIENT');
+        const parts = hash.split('/');
+        if (parts[1]) {
+          const matched = patients.find((p) => p.patientId.toLowerCase() === parts[1].toLowerCase());
+          if (matched) setSelectedPatientId(matched.patientId);
+        }
+      } else if (hash === 'analytics') {
+        setActivePage('ANALYTICS');
+      } else if (hash === 'audit') {
+        setActivePage('AUDIT');
+      } else if (hash === 'simulation') {
+        setActivePage('SIMULATION');
+      } else {
+        setActivePage('RADAR');
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [patients]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('aegispulse-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  }, []);
+
+  // Derive counts for ward navigation
   const criticalCount = patients.filter((p) => p.category === 'CRITICAL_REVIEW').length;
   const evaluateCount = patients.filter((p) => p.category === 'EVALUATE').length;
   const watchCount = patients.filter((p) => p.category === 'WATCH').length;
@@ -368,6 +449,14 @@ export default function App() {
   // 3. Accessible Keyboard Navigation Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts if user is typing in an input or textarea
+      if (
+        document.activeElement &&
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)
+      ) {
+        return;
+      }
+
       if (e.key === 'ArrowDown' || e.key === 'j') {
         e.preventDefault();
         const nextIdx = (focusedPatientIndex + 1) % sortedPatients.length;
@@ -387,42 +476,47 @@ export default function App() {
         if (sortedPatients[bedIndex]) {
           setFocusedPatientIndex(bedIndex);
           setSelectedPatientId(sortedPatients[bedIndex].patientId);
-          setMobileView('DETAIL');
+          navigateTo('PATIENT', sortedPatients[bedIndex].patientId);
         }
       } else if (e.key === 'a' || e.key === 'A') {
-        const target = sortedPatients[focusedPatientIndex];
+        const target = sortedPatients[focusedPatientIndex] || selectedPatient;
         if (target) handleAcknowledge(target.patientId);
       } else if (e.key === 'd' || e.key === 'D') {
         setIsDiagnosticsOpen((prev) => !prev);
+      } else if (e.key === 'Escape' && activePage === 'PATIENT') {
+        navigateTo('RADAR');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [focusedPatientIndex, sortedPatients, handleAcknowledge]);
+  }, [focusedPatientIndex, sortedPatients, selectedPatient, handleAcknowledge, activePage, navigateTo]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-cyan-500 selection:text-black">
-      {/* Top Command Center Header */}
-      <WardHeader
+    <div className="min-h-screen bg-background text-foreground flex flex-col antialiased transition-colors duration-200">
+      {/* 1. Master Application Navigation Bar */}
+      <Navigation
+        activePage={activePage}
+        onNavigate={(page) => navigateTo(page)}
         wardName="Ward 4B — Acute Surgical & Step-Down"
         shiftLead="Nurse Rachel Hayes, RN"
         shiftHours="Day Shift 07:00 - 19:00"
-        streamStatus={streamStatus}
-        streamSeq={streamSeq}
-        connectivityState={connectivityState}
-        pendingSyncCount={pendingSyncCount}
+        selectedBedNumber={selectedPatient?.bedNumber}
         totalPatients={patients.length}
         criticalCount={criticalCount}
         evaluateCount={evaluateCount}
         watchCount={watchCount}
         lowCount={lowCount}
-        activeScenario={activeScenario}
-        onScenarioChange={handleScenarioChange}
+        streamStatus={streamStatus}
+        streamSeq={streamSeq}
+        connectivityState={connectivityState}
+        pendingSyncCount={pendingSyncCount}
         onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
-      {/* Diagnostics Modal */}
+      {/* 2. Diagnostics Telemetry Modal */}
       <DiagnosticsModal
         isOpen={isDiagnosticsOpen}
         onClose={() => setIsDiagnosticsOpen(false)}
@@ -431,82 +525,89 @@ export default function App() {
         pendingSyncCount={pendingSyncCount}
       />
 
-      {/* Flagship Deterministic Demo Scrubber */}
-      <DemoScrubber
-        onApplyStep={(updatedPatients, targetPatientId) => {
-          setPatients(updatedPatients);
-          if (targetPatientId) {
-            setSelectedPatientId(targetPatientId);
-            const idx = updatedPatients.findIndex((p) => p.patientId === targetPatientId);
-            if (idx !== -1) setFocusedPatientIndex(idx);
-          }
-        }}
-      />
+      {/* 3. Main Multi-Page Content Area */}
+      <main className="flex-1 w-full max-w-[1780px] mx-auto p-4 sm:p-6 lg:p-8">
+        {activePage === 'RADAR' && (
+          <WardRadarPage
+            patients={patients}
+            selectedPatientId={selectedPatientId}
+            onSelectPatient={(p) => {
+              setSelectedPatientId(p.patientId);
+              const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+              if (idx !== -1) setFocusedPatientIndex(idx);
+            }}
+            onAcknowledgePatient={handleAcknowledge}
+            onNavigateToPatient={(p) => {
+              setSelectedPatientId(p.patientId);
+              const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+              if (idx !== -1) setFocusedPatientIndex(idx);
+              navigateTo('PATIENT', p.patientId);
+            }}
+          />
+        )}
 
-      {/* Mobile/Tablet View Switcher (< lg screens) */}
-      <div className="lg:hidden px-4 pt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={() => setMobileView('QUEUE')}
-          className={`flex-1 py-2 rounded-lg text-xs font-bold font-mono transition-colors ${
-            mobileView === 'QUEUE'
-              ? 'bg-cyan-600 text-white shadow'
-              : 'bg-slate-900 text-slate-400 border border-slate-800'
-          }`}
-        >
-          Attention Queue ({patients.length} Beds)
-        </button>
-        <button
-          type="button"
-          onClick={() => setMobileView('DETAIL')}
-          className={`flex-1 py-2 rounded-lg text-xs font-bold font-mono transition-colors ${
-            mobileView === 'DETAIL'
-              ? 'bg-cyan-600 text-white shadow'
-              : 'bg-slate-900 text-slate-400 border border-slate-800'
-          }`}
-        >
-          Bed {selectedPatient?.bedNumber} Detail
-        </button>
-      </div>
+        {activePage === 'PATIENT' && (
+          <PatientWorkstationPage
+            patients={patients}
+            selectedPatient={selectedPatient}
+            onSelectPatient={(p) => {
+              setSelectedPatientId(p.patientId);
+              const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+              if (idx !== -1) setFocusedPatientIndex(idx);
+              navigateTo('PATIENT', p.patientId);
+            }}
+            onBackToRadar={() => navigateTo('RADAR')}
+            onAcknowledge={handleAcknowledge}
+            onLogAssessment={handleLogAssessment}
+            onEscalate={handleEscalate}
+          />
+        )}
 
-      {/* Main Operational Command Center Grid */}
-      <main className="flex-1 w-full max-w-[1720px] mx-auto p-3 sm:p-4 lg:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* Left Column: Primary Attention Queue */}
-          <div
-            className={`lg:col-span-6 xl:col-span-6 space-y-4 ${
-              mobileView === 'DETAIL' ? 'hidden lg:block' : 'block'
-            }`}
-          >
-            <AttentionQueue
-              patients={patients}
-              selectedPatientId={selectedPatientId}
-              focusedPatientIndex={focusedPatientIndex}
-              onSelectPatient={(p) => {
-                setSelectedPatientId(p.patientId);
-                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+        {activePage === 'ANALYTICS' && (
+          <WardAnalyticsPage
+            patients={patients}
+            onNavigateToPatient={(p) => {
+              setSelectedPatientId(p.patientId);
+              const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+              if (idx !== -1) setFocusedPatientIndex(idx);
+              navigateTo('PATIENT', p.patientId);
+            }}
+          />
+        )}
+
+        {activePage === 'AUDIT' && (
+          <WardAuditPage
+            patients={patients}
+            onNavigateToPatient={(p) => {
+              setSelectedPatientId(p.patientId);
+              const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+              if (idx !== -1) setFocusedPatientIndex(idx);
+              navigateTo('PATIENT', p.patientId);
+            }}
+          />
+        )}
+
+        {activePage === 'SIMULATION' && (
+          <SimulationPage
+            activeScenario={activeScenario}
+            onScenarioChange={handleScenarioChange}
+            onApplyStep={(updatedPatients, targetPatientId) => {
+              setPatients(updatedPatients);
+              if (targetPatientId) {
+                setSelectedPatientId(targetPatientId);
+                const idx = updatedPatients.findIndex((p) => p.patientId === targetPatientId);
                 if (idx !== -1) setFocusedPatientIndex(idx);
-                setMobileView('DETAIL');
-              }}
-              onAcknowledgePatient={handleAcknowledge}
-            />
-          </div>
-
-          {/* Right Column: Patient Detail Panel (Docked & Synchronized) */}
-          <div
-            className={`lg:col-span-6 xl:col-span-6 lg:sticky lg:top-20 lg:h-[calc(100vh-100px)] ${
-              mobileView === 'QUEUE' ? 'hidden lg:block' : 'block'
-            }`}
-          >
-            <PatientDetailPanel
-              patient={selectedPatient}
-              isEmbedded={true}
-              onAcknowledge={handleAcknowledge}
-              onLogAssessment={handleLogAssessment}
-              onEscalate={handleEscalate}
-            />
-          </div>
-        </div>
+              }
+            }}
+            onNavigateToPatient={(p) => {
+              setSelectedPatientId(p.patientId);
+              const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+              if (idx !== -1) setFocusedPatientIndex(idx);
+              navigateTo('PATIENT', p.patientId);
+            }}
+            patients={patients}
+          />
+        )}
       </main>
     </div>
   );

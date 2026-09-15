@@ -1,8 +1,8 @@
 {
   "experimentId": "EXP-CLIN-005",
   "name": "Longitudinal Deterioration Early Warning Lead Time & Alarm Suppression",
-  "timestamp": "2026-09-14T15:56:20.786Z",
-  "executionDurationMs": 34,
+  "timestamp": "2026-09-15T05:02:46.531Z",
+  "executionDurationMs": 13,
   "dataset": {
     "slug": "mimic-iv",
     "name": "MIMIC-IV (Medical Information Mart for Intensive Care IV)",
