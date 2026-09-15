@@ -23,6 +23,7 @@ interface PatientWorkstationPageProps {
     patientId: string,
     vitals: { heartRate: number; respiratoryRate: number; confidence: number }
   ) => void;
+  onOpenCamera?: () => void;
 }
 
 export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
@@ -34,6 +35,7 @@ export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
   onLogAssessment,
   onEscalate,
   onSpotCheckComplete,
+  onOpenCamera,
 }) => {
   if (!selectedPatient) {
     return (
@@ -158,6 +160,7 @@ export const PatientWorkstationPage: React.FC<PatientWorkstationPageProps> = ({
           onLogAssessment={onLogAssessment}
           onEscalate={onEscalate}
           onSpotCheckComplete={onSpotCheckComplete}
+          onOpenCamera={onOpenCamera}
         />
       </div>
     </div>

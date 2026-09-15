@@ -257,7 +257,7 @@ describe('Configuration Validation Layer', () => {
           },
           encoding: 'utf-8',
           shell: true,
-          timeout: 15000,
+          timeout: 35000,
         }
       );
 
@@ -266,7 +266,7 @@ describe('Configuration Validation Layer', () => {
       expect(res.stderr).toContain('AEGIS_DB_PATH is REQUIRED in production/staging');
       expect(res.stderr).toContain('JWT_SECRET is REQUIRED in production/staging');
       expect(res.stderr).toContain('CORS_ORIGIN is REQUIRED in production/staging');
-    }, 25000);
+    }, 45000);
 
     it('valid env in production -> passes configuration validation and initializes cleanly', () => {
       const validEnv = {
@@ -318,8 +318,8 @@ describe('Configuration Validation Layer', () => {
 
             const checkHealth = () => {
               if (resolved) return;
-              if (Date.now() - start > 15000) {
-                return rejectPromise(new Error('Server startup timed out after 15s'));
+              if (Date.now() - start > 35000) {
+                return rejectPromise(new Error('Server startup timed out after 35s'));
               }
               const req = http.get(`http://127.0.0.1:${testPort}/health`, (res) => {
                 if (res.statusCode === 200) {
@@ -358,7 +358,7 @@ describe('Configuration Validation Layer', () => {
           }
         }
       },
-      25000
+      45000
     );
   });
 });

@@ -63,7 +63,7 @@ export class AegisPulseStreamClient {
 
   constructor(options: StreamClientOptions = {}) {
     const defaultUrl =
-      typeof window !== 'undefined'
+      typeof window !== 'undefined' && window.location
         ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v1/stream/ws`
         : 'ws://localhost:3001/api/v1/stream/ws';
 
@@ -241,8 +241,13 @@ export class AegisPulseStreamClient {
    * Routes an incoming envelope with sequence gap detection and out-of-order resequencing.
    */
   private routeEnvelope(envelope: TelemetryStreamEnvelope): void {
+    if (!envelope || typeof envelope !== 'object' || typeof envelope.seq !== 'number' || isNaN(envelope.seq)) {
+      return;
+    }
+
+    const eventId = envelope.eventId || `${envelope.seq}-${envelope.timestamp || Date.now()}`;
     // 1. Duplicate suppression
-    if (this.seenEventIds.has(envelope.eventId)) {
+    if (this.seenEventIds.has(eventId)) {
       return;
     }
 
@@ -304,11 +309,15 @@ export class AegisPulseStreamClient {
    * Processes a single envelope with Anti-Rollback validation and dispatch.
    */
   private processEnvelope(envelope: TelemetryStreamEnvelope): void {
-    // 1. Deduplication check
-    if (this.seenEventIds.has(envelope.eventId)) {
+    if (!envelope || typeof envelope !== 'object') {
       return;
     }
-    this.recordSeenEventId(envelope.eventId);
+    const eventId = envelope.eventId || `${envelope.seq}-${envelope.timestamp || Date.now()}`;
+    // 1. Deduplication check
+    if (this.seenEventIds.has(eventId)) {
+      return;
+    }
+    this.recordSeenEventId(eventId);
 
     // 2. Anti-Rollback Protection:
     // Verify that delayed out-of-order packets cannot roll a patient's vitals or APS backwards

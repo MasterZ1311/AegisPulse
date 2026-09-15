@@ -82,6 +82,13 @@ export class OfflineSyncQueue {
     }
   }
 
+  private pushItem(item: QueuedSyncItem): void {
+    this.queue.push(item);
+    if (this.queue.length > 100) {
+      this.queue.shift();
+    }
+  }
+
   /**
    * Enqueue a manual bedside observation entered while offline
    */
@@ -114,7 +121,7 @@ export class OfflineSyncQueue {
       retryAttempts: 0,
     };
 
-    this.queue.push(item);
+    this.pushItem(item);
     this.saveToStorage();
     this.notifyListeners();
 
@@ -151,7 +158,7 @@ export class OfflineSyncQueue {
       retryAttempts: 0,
     };
 
-    this.queue.push(item);
+    this.pushItem(item);
     this.saveToStorage();
     this.notifyListeners();
 
@@ -189,7 +196,7 @@ export class OfflineSyncQueue {
       retryAttempts: 0,
     };
 
-    this.queue.push(item);
+    this.pushItem(item);
     this.saveToStorage();
     this.notifyListeners();
 

@@ -18,7 +18,7 @@ export interface GuardrailCheckResult {
  */
 const PROMPT_INJECTION_PATTERNS: Array<{ regex: RegExp; label: string }> = [
   {
-    regex: /(?:ignore|disregard|bypass|forget|override)\s+(?:all\s+)?(?:previous\s+|prior\s+|system\s+)?(?:instructions|directives|prompts|safeguards|constraints|prior\s+rules|previous\s+rules|system\s+rules)/i,
+    regex: /(?:system\s+override|(?:ignore|disregard|bypass|forget|override)\s+(?:all\s+)?(?:previous\s+|prior\s+|system\s+)?(?:clinical\s+)?(?:instructions|directives|prompts|safeguards|constraints|rules?))/i,
     label: 'Instruction Override Attempt',
   },
   {
@@ -34,7 +34,7 @@ const PROMPT_INJECTION_PATTERNS: Array<{ regex: RegExp; label: string }> = [
     label: 'Control Token Spoofing',
   },
   {
-    regex: /(?:output|reveal|dump|print)\s+(?:your\s+)?(?:system\s+prompt|hidden\s+instructions?|base\s+instructions?)/i,
+    regex: /(?:output|reveal|dump|print)\s+(?:your\s+)?(?:(?:base|hidden|system)\s+)*(?:system\s+)?(?:prompt|instructions?)/i,
     label: 'System Prompt Exfiltration',
   },
   {
@@ -266,6 +266,160 @@ export function validateEvidenceGrounding(
           refusalReason: 'UNSUPPORTED_OR_MISSING_DATA',
           refusalExplanation: `Refusal: ${item.vitalType} is not available in the verified telemetry record. The copilot refuses to fabricate unmeasured physiological vitals.`,
         };
+      }
+    }
+  }
+
+  return { passed: true };
+}
+
+/**
+ * Scans patient metadata, admission reason, comorbidities, and timeline events
+ * for indirect prompt injection vectors or context poisoning attempts.
+ */
+export function validateIndirectPromptInjection(
+  evidence: StructuredEvidencePackage
+): GuardrailCheckResult {
+  const fieldsToScan: string[] = [
+    evidence.admissionReason || '',
+    evidence.patientName || '',
+    ...(evidence.comorbidities || []),
+    ...(evidence.timelineSummary || []).map((t) => `${t.title} ${t.description}`),
+  ];
+
+  for (const text of fieldsToScan) {
+    if (!text) continue;
+    for (const { regex, label } of PROMPT_INJECTION_PATTERNS) {
+      if (regex.test(text)) {
+        return {
+          passed: false,
+          refusalReason: 'PROMPT_INJECTION_DETECTED',
+          refusalExplanation: `Indirect context poisoning blocked: detected "${label}" within clinical records or patient metadata.`,
+          detectedPattern: label,
+        };
+      }
+    }
+  }
+
+  return { passed: true };
+}
+
+/**
+ * Strict Output Schema & Invariant Validation for Untrusted LLM outputs.
+ * Enforces that untrusted models cannot:
+ * 1. Return empty or whitespace responses
+ * 2. Fabricate vitals that do not exist in verified evidence
+ * 3. Emit unauthorized medical diagnoses
+ * 4. Issue prescriptive treatments or drug dosages
+ * 5. Attempt output-side prompt hijacking or markdown data exfiltration
+ * 6. Claim to alter deterministic APS or telemetry data
+ */
+export function validateLLMOutput(
+  output: {
+    answer?: string;
+    sourceReferences?: any[];
+    missingDataIdentified?: string[];
+  },
+  evidence: StructuredEvidencePackage
+): GuardrailCheckResult {
+  if (!output || typeof output !== 'object') {
+    return {
+      passed: false,
+      refusalReason: 'UNSUPPORTED_OR_MISSING_DATA',
+      refusalExplanation: 'Untrusted LLM provider returned malformed non-object output.',
+    };
+  }
+
+  if (typeof output.answer !== 'string' || output.answer.trim().length === 0) {
+    return {
+      passed: false,
+      refusalReason: 'UNSUPPORTED_OR_MISSING_DATA',
+      refusalExplanation: 'Untrusted LLM provider returned an empty or whitespace response.',
+    };
+  }
+
+  const answer = output.answer;
+
+  // 1. Output-side prompt injection / markdown exfiltration check
+  for (const { regex, label } of PROMPT_INJECTION_PATTERNS) {
+    if (regex.test(answer)) {
+      return {
+        passed: false,
+        refusalReason: 'PROMPT_INJECTION_DETECTED',
+        refusalExplanation: `Untrusted model output contained prohibited control pattern: "${label}".`,
+        detectedPattern: label,
+      };
+    }
+  }
+
+  // 2. Prohibited diagnosis assertion in output
+  const OUTPUT_DIAGNOSIS_PATTERNS = [
+    /\b(?:i\s+diagnose|patient\s+is\s+diagnosed\s+with|confirmed\s+diagnosis\s+is|my\s+diagnosis\s+is)\b/i,
+    /\b(?:official\s+diagnosis|conclusive\s+diagnosis)\b/i,
+  ];
+  for (const pattern of OUTPUT_DIAGNOSIS_PATTERNS) {
+    if (pattern.test(answer)) {
+      return {
+        passed: false,
+        refusalReason: 'ATTEMPTED_DIAGNOSIS',
+        refusalExplanation: 'Untrusted model attempted to issue an autonomous medical diagnosis.',
+      };
+    }
+  }
+
+  // 3. Prohibited medication prescription in output
+  const OUTPUT_PRESCRIPTION_PATTERNS = [
+    /\b(?:i\s+prescribe|prescribing|i\s+order\s+(?:the\s+following|administration))\b/i,
+    /\badminister\s+\d+\s*(?:mg|mcg|ml|g|units?)\b/i,
+  ];
+  for (const pattern of OUTPUT_PRESCRIPTION_PATTERNS) {
+    if (pattern.test(answer)) {
+      return {
+        passed: false,
+        refusalReason: 'ATTEMPTED_TREATMENT_RECOMMENDATION',
+        refusalExplanation: 'Untrusted model attempted to independently order medication or clinical treatment.',
+      };
+    }
+  }
+
+  // 4. Prohibited claim to alter APS or telemetry
+  const OUTPUT_MUTATION_PATTERNS = [
+    /\b(?:i\s+have\s+(?:changed|lowered|raised|reset|modified|updated)\s+(?:the\s+)?(?:aps|attention\s+score|priority))\b/i,
+    /\b(?:aps\s+has\s+been\s+(?:changed|overridden|reset|lowered))\b/i,
+    /\b(?:i\s+have\s+overwritten\s+(?:the\s+)?(?:vitals?|observations?|measurements?))\b/i,
+  ];
+  for (const pattern of OUTPUT_MUTATION_PATTERNS) {
+    if (pattern.test(answer)) {
+      return {
+        passed: false,
+        refusalReason: 'ATTEMPTED_APS_MUTATION',
+        refusalExplanation: 'Untrusted model falsely claimed to mutate deterministic APS scores or source observations.',
+      };
+    }
+  }
+
+  // 5. Hallucinated vitals validation in sourceReferences
+  if (Array.isArray(output.sourceReferences)) {
+    for (const ref of output.sourceReferences) {
+      if (ref.vitalType) {
+        const verified = evidence.verifiedVitals[ref.vitalType];
+        if (!verified) {
+          return {
+            passed: false,
+            refusalReason: 'UNSUPPORTED_OR_MISSING_DATA',
+            refusalExplanation: `Untrusted model hallucinated reference to unverified vital '${ref.vitalType}'.`,
+          };
+        }
+        if (typeof ref.value === 'number') {
+          const diff = Math.abs(ref.value - verified.value);
+          if (diff > Math.max(0.1, verified.value * 0.05)) {
+            return {
+              passed: false,
+              refusalReason: 'UNSUPPORTED_OR_MISSING_DATA',
+              refusalExplanation: `Untrusted model hallucinated incorrect vital value ${ref.value} for ${ref.vitalType} (verified: ${verified.value}).`,
+            };
+          }
+        }
       }
     }
   }

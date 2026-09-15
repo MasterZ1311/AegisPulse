@@ -16,6 +16,8 @@ import { WardAuditPage } from './components/pages/WardAuditPage';
 import { SimulationPage } from './components/pages/SimulationPage';
 import { DiagnosticsModal } from './components/DiagnosticsModal';
 import { BedsideCameraModal } from './components/BedsideCameraModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { TabLifecycleManager } from './services/tab-lifecycle';
 import { INITIAL_WARD_PATIENTS } from './data/ward-simulated-data';
 import type { WardPatientRadarState } from './types/radar';
 import { AlertTriangle } from 'lucide-react';
@@ -285,11 +287,26 @@ export default function App() {
       }
     });
 
+    const tabLifecycle = new TabLifecycleManager({
+      onResume: (elapsedMs) => {
+        if (elapsedMs > 15000) {
+          console.info(
+            `[AegisPulse] Tab resumed after ${Math.round(elapsedMs / 1000)}s suspension. Reconciling authoritative snapshot.`
+          );
+          if (client.getStatus() === 'CONNECTED') {
+            client.requestSnapshot();
+          }
+        }
+      },
+    });
+    const unsubLifecycle = tabLifecycle.init();
+
     client.connect();
 
     return () => {
       clearInterval(healthInterval);
       unsubOffline();
+      unsubLifecycle();
       client.disconnect();
     };
   }, []);
@@ -643,90 +660,93 @@ export default function App() {
         }}
       />
 
-      {/* 3. Main Multi-Page Content Area */}
+      {/* 3. Main Multi-Page Content Area with Section Error Boundary */}
       <main className="flex-1 w-full max-w-[1780px] mx-auto p-4 sm:p-6 lg:p-8">
-        {activePage === 'RADAR' && (
-          <WardRadarPage
-            patients={patients}
-            selectedPatientId={selectedPatientId}
-            onSelectPatient={(p) => {
-              setSelectedPatientId(p.patientId);
-              const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
-              if (idx !== -1) setFocusedPatientIndex(idx);
-            }}
-            onAcknowledgePatient={handleAcknowledge}
-            onNavigateToPatient={(p) => {
-              setSelectedPatientId(p.patientId);
-              const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
-              if (idx !== -1) setFocusedPatientIndex(idx);
-              navigateTo('PATIENT', p.patientId);
-            }}
-          />
-        )}
-
-        {activePage === 'PATIENT' && (
-          <PatientWorkstationPage
-            patients={patients}
-            selectedPatient={selectedPatient}
-            onSelectPatient={(p) => {
-              setSelectedPatientId(p.patientId);
-              const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
-              if (idx !== -1) setFocusedPatientIndex(idx);
-              navigateTo('PATIENT', p.patientId);
-            }}
-            onBackToRadar={() => navigateTo('RADAR')}
-            onAcknowledge={handleAcknowledge}
-            onLogAssessment={handleLogAssessment}
-            onEscalate={handleEscalate}
-            onSpotCheckComplete={handleSpotCheckComplete}
-          />
-        )}
-
-        {activePage === 'ANALYTICS' && (
-          <WardAnalyticsPage
-            patients={patients}
-            onNavigateToPatient={(p) => {
-              setSelectedPatientId(p.patientId);
-              const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
-              if (idx !== -1) setFocusedPatientIndex(idx);
-              navigateTo('PATIENT', p.patientId);
-            }}
-          />
-        )}
-
-        {activePage === 'AUDIT' && (
-          <WardAuditPage
-            patients={patients}
-            onNavigateToPatient={(p) => {
-              setSelectedPatientId(p.patientId);
-              const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
-              if (idx !== -1) setFocusedPatientIndex(idx);
-              navigateTo('PATIENT', p.patientId);
-            }}
-          />
-        )}
-
-        {activePage === 'SIMULATION' && (
-          <SimulationPage
-            activeScenario={activeScenario}
-            onScenarioChange={handleScenarioChange}
-            onApplyStep={(updatedPatients, targetPatientId) => {
-              setPatients(updatedPatients);
-              if (targetPatientId) {
-                setSelectedPatientId(targetPatientId);
-                const idx = updatedPatients.findIndex((p) => p.patientId === targetPatientId);
+        <ErrorBoundary fallbackTitle="Clinical View Exception Guard" isRoot={false}>
+          {activePage === 'RADAR' && (
+            <WardRadarPage
+              patients={patients}
+              selectedPatientId={selectedPatientId}
+              onSelectPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
                 if (idx !== -1) setFocusedPatientIndex(idx);
-              }
-            }}
-            onNavigateToPatient={(p) => {
-              setSelectedPatientId(p.patientId);
-              const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
-              if (idx !== -1) setFocusedPatientIndex(idx);
-              navigateTo('PATIENT', p.patientId);
-            }}
-            patients={patients}
-          />
-        )}
+              }}
+              onAcknowledgePatient={handleAcknowledge}
+              onNavigateToPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+                if (idx !== -1) setFocusedPatientIndex(idx);
+                navigateTo('PATIENT', p.patientId);
+              }}
+            />
+          )}
+
+          {activePage === 'PATIENT' && (
+            <PatientWorkstationPage
+              patients={patients}
+              selectedPatient={selectedPatient}
+              onSelectPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+                if (idx !== -1) setFocusedPatientIndex(idx);
+                navigateTo('PATIENT', p.patientId);
+              }}
+              onBackToRadar={() => navigateTo('RADAR')}
+              onAcknowledge={handleAcknowledge}
+              onLogAssessment={handleLogAssessment}
+              onEscalate={handleEscalate}
+              onSpotCheckComplete={handleSpotCheckComplete}
+              onOpenCamera={() => setIsCameraModalOpen(true)}
+            />
+          )}
+
+          {activePage === 'ANALYTICS' && (
+            <WardAnalyticsPage
+              patients={patients}
+              onNavigateToPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+                if (idx !== -1) setFocusedPatientIndex(idx);
+                navigateTo('PATIENT', p.patientId);
+              }}
+            />
+          )}
+
+          {activePage === 'AUDIT' && (
+            <WardAuditPage
+              patients={patients}
+              onNavigateToPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+                if (idx !== -1) setFocusedPatientIndex(idx);
+                navigateTo('PATIENT', p.patientId);
+              }}
+            />
+          )}
+
+          {activePage === 'SIMULATION' && (
+            <SimulationPage
+              activeScenario={activeScenario}
+              onScenarioChange={handleScenarioChange}
+              onApplyStep={(updatedPatients, targetPatientId) => {
+                setPatients(updatedPatients);
+                if (targetPatientId) {
+                  setSelectedPatientId(targetPatientId);
+                  const idx = updatedPatients.findIndex((p) => p.patientId === targetPatientId);
+                  if (idx !== -1) setFocusedPatientIndex(idx);
+                }
+              }}
+              onNavigateToPatient={(p) => {
+                setSelectedPatientId(p.patientId);
+                const idx = sortedPatients.findIndex((sp) => sp.patientId === p.patientId);
+                if (idx !== -1) setFocusedPatientIndex(idx);
+                navigateTo('PATIENT', p.patientId);
+              }}
+              patients={patients}
+            />
+          )}
+        </ErrorBoundary>
       </main>
     </div>
   );

@@ -15,6 +15,14 @@ security:
   - ApiKeyAuth: []
 
 tags:
+  - name: Identity & Authentication
+    description: Clinician authentication, session issuance, refresh, and logout
+  - name: Edge Sync
+    description: Idempotent batch synchronization for offline bedside tablets
+  - name: AI Copilot
+    description: Grounded advisory decision support bounded by verified patient evidence
+  - name: Realtime Streaming
+    description: Sub-second SSE and WebSocket clinical telemetry streams
   - name: System Telemetry
     description: Health, liveness, and readiness probes
   - name: Wards & Beds
@@ -74,6 +82,68 @@ paths:
       responses:
         '200':
           description: Service is ready
+
+  /api/v1/auth/login:
+    post:
+      tags: [Identity & Authentication]
+      summary: Authenticate clinician credentials and issue access/refresh tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authentication successful with signed JWT
+        '401':
+          description: Invalid username or password
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [Identity & Authentication]
+      summary: Exchange refresh token for new access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Session refreshed
+        '401':
+          description: Invalid or expired refresh token
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Identity & Authentication]
+      summary: Revoke session token and blacklist token identifier
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully logged out
+
+  /api/v1/auth/me:
+    get:
+      tags: [Identity & Authentication]
+      summary: Get active authenticated clinician profile and jurisdiction
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
 
   /api/v1/wards:
     get:
@@ -226,7 +296,7 @@ paths:
             schema:
               $ref: '#/components/schemas/IngestObservationRequest'
       responses:
-        '21':
+        '201':
           description: Ingestion accepted and indexed
         '400':
           description: Validation error or out of physiological limits
@@ -584,6 +654,146 @@ paths:
       responses:
         '200':
           description: Simulation status
+
+  /api/v1/simulation/chaos/database:
+    post:
+      tags: [Simulation]
+      summary: Toggle database availability for chaos resilience testing
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                disrupted:
+                  type: boolean
+      responses:
+        '200':
+          description: Chaos state updated
+
+  /api/v1/patients/{patientId}/copilot:
+    post:
+      tags: [AI Copilot]
+      summary: Advisory AI Clinical Copilot bounded by verified patient evidence
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                queryType:
+                  type: string
+                  enum: [QUESTION_ANSWER, SUMMARIZE_TIMELINE, EXPLAIN_APS_CHANGE, DRAFT_SBAR, IDENTIFY_MISSING_INFO, EXPLAIN_CALCULATION]
+                  default: QUESTION_ANSWER
+                includeExplanations:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Grounded clinical response with immutable provenance and source references
+        '400':
+          description: Validation failure or clock skew
+        '429':
+          description: Rate limit exceeded
+
+  /api/v1/sync:
+    post:
+      tags: [Edge Sync]
+      summary: Idempotent batch synchronization for offline bedside tablets
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clientSyncId, clientId, items]
+              properties:
+                clientSyncId:
+                  type: string
+                clientId:
+                  type: string
+                wardId:
+                  type: string
+                lastServerSeq:
+                  type: integer
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [idempotencyKey, itemType, timestamp, patientId, payload]
+                    properties:
+                      idempotencyKey:
+                        type: string
+                      itemType:
+                        type: string
+                        enum: [OBSERVATION, ACKNOWLEDGEMENT, CLINICAL_ACTION]
+                      timestamp:
+                        type: integer
+                      patientId:
+                        type: string
+                      payload:
+                        type: object
+      responses:
+        '200':
+          description: Sync batch processed
+
+  /api/v1/metrics:
+    get:
+      tags: [System Telemetry]
+      summary: Prometheus / operational system metrics
+      responses:
+        '200':
+          description: Metrics snapshot
+
+  /api/v1/stream/sse:
+    get:
+      tags: [Realtime Streaming]
+      summary: Server-Sent Events stream for ward telemetry
+      parameters:
+        - name: wardId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Persistent SSE event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /api/v1/stream/ws:
+    get:
+      tags: [Realtime Streaming]
+      summary: Bidirectional WebSocket stream with anti-rollback guarantees and sequence recovery
+      parameters:
+        - name: wardId
+          in: query
+          schema:
+            type: string
+        - name: lastSeq
+          in: query
+          schema:
+            type: integer
+      responses:
+        '101':
+          description: Switching protocols to WebSocket
 
 components:
   securitySchemes:

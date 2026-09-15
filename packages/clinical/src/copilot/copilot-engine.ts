@@ -13,6 +13,8 @@ import {
   detectPromptInjection,
   detectForbiddenIntent,
   validateEvidenceGrounding,
+  validateIndirectPromptInjection,
+  validateLLMOutput,
 } from './guardrails';
 import { CopilotAuditLogger, defaultCopilotAuditLogger } from './audit-logger';
 
@@ -409,7 +411,7 @@ export class ClinicalCopilotEngine {
     const responseId = `copilot-resp-${crypto.randomUUID()}`;
     const auditId = `copilot-audit-${crypto.randomUUID()}`;
 
-    // 1. Prompt Injection Defense
+    // 1. Direct Prompt Injection Defense
     const injectionCheck = detectPromptInjection(request.query);
     if (!injectionCheck.passed) {
       return this.recordRefusal(
@@ -418,6 +420,19 @@ export class ClinicalCopilotEngine {
         auditId,
         injectionCheck.refusalReason!,
         injectionCheck.refusalExplanation!,
+        startTime
+      );
+    }
+
+    // 1b. Indirect Prompt Injection & Context Poisoning Defense
+    const indirectCheck = validateIndirectPromptInjection(request.evidence);
+    if (!indirectCheck.passed) {
+      return this.recordRefusal(
+        request,
+        responseId,
+        auditId,
+        indirectCheck.refusalReason!,
+        indirectCheck.refusalExplanation!,
         startTime
       );
     }
@@ -494,14 +509,14 @@ export class ClinicalCopilotEngine {
   }
 
   /**
-   * Processes a copilot request asynchronously (supports custom LLM provider).
+   * Processes a copilot request asynchronously (supports custom LLM provider with fail-safe fallback).
    */
   public async ask(request: CopilotRequest): Promise<CopilotResponse> {
     const startTime = Date.now();
     const responseId = `copilot-resp-${crypto.randomUUID()}`;
     const auditId = `copilot-audit-${crypto.randomUUID()}`;
 
-    // 1. Prompt Injection Defense
+    // 1. Direct Prompt Injection Defense
     const injectionCheck = detectPromptInjection(request.query);
     if (!injectionCheck.passed) {
       return this.recordRefusal(
@@ -510,6 +525,19 @@ export class ClinicalCopilotEngine {
         auditId,
         injectionCheck.refusalReason!,
         injectionCheck.refusalExplanation!,
+        startTime
+      );
+    }
+
+    // 1b. Indirect Prompt Injection & Context Poisoning Defense
+    const indirectCheck = validateIndirectPromptInjection(request.evidence);
+    if (!indirectCheck.passed) {
+      return this.recordRefusal(
+        request,
+        responseId,
+        auditId,
+        indirectCheck.refusalReason!,
+        indirectCheck.refusalExplanation!,
         startTime
       );
     }
@@ -540,7 +568,7 @@ export class ClinicalCopilotEngine {
       );
     }
 
-    // 4. Generate Answer via Custom LLM or Deterministic Engine
+    // 4. Generate Answer via Custom LLM or Deterministic Fallback Engine
     let execution: {
       answer: string;
       sourceReferences: CopilotSourceReference[];
@@ -548,18 +576,51 @@ export class ClinicalCopilotEngine {
     };
 
     if (this.customLLMProvider) {
-      const llmResult = await this.customLLMProvider.generateResponse(
-        request.queryType,
-        request.query,
-        request.evidence
-      );
-      execution = {
-        answer: llmResult.answer,
-        sourceReferences: llmResult.sourceReferences,
-        missingDataIdentified:
-          llmResult.missingDataIdentified ??
-          request.evidence.missingVitals.map((v) => String(v)),
-      };
+      try {
+        // Enforce 10s timeout on external untrusted LLM provider
+        const timeoutMs = 10000;
+        const llmResult = await Promise.race([
+          this.customLLMProvider.generateResponse(
+            request.queryType,
+            request.query,
+            request.evidence
+          ),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('LLM Provider Timeout')), timeoutMs)
+          ),
+        ]);
+
+        // Output Guardrail & Provenance Verification
+        const outputValidation = validateLLMOutput(llmResult, request.evidence);
+        if (!outputValidation.passed) {
+          console.warn(
+            `[ClinicalCopilotEngine] Untrusted LLM output failed safety guardrails (${outputValidation.refusalReason}: ${outputValidation.refusalExplanation}). Falling back to deterministic engine.`
+          );
+          execution = this.deterministicEngine.execute(
+            request.queryType,
+            request.query,
+            request.evidence
+          );
+        } else {
+          execution = {
+            answer: llmResult.answer,
+            sourceReferences: llmResult.sourceReferences ?? [],
+            missingDataIdentified:
+              llmResult.missingDataIdentified ??
+              request.evidence.missingVitals.map((v) => String(v)),
+          };
+        }
+      } catch (err: any) {
+        // Provider failure / rate limit / timeout fallback
+        console.warn(
+          `[ClinicalCopilotEngine] LLM Provider failure (${err.message}). Engaging deterministic fallback.`
+        );
+        execution = this.deterministicEngine.execute(
+          request.queryType,
+          request.query,
+          request.evidence
+        );
+      }
     } else {
       execution = this.deterministicEngine.execute(
         request.queryType,
