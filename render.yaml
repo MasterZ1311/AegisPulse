@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: npm install && npm run build:packages && npm run build --workspace=@aegispulse/api
+    buildCommand: npm install && npm run build
     startCommand: node services/api/dist/index.js
     healthCheckPath: /health
     autoDeploy: true
@@ -16,7 +16,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        value: https://*.vercel.app,https://aegispulse.vercel.app
+        value: https://*.onrender.com,https://aegispulse-api.onrender.com
+      - key: AEGIS_DB_PATH
+        value: ./data/aegispulse.db
       - key: DATABASE_PATH
         value: ./data/aegispulse.db
       - key: ALLOW_HEADER_AUTH

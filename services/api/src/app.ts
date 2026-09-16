@@ -1,5 +1,11 @@
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import { requestIdMiddleware } from './middleware/request-id';
 import { structuredLogger } from './middleware/logger';
 import { errorHandler, NotFoundError } from './middleware/errors';
@@ -26,7 +32,7 @@ export function createApp(): Express {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; script-src 'self'; object-src 'none'; frame-ancestors 'none';"
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' ws: wss:; object-src 'none'; frame-ancestors 'none';"
     );
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(), payment=()');
@@ -114,12 +120,38 @@ export function createApp(): Express {
   app.use('/api/v1', v1Router);
   app.use('/api', v1Router);
 
-  // 10. 404 Handler
+  // 10. Static Asset Serving & SPA Routing Fallback (Unified Full-Stack Deployment)
+  const webDistCandidates = [
+    resolve(process.cwd(), 'apps/web/dist'),
+    resolve(process.cwd(), 'dist'),
+    resolve(__dirname, '../../../apps/web/dist'),
+    resolve(__dirname, '../../web/dist'),
+  ];
+  const webDistPath = webDistCandidates.find((dir) => existsSync(dir));
+
+  if (webDistPath) {
+    app.use(express.static(webDistPath));
+    app.get('*', (req: Request, res: Response, next) => {
+      // Do not intercept API or operational probe endpoints
+      if (
+        req.path.startsWith('/api') ||
+        req.path === '/health' ||
+        req.path === '/ready' ||
+        req.path === '/metrics' ||
+        req.path.startsWith('/docs')
+      ) {
+        return next();
+      }
+      res.sendFile(resolve(webDistPath, 'index.html'));
+    });
+  }
+
+  // 11. 404 Handler for Unmatched API Endpoints
   app.use((req: Request, _res: Response, next) => {
     next(new NotFoundError(`The requested endpoint '${req.method} ${req.originalUrl}' does not exist on this AegisPulse service.`));
   });
 
-  // 11. Centralized Error Handler
+  // 12. Centralized Error Handler
   app.use(errorHandler);
 
   return app;
