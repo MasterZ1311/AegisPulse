@@ -6,8 +6,11 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646cff?style=flat-square&logo=vite)](https://vitejs.dev)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind-v4.0-38bdf8?style=flat-square&logo=tailwindcss)](https://tailwindcss.com)
-[![Tests Passing](https://img.shields.io/badge/Tests-515%20Passed-emerald?style=flat-square)](docs/TESTING.md)
+[![Tests Passing](https://img.shields.io/badge/Tests-535%20Passed%20(70%20Suites)-emerald?style=flat-square)](JUDGES_EVALUATION_GUIDE.md)
+[![Judges Guide](https://img.shields.io/badge/Evaluator%20Guide-Technical%20Audit-blue?style=flat-square)](JUDGES_EVALUATION_GUIDE.md)
 [![License](https://img.shields.io/badge/License-MIT-gray?style=flat-square)](LICENSE)
+
+> 🏆 **FOR JUDGES & EVALUATORS:** See [**`JUDGES_EVALUATION_GUIDE.md`**](JUDGES_EVALUATION_GUIDE.md) for the complete evaluation rubric, architectural evidence, mathematical derivations, and pre-configured mock admin credentials (`admin` / `AdminPass123!`).
 
 ---
 

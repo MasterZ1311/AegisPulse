@@ -32,8 +32,9 @@ coverage
 .DS_Store
 Thumbs.db
 
-# Private Team Documentation (Local-Only)
+# Private Team Documentation & Rehearsal Scripts (Local-Only)
 team-docs/
+pitch/
 
 # Local Test Reports & Data
 playwright-report/
