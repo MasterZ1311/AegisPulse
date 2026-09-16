@@ -29,7 +29,7 @@ Render will automatically read [`render.yaml`](file:///e:/AegisPulse/render.yaml
 - **Service Name**: `aegispulse-api` (or `aegispulse`)
 - **Environment**: `Node`
 - **Plan**: `Free`
-- **Build Command**: `npm install && npm run build`
+- **Build Command**: `npm install --include=dev && npm run build`
 - **Start Command**: `node services/api/dist/index.js`
 - **Health Check Path**: `/health`
 - **Managed Variables**:

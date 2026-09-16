@@ -24,6 +24,10 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\""
   },
+  "dependencies": {
+    "@types/node": "^22.13.1",
+    "typescript": "^5.7.3"
+  },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
     "@types/node": "^22.13.1",
