@@ -30,7 +30,7 @@ export class SimulationSensorProvider implements SensorProvider {
   private readonly streamingIntervalMs: number;
 
   private isStreaming = false;
-  private timer: NodeJS.Timeout | null = null;
+  private timer: ReturnType<typeof setInterval> | null = null;
   private lastReadingTimestamp?: number;
   private statusMessage = 'Initialized';
 

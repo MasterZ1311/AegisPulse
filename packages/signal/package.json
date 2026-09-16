@@ -21,7 +21,8 @@
   "dependencies": {
     "@aegispulse/types": "*",
     "@aegispulse/simulation": "*",
-    "@aegispulse/rppg": "*"
+    "@aegispulse/rppg": "*",
+    "@types/node": "^22.13.1"
   },
   "devDependencies": {
     "@aegispulse/config": "*",
