@@ -21,10 +21,11 @@ export function validateRequest(schemas: ValidationTargets) {
         req.body = schemas.body.parse(req.body);
       }
       next();
-    } catch (err) {
-      if (err instanceof ZodError) {
-        const invalidParams = err.issues.map((e) => ({
-          field: e.path.join('.'),
+    } catch (err: any) {
+      if (err instanceof ZodError || err?.name === 'ZodError' || Array.isArray(err?.issues)) {
+        const issues = err.issues || [];
+        const invalidParams = issues.map((e: any) => ({
+          field: Array.isArray(e.path) ? e.path.join('.') : String(e.path || ''),
           message: e.message,
           code: e.code,
         }));
