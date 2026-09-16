@@ -4,6 +4,7 @@
  * Runs empirical validation on Attention Priority Scoring and prints formatted audit report.
  */
 
+import process from 'node:process';
 import { runCalibrationLab, formatCalibrationReport } from './calibration-lab';
 
 function main() {
