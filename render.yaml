@@ -4,11 +4,14 @@ services:
     runtime: node
     plan: free
     region: oregon
+    branch: MZ-Main
     buildCommand: npm install --include=dev && npm run build
     startCommand: node services/api/dist/index.js
     healthCheckPath: /health
     autoDeploy: true
     envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
       - key: NODE_ENV
         value: production
       - key: PORT
