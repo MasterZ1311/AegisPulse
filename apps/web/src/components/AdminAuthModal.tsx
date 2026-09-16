@@ -11,6 +11,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { apiUrl } from '../lib/api';
 
 interface AdminAuthModalProps {
   isOpen: boolean;
@@ -51,7 +52,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
 
     try {
       // 1. Attempt API login
-      const res = await fetch('/api/v1/auth/login', {
+      const res = await fetch(apiUrl('/api/v1/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),

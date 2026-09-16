@@ -41,8 +41,20 @@ export function createApp(): Express {
     cors({
       origin: (origin, callback) => {
         // Allow requests with no origin (e.g. mobile apps, curl, internal server-to-server)
-        if (!origin) return callback(null, true);
-        if (config.nodeEnv !== 'production' || config.corsOrigins.includes(origin) || config.corsOrigins.includes('*')) {
+        if (!origin || config.nodeEnv !== 'production' || config.corsOrigins.includes('*')) {
+          return callback(null, true);
+        }
+
+        if (
+          config.corsOrigins.includes(origin) ||
+          config.corsOrigins.some((allowed) => {
+            if (allowed.includes('*')) {
+              const regex = new RegExp('^' + allowed.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$');
+              return regex.test(origin);
+            }
+            return false;
+          })
+        ) {
           return callback(null, true);
         }
         return callback(new Error(`Origin '${origin}' is not allowed by CORS policy.`));

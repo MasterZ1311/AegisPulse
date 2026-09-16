@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: aegispulse-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build:packages && npm run build --workspace=@aegispulse/api
+    startCommand: node services/api/dist/index.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: https://*.vercel.app,https://aegispulse.vercel.app
+      - key: DATABASE_PATH
+        value: ./data/aegispulse.db
+      - key: ALLOW_HEADER_AUTH
+        value: "false"
+      - key: ALLOW_DEV_TEST_TOKENS
+        value: "false"

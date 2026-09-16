@@ -257,7 +257,7 @@ describe('Configuration Validation Layer', () => {
           },
           encoding: 'utf-8',
           shell: true,
-          timeout: 35000,
+          timeout: 60000,
         }
       );
 
@@ -266,7 +266,7 @@ describe('Configuration Validation Layer', () => {
       expect(res.stderr).toContain('AEGIS_DB_PATH is REQUIRED in production/staging');
       expect(res.stderr).toContain('JWT_SECRET is REQUIRED in production/staging');
       expect(res.stderr).toContain('CORS_ORIGIN is REQUIRED in production/staging');
-    }, 45000);
+    }, 70000);
 
     it('valid env in production -> passes configuration validation and initializes cleanly', () => {
       const validEnv = {

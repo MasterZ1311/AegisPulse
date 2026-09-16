@@ -9,22 +9,26 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     react(),
     tailwindcss(),
-    basicSsl(),
-    {
-      name: 'suppress-tls-reset',
-      configureServer(server) {
-        server.httpServer?.on('clientError', (err: any, socket) => {
-          if (err?.code === 'ECONNRESET' || !socket.writable) return;
-          try {
-            socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
-          } catch {}
-        });
-      },
-    },
+    ...(command === 'serve'
+      ? [
+          basicSsl(),
+          {
+            name: 'suppress-tls-reset',
+            configureServer(server: any) {
+              server.httpServer?.on('clientError', (err: any, socket: any) => {
+                if (err?.code === 'ECONNRESET' || !socket.writable) return;
+                try {
+                  socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+                } catch {}
+              });
+            },
+          },
+        ]
+      : []),
   ],
   resolve: {
     alias: {
@@ -45,4 +49,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

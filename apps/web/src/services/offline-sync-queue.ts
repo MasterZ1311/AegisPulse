@@ -1,4 +1,5 @@
 export type WardConnectivityState = 'ONLINE' | 'DEGRADED' | 'OFFLINE' | 'SYNCING';
+import { apiUrl } from '../lib/api';
 
 export interface QueuedSyncItem {
   idempotencyKey: string;
@@ -31,7 +32,7 @@ export class OfflineSyncQueue {
 
   constructor(options: OfflineSyncOptions = {}) {
     this.storageKey = options.storageKey ?? 'aegispulse_offline_queue_v1';
-    this.syncEndpoint = options.syncEndpoint ?? '/api/v1/sync';
+    this.syncEndpoint = options.syncEndpoint ?? apiUrl('/api/v1/sync');
     this.clientId = options.clientId ?? `tablet-bedside-${Math.random().toString(36).substring(2, 8)}`;
     this.wardId = options.wardId ?? 'WARD-4B';
     this.maxRetries = options.maxRetries ?? 5;

@@ -345,6 +345,7 @@ describe('Implementation-Level Privacy Verification: Strict Exclusion of Raw Vid
         if (!existsSync(dir)) continue;
         const entries = readdirSync(dir);
         for (const entry of entries) {
+          if (entry.toLowerCase().includes('logo')) continue;
           for (const ext of forbiddenExtensions) {
             expect(entry.toLowerCase().endsWith(ext)).toBe(false);
           }

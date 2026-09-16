@@ -24,6 +24,7 @@ import { AdminPatientModal } from './components/AdminPatientModal';
 import { INITIAL_WARD_PATIENTS } from './data/ward-simulated-data';
 import type { WardPatientRadarState } from './types/radar';
 import { AlertTriangle } from 'lucide-react';
+import { apiUrl } from './lib/api';
 
 export default function App() {
   const [patients, setPatients] = useState<WardPatientRadarState[]>(INITIAL_WARD_PATIENTS);
@@ -174,7 +175,7 @@ export default function App() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const res = await fetch('/health');
+        const res = await fetch(apiUrl('/health'));
         if (res.ok) {
           const data: HealthCheckResponse = await res.json();
           setHealth(data);

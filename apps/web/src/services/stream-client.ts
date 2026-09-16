@@ -4,6 +4,7 @@ import type {
   ServerStreamMessage,
   ClientStreamMessage,
 } from '@aegispulse/types';
+import { wsUrl } from '../lib/api';
 
 export type StreamConnectionStatus =
   | 'CONNECTING'
@@ -62,10 +63,7 @@ export class AegisPulseStreamClient {
   private readonly snapshotListeners = new Set<SnapshotCallback>();
 
   constructor(options: StreamClientOptions = {}) {
-    const defaultUrl =
-      typeof window !== 'undefined' && window.location
-        ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v1/stream/ws`
-        : 'ws://localhost:3001/api/v1/stream/ws';
+    const defaultUrl = wsUrl('/api/v1/stream/ws');
 
     this.options = {
       url: options.url ?? defaultUrl,

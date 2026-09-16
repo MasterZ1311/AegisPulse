@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { WardPatientRadarState } from '../types/radar';
+import { apiUrl } from '../lib/api';
 
 interface AdminPatientModalProps {
   isOpen: boolean;
@@ -110,7 +111,7 @@ export const AdminPatientModal: React.FC<AdminPatientModalProps> = ({
           isolationStatus,
         };
 
-        const res = await fetch('/api/v1/patients', {
+        const res = await fetch(apiUrl('/api/v1/patients'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -245,7 +246,7 @@ export const AdminPatientModal: React.FC<AdminPatientModalProps> = ({
           isolationStatus,
         };
 
-        const res = await fetch(`/api/v1/patients/${initialPatient.patientId}`, {
+        const res = await fetch(apiUrl(`/api/v1/patients/${initialPatient.patientId}`), {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -295,7 +296,7 @@ export const AdminPatientModal: React.FC<AdminPatientModalProps> = ({
     const token = localStorage.getItem('aegis-admin-token') || 'admin-token';
 
     try {
-      const res = await fetch(`/api/v1/patients/${initialPatient.patientId}`, {
+      const res = await fetch(apiUrl(`/api/v1/patients/${initialPatient.patientId}`), {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

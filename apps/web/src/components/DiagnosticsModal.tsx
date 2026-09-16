@@ -21,6 +21,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { apiUrl } from '../lib/api';
 
 interface DiagnosticsModalProps {
   isOpen: boolean;
@@ -63,8 +64,8 @@ export const DiagnosticsModal: React.FC<DiagnosticsModalProps> = ({
     refreshStreamMetrics();
     try {
       const [mRes, rRes] = await Promise.all([
-        fetch('/api/v1/metrics').then((r) => (r.ok ? r.json() : null)),
-        fetch('/ready').then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl('/api/v1/metrics')).then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl('/ready')).then((r) => (r.ok ? r.json() : null)),
       ]);
       if (mRes) setMetrics(mRes.data);
       if (rRes) setReadyCheck(rRes);
